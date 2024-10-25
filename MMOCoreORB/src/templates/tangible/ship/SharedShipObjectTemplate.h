@@ -47,9 +47,11 @@ class SharedShipObjectTemplate : public SharedTangibleObjectTemplate {
 	uint64 customShipAiMap;
 	unsigned int pvpStatusBitmask;
 
+	int experience;
+	int factionReward;
+
 public:
 	SharedShipObjectTemplate() {
-
 	}
 
 	~SharedShipObjectTemplate() {
@@ -194,8 +196,12 @@ public:
 		shipBitmask = templateData->getIntField("shipBitmask");
 		pvpStatusBitmask = templateData->getIntField("pvpStatusBitmask");
 
-		if (!templateData->getStringField("customShipAiMap").isEmpty())
+		if (!templateData->getStringField("customShipAiMap").isEmpty()) {
 			customShipAiMap = templateData->getStringField("customShipAiMap").hashCode();
+		}
+
+		experience = templateData->getIntField("experience");
+		factionReward = templateData->getIntField("factionReward");
 
 		readAttributeMap(templateData);
 
@@ -378,6 +384,14 @@ public:
 
 	inline uint64 getCustomShipAiMap() {
 		return customShipAiMap;
+	}
+
+	inline int getExperienceValue() {
+		return experience;
+	}
+
+	inline int getFactionRewardValue() {
+		return factionReward;
 	}
 
 	void parseVariableData(const String& varName, Chunk* data) {
