@@ -29,7 +29,7 @@ protected:
 	int volumeType;
 
 public:
-	ShipCollisionData(const String& shipName, const ShipChassisData* chassisData);
+	ShipCollisionData(SharedShipObjectTemplate* templateData, const ShipChassisData* chassisData);
 
 	void setCollisionData(SharedShipObjectTemplate* templateData);
 

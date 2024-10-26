@@ -1,26 +1,8 @@
 #include "server/zone/objects/ship/ShipCollisionData.h"
 #include "templates/manager/DataArchiveStore.h"
 
-ShipCollisionData::ShipCollisionData(const String& shipName, const ShipChassisData* chassisData) : Object() {
-	setLoggingName("ShipCollisionData " + shipName);
-
-	const String& templatePath = getShipFileName(shipName);
-
-	if (templatePath == "") {
-		return;
-	}
-
-	auto templateData = TemplateManager::instance()->getTemplate(templatePath.hashCode());
-
-	if (templateData == nullptr) {
-		return;
-	}
-
-	auto shipTemplate = dynamic_cast<SharedShipObjectTemplate*>(templateData);
-
-	if (shipTemplate == nullptr) {
-		return;
-	}
+ShipCollisionData::ShipCollisionData(SharedShipObjectTemplate* shipTemplate, const ShipChassisData* chassisData) : Object() {
+	setLoggingName("ShipCollisionData " + chassisData->getName());
 
 	hardpointMap.setNoDuplicateInsertPlan();
 	slotWeights.setNoDuplicateInsertPlan();

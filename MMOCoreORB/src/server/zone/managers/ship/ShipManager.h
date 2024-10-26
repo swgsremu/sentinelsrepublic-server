@@ -37,7 +37,7 @@ protected:
 	HashTable<String, Reference<ShipAppearanceData*>> shipAppearanceData;
 	HashTable<uint32, Reference<ShipProjectileData*>> shipProjectileData;
 	HashTable<String, ShipProjectileData*> shipProjectiletTemplateNames;
-	HashTable<String, Reference<ShipCollisionData*>> shipCollisionData;
+	HashTable<uint32, Reference<ShipCollisionData*>> shipCollisionData;
 	HashTable<String, Reference<ShipChassisData*>> chassisData;
 
 	HashTable<uint32, Reference<ShipMissileData*>> missileData;
@@ -145,7 +145,7 @@ public:
 			return nullptr;
 		}
 
-		return shipCollisionData.get(ship->getShipChassisName());
+		return shipCollisionData.get(ship->getServerObjectCRC());
 	}
 
 	const ShipMissileData* getMissileData(uint32 ammoType) const {
