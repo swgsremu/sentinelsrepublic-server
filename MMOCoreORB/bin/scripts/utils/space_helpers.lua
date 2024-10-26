@@ -148,6 +148,8 @@ function SpaceHelpers:surrenderPilot(pPlayer, pilotProfession)
 			CreatureObject(pPlayer):surrenderSkill(skillName)
 		end
 	end
+
+	CreatureObject(pPlayer):resetPilotTier()
 end
 
 -- @param pPlayer pointer adds waypoint to the starting neutral pilot trainer
