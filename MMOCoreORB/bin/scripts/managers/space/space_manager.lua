@@ -80,7 +80,7 @@ talus = {
 
 tatooine = {
 	jtlTravelPoints = {
-		{"Mos Eisley Starport", 3416.6914, 5, -4648.1411},
+		{"Mos Eisley Starport", 3599.894, 5, -4780.4487},
 		{"Bestine Starport", -1361.1917, 12, -3600.0254},
 		{"Mos Espa Starport", -2833.1609, 5, 2107.3787},
 		{"Mos Entha Starport", 1266.0996, 7, 3065.1392},
