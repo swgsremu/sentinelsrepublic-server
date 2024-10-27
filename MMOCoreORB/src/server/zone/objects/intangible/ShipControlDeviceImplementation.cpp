@@ -185,7 +185,7 @@ int ShipControlDeviceImplementation::handleObjectMenuSelect(CreatureObject* play
 
 			Vector<uint64> dummyVec;
 
-			LaunchShipTask* launchTask = new LaunchShipTask(player, _this.getReferenceUnsafeStaticCast(), dummyVec);
+			LaunchShipTask* launchTask = new LaunchShipTask(player, _this.getReferenceUnsafeStaticCast(), dummyVec, zone->getZoneName());
 
 			if (launchTask != nullptr)
 				launchTask->execute();

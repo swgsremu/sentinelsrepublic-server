@@ -17,9 +17,14 @@ class LaunchShipTask : public Task, public Logger {
 	ManagedWeakReference<CreatureObject*> play;
 	ManagedWeakReference<ShipControlDevice*> shipDev;
 	Vector<uint64> groupMembers;
+	String chosenZone;
 
 public:
 	LaunchShipTask(CreatureObject* creo, ShipControlDevice* controlDevice, Vector<uint64> group) : play(creo), shipDev(controlDevice), groupMembers(group) {
+		setLoggingName("LaunchShipTask");
+	}
+
+	LaunchShipTask(CreatureObject* creo, ShipControlDevice* controlDevice, Vector<uint64> group, String zoneName) : play(creo), shipDev(controlDevice), groupMembers(group), chosenZone(zoneName) {
 		setLoggingName("LaunchShipTask");
 	}
 
@@ -43,6 +48,10 @@ public:
 		}
 
 		String jtlZoneName = planetManager->getJtlZoneName();
+
+		if (!chosenZone.isEmpty()) {
+			jtlZoneName = chosenZone;
+		}
 
 		if (jtlZoneName == "") {
 			return;
