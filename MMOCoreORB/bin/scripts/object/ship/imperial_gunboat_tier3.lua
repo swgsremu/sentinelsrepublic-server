@@ -60,6 +60,8 @@ object_ship_imperial_gunboat_tier3 = object_ship_shared_imperial_gunboat_tier3:n
 	optionsBitmask = AIENABLED,
 
 	customShipAiMap = "",
+
+	experience = 6000,
 	factionMultiplier = 20.0,
 
 	reactor = {name = "rct_generic", hitpoints = 10800, armor = 10800},

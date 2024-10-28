@@ -60,6 +60,7 @@ object_ship_awing_tier2 = object_ship_shared_awing_tier2:new {
 	optionsBitmask = AIENABLED,
 
 	customShipAiMap = "",
+	experience = 325,
 
 	reactor = {name = "rct_generic", hitpoints = 405, armor = 405},
 	engine = {name = "eng_incom_fusialthrust", hitpoints = 405, armor = 405, speed = 47.59, acceleration = 11.56, deceleration = 8.96, yaw = 18.85, yawRate = 39.55, pitch = 23.79, pitchRate = 47.59, roll = 29.46, rollRate = 53.66},

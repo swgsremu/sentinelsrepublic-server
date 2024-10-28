@@ -60,6 +60,7 @@ object_ship_civspeeder2 = object_ship_shared_civspeeder2:new {
 	optionsBitmask = AIENABLED,
 
 	customShipAiMap = "",
+	experience = 0,
 
 	reactor = {name = "rct_generic", hitpoints = 100, armor = 200},
 	engine = {name = "eng_generic", hitpoints = 100, armor = 200, speed = 40, acceleration = 34.8, deceleration = 29.928, yaw = 21.3, yawRate = 43.8, pitch = 21.3, pitchRate = 43.8, roll = 21.3, rollRate = 43.8},

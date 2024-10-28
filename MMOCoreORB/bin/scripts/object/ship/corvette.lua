@@ -60,6 +60,8 @@ object_ship_corvette = object_ship_shared_corvette:new {
 	optionsBitmask = AIENABLED,
 
 	customShipAiMap = "",
+
+	experience = 43000,
 	factionMultiplier = 22.0,
 
 	reactor = {name = "rct_generic", hitpoints = 10000, armor = 5000},

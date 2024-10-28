@@ -900,6 +900,24 @@ int ShipManager::notifyDestruction(ShipObject* destructorShip, ShipAiAgent* dest
 	}
 
 	try {
+		/* Order of priority
+			1. Credit chip Granted
+			2. Loot Given
+			3. Quest Kill
+			4. Ship Destroyed (killed creature style observer if needed)
+			5. FP Awarded
+			5. XP awarded
+		*/
+
+		// TODO: Grant Credit Chip here
+
+
+
+		// object/tangible/item/loot_credit_chip.iff
+		// 'string/en/space/space_loot.stf', '11', 'looted_credits', '%TT has looted a credit chip worth %DI credits.
+
+
+
 		// Quest Kill Observers
 		SortedVector<ManagedReference<Observer* > > observers = destructedShip->getObservers(ObserverEventType::QUESTKILL);
 
@@ -921,7 +939,7 @@ int ShipManager::notifyDestruction(ShipObject* destructorShip, ShipAiAgent* dest
 		}
 
 
-		// TODO: Killed creature style observer for ship agents
+		// TODO: Grant Loot here
 
 
 		// Handle Awarding XP
@@ -930,9 +948,6 @@ int ShipManager::notifyDestruction(ShipObject* destructorShip, ShipAiAgent* dest
 		if (playerManager != nullptr) {
 			playerManager->disseminateSpaceExperience(destructedShip, &copyThreatMap);
 		}
-
-		// TODO: Award Credit Chip and Loot here
-
 	} catch (Exception& e) {
 		destructedShip->scheduleDespawn(10, true);
 

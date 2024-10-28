@@ -60,6 +60,7 @@ object_ship_hutt_medium_s02_tier5 = object_ship_shared_hutt_medium_s02_tier5:new
 	optionsBitmask = AIENABLED,
 
 	customShipAiMap = "",
+	experience = 6250,
 
 	reactor = {name = "rct_generic", hitpoints = 5000, armor = 5000},
 	engine = {name = "eng_incom_fusialthrust", hitpoints = 5000, armor = 5000, speed = 47.27, acceleration = 11.48, deceleration = 9.79, yaw = 20.6, yawRate = 43.22, pitch = 26, pitchRate = 52, roll = 32.19, rollRate = 58.64},

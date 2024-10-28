@@ -60,6 +60,7 @@ object_ship_corvette_interior = object_ship_shared_corvette_interior:new {
 	optionsBitmask = AIENABLED,
 
 	customShipAiMap = "",
+	experience = 0,
 
 	reactor = {name = "rct_generic", hitpoints = 5000, armor = 2000},
 	engine = {name = "eng_generic", hitpoints = 5000, armor = 2000, speed = 32, acceleration = 8, deceleration = 8, yaw = 3, yawRate = 3, pitch = 3, pitchRate = 3, roll = 3, rollRate = 3},

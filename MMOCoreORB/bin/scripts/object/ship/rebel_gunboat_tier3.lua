@@ -60,6 +60,8 @@ object_ship_rebel_gunboat_tier3 = object_ship_shared_rebel_gunboat_tier3:new {
 	optionsBitmask = AIENABLED,
 
 	customShipAiMap = "",
+
+	experience = 6000,
 	factionMultiplier = 20.0,
 
 	reactor = {name = "rct_generic", hitpoints = 10800, armor = 10800},

@@ -81,7 +81,7 @@ void ShipAiAgentImplementation::loadTemplateData(SharedShipObjectTemplate* shipT
 	// Special AI Template behavior tree
 	customShipAiMap = shipTemp->getCustomShipAiMap();
 
-	experienceValue = Math::max(50, shipTemp->getExperienceValue());
+	experienceValue = shipTemp->getExperienceValue();
 	factionMultiplier = shipTemp->getFactionMultiplier();
 
 	const auto& componentNames = shipTemp->getComponentNames();

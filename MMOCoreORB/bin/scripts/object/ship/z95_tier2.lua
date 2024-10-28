@@ -60,6 +60,7 @@ object_ship_z95_tier2 = object_ship_shared_z95_tier2:new {
 	optionsBitmask = AIENABLED,
 
 	customShipAiMap = "",
+	experience = 375,
 
 	reactor = {name = "rct_generic", hitpoints = 450, armor = 450},
 	engine = {name = "eng_incom_fusialthrust", hitpoints = 450, armor = 450, speed = 47.59, acceleration = 11.56, deceleration = 8.96, yaw = 18.85, yawRate = 39.55, pitch = 23.79, pitchRate = 47.59, roll = 29.46, rollRate = 53.66},

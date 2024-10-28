@@ -60,6 +60,7 @@ object_ship_blacksun_light_s04_tier1 = object_ship_shared_blacksun_light_s04_tie
 	optionsBitmask = AIENABLED,
 
 	customShipAiMap = "",
+	experience = 90,
 
 	reactor = {name = "rct_generic", hitpoints = 135, armor = 200},
 	engine = {name = "eng_generic", hitpoints = 135, armor = 200, speed = 42, acceleration = 10.2, deceleration = 8.7, yaw = 18.3, yawRate = 38.4, pitch = 23.1, pitchRate = 46.2, roll = 28.6, rollRate = 52.1},
