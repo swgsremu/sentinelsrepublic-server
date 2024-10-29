@@ -18,7 +18,7 @@
 #include "server/zone/objects/area/areashapes/SphereAreaShape.h"
 #include "server/zone/objects/area/events/RemoveNoSpawnAreaTask.h"
 
-#define DEBUG_SPACE_AREAS
+// #define DEBUG_SPACE_AREAS
 // #define DEBUG_SPACE_SPAWNING
 
 void SpaceSpawnAreaImplementation::notifyPositionUpdate(TreeEntry* entry) {

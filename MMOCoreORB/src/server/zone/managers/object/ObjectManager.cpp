@@ -341,6 +341,7 @@ void ObjectManager::registerObjectTypes() {
 	objectFactory.registerObject<Component>(SceneObjectType::SHIPCOUNTERMEASURE);
 	objectFactory.registerObject<ShipWeaponComponent>(SceneObjectType::SHIPWEAPONLAUNCHER);
 	objectFactory.registerObject<ShipWeaponComponent>(SceneObjectType::SHIPCOUNTERMEASURELAUNCHER);
+	objectFactory.registerObject<StaticObject>(SceneObjectType::ASTEROID);
 	objectFactory.registerObject<TangibleObject>(SceneObjectType::PILOTCHAIR);
 	objectFactory.registerObject<TangibleObject>(SceneObjectType::OPERATIONSCHAIR);
 	objectFactory.registerObject<TangibleObject>(SceneObjectType::TURRETACCESSLADDER);
