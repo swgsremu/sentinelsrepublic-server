@@ -21,6 +21,16 @@ anthropology_diplomat = ShipAgent:new {
 	color2 = 0,
 	texture = 2,
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(anthropology_diplomat, "anthropology_diplomat")

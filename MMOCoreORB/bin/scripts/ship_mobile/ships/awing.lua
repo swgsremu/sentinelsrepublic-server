@@ -31,6 +31,16 @@ awing = ShipAgent:new {
 	tauntDefendChance = 0.05,
 	tauntDieChance = 0.1,
 	tauntAggressiveness = 0.05,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(awing, "awing")

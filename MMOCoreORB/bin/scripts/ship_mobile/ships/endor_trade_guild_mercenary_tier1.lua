@@ -21,6 +21,16 @@ endor_trade_guild_mercenary_tier1 = ShipAgent:new {
 	color1 = 12,
 	color2 = 20,
 	texture = 2,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(endor_trade_guild_mercenary_tier1, "endor_trade_guild_mercenary_tier1")

@@ -18,6 +18,16 @@ debris_smuggler_boss = ShipAgent:new {
 	alliedFactions = {"pirate"},
 	enemyFactions = {"civilian", "rebel", "imperial", "hutt", "merchant"},
 	color2 = 52,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(debris_smuggler_boss, "debris_smuggler_boss")

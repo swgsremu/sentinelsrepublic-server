@@ -17,6 +17,16 @@ tuskcat_run_attack_drone = ShipAgent:new {
 	spaceFaction = "pirate",
 	enemyFactions = {"rebel", "corsec", "rsf", "hutt", "valarian"},
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(tuskcat_run_attack_drone, "tuskcat_run_attack_drone")

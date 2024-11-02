@@ -19,6 +19,16 @@ slave_trader_transport = ShipAgent:new {
 	color1 = 7,
 	color2 = 59,
 	texture = 0,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(slave_trader_transport, "slave_trader_transport")

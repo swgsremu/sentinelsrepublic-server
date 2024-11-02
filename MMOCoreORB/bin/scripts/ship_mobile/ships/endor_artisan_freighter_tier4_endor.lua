@@ -16,6 +16,16 @@ endor_artisan_freighter_tier4_endor = ShipAgent:new {
 
 	spaceFaction = "civilian",
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(endor_artisan_freighter_tier4_endor, "endor_artisan_freighter_tier4_endor")

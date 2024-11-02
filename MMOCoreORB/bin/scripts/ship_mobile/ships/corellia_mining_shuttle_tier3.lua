@@ -16,6 +16,16 @@ corellia_mining_shuttle_tier3 = ShipAgent:new {
 
 	spaceFaction = "merchant",
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(corellia_mining_shuttle_tier3, "corellia_mining_shuttle_tier3")

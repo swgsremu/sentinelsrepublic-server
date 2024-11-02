@@ -18,6 +18,16 @@ scavenger_collector_tier2 = ShipAgent:new {
 	alliedFactions = {"pirate", "blacksun", "nym"},
 	enemyFactions = {"civilian", "rebel", "imperial", "hutt", "merchant"},
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(scavenger_collector_tier2, "scavenger_collector_tier2")

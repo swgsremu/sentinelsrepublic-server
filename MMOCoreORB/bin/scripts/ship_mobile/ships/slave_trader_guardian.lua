@@ -22,6 +22,16 @@ slave_trader_guardian = ShipAgent:new {
 	color2 = 59,
 	texture = 0,
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(slave_trader_guardian, "slave_trader_guardian")

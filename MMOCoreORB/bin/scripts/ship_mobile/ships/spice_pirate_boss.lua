@@ -22,6 +22,16 @@ spice_pirate_boss = ShipAgent:new {
 	color2 = 31,
 	texture = 0,
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(spice_pirate_boss, "spice_pirate_boss")

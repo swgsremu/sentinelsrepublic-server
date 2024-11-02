@@ -24,6 +24,16 @@ rebel_saboteur = ShipAgent:new {
 	color2 = 3,
 	texture = 3,
 	appearance = "rebel_pilot",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(rebel_saboteur, "rebel_saboteur")

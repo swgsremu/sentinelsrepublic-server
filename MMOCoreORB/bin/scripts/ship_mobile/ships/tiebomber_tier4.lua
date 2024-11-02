@@ -26,6 +26,16 @@ tiebomber_tier4 = ShipAgent:new {
 	tauntAttackChance = 0.1,
 	tauntDefendChance = 0.05,
 	tauntDieChance = 0.1,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(tiebomber_tier4, "tiebomber_tier4")

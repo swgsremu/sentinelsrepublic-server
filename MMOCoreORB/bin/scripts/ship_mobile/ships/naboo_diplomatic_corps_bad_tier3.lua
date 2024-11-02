@@ -21,6 +21,16 @@ naboo_diplomatic_corps_bad_tier3 = ShipAgent:new {
 	texture = 4,
 	questLoot = "encrypted_documents",
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(naboo_diplomatic_corps_bad_tier3, "naboo_diplomatic_corps_bad_tier3")

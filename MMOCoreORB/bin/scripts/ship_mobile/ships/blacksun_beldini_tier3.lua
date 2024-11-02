@@ -22,6 +22,16 @@ blacksun_beldini_tier3 = ShipAgent:new {
 	color2 = 55,
 	texture = 1,
 	appearance = "blacksun",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(blacksun_beldini_tier3, "blacksun_beldini_tier3")

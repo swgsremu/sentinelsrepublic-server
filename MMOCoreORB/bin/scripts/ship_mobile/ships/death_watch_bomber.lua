@@ -21,6 +21,16 @@ death_watch_bomber = ShipAgent:new {
 	color1 = 35,
 	color2 = 26,
 	texture = 5,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(death_watch_bomber, "death_watch_bomber")

@@ -24,6 +24,16 @@ rebel_spy = ShipAgent:new {
 	color2 = 47,
 	texture = 3,
 	appearance = "rebel_pilot",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(rebel_spy, "rebel_spy")

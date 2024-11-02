@@ -18,6 +18,16 @@ dantooine_scavenger_fighter = ShipAgent:new {
 	alliedFactions = {"pirate"},
 	enemyFactions = {"imperial", "rebel", "hutt", "valarian", "rsf", "corsec"},
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(dantooine_scavenger_fighter, "dantooine_scavenger_fighter")

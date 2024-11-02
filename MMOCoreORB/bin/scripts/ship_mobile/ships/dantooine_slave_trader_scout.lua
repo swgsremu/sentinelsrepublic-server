@@ -18,6 +18,16 @@ dantooine_slave_trader_scout = ShipAgent:new {
 	alliedFactions = {"pirate", "imperial"},
 	enemyFactions = {"rebel", "nym", "merchant"},
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(dantooine_slave_trader_scout, "dantooine_slave_trader_scout")

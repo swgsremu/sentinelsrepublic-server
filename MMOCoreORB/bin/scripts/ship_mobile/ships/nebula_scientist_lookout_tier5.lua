@@ -22,6 +22,16 @@ nebula_scientist_lookout_tier5 = ShipAgent:new {
 	color2 = 58,
 	texture = 2,
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(nebula_scientist_lookout_tier5, "nebula_scientist_lookout_tier5")

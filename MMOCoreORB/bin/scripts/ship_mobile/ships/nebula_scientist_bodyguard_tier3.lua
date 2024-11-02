@@ -21,6 +21,16 @@ nebula_scientist_bodyguard_tier3 = ShipAgent:new {
 	color1 = 12,
 	color2 = 58,
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(nebula_scientist_bodyguard_tier3, "nebula_scientist_bodyguard_tier3")

@@ -20,6 +20,16 @@ probe_droid_pod = ShipAgent:new {
 	imperialFactionReward = 0,
 	rebelFactionReward = 0,
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(probe_droid_pod, "probe_droid_pod")

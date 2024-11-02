@@ -20,6 +20,16 @@ reb_kessel_lootboat_tier5 = ShipAgent:new {
 	imperialFactionReward = 192,
 	rebelFactionReward = -383,
 	appearance = "rebel_pilot",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(reb_kessel_lootboat_tier5, "reb_kessel_lootboat_tier5")

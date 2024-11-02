@@ -22,6 +22,16 @@ spice_pirate_fighter_tier1 = ShipAgent:new {
 	color2 = 31,
 	texture = 0,
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(spice_pirate_fighter_tier1, "spice_pirate_fighter_tier1")

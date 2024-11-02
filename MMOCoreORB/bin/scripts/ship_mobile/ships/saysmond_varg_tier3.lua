@@ -22,6 +22,16 @@ saysmond_varg_tier3 = ShipAgent:new {
 	color2 = 22,
 	texture = 5,
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(saysmond_varg_tier3, "saysmond_varg_tier3")

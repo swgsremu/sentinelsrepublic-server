@@ -20,6 +20,16 @@ imperial_engineer = ShipAgent:new {
 	imperialFactionReward = -54,
 	rebelFactionReward = 27,
 	appearance = "imperial_officer",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(imperial_engineer, "imperial_engineer")

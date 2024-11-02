@@ -17,6 +17,16 @@ imperial_debris_collector = ShipAgent:new {
 	spaceFaction = "imperial",
 	imperialFactionReward = -40,
 	appearance = "imperial_pilot",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(imperial_debris_collector, "imperial_debris_collector")

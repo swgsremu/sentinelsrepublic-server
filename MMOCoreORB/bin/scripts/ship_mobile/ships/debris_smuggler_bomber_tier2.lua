@@ -19,6 +19,16 @@ debris_smuggler_bomber_tier2 = ShipAgent:new {
 	enemyFactions = {"civilian", "rebel", "imperial", "hutt", "merchant"},
 	color2 = 52,
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(debris_smuggler_bomber_tier2, "debris_smuggler_bomber_tier2")

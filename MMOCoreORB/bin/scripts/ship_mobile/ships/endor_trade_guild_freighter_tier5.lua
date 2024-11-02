@@ -15,6 +15,16 @@ endor_trade_guild_freighter_tier5 = ShipAgent:new {
 	aggressive = 0,
 
 	spaceFaction = "merchant",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(endor_trade_guild_freighter_tier5, "endor_trade_guild_freighter_tier5")

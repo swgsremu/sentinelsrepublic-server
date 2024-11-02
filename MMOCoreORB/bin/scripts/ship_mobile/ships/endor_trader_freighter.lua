@@ -16,6 +16,16 @@ endor_trader_freighter = ShipAgent:new {
 
 	spaceFaction = "merchant",
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(endor_trader_freighter, "endor_trader_freighter")

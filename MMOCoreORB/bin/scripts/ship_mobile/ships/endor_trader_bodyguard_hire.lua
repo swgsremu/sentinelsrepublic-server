@@ -22,6 +22,16 @@ endor_trader_bodyguard_hire = ShipAgent:new {
 	color2 = 13,
 	texture = 4,
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(endor_trader_bodyguard_hire, "endor_trader_bodyguard_hire")

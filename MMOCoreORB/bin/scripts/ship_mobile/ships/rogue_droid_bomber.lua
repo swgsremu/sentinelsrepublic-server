@@ -17,6 +17,16 @@ rogue_droid_bomber = ShipAgent:new {
 	spaceFaction = "pirate",
 	alliedFactions = {"pirate"},
 	enemyFactions = {"imperial", "rebel", "civilian", "merchant", "hutt", "rsf"},
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(rogue_droid_bomber, "rogue_droid_bomber")

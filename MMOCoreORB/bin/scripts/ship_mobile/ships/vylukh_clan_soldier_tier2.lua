@@ -27,6 +27,16 @@ vylukh_clan_soldier_tier2 = ShipAgent:new {
 	tauntAttackChance = 0.1,
 	tauntDefendChance = 0.05,
 	tauntDieChance = 0.1,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(vylukh_clan_soldier_tier2, "vylukh_clan_soldier_tier2")

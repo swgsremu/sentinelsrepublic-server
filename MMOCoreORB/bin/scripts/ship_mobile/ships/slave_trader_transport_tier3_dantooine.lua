@@ -20,6 +20,16 @@ slave_trader_transport_tier3_dantooine = ShipAgent:new {
 	color2 = 59,
 	texture = 0,
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(slave_trader_transport_tier3_dantooine, "slave_trader_transport_tier3_dantooine")

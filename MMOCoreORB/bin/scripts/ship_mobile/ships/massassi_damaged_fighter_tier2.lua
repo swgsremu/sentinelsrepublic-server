@@ -24,6 +24,16 @@ massassi_damaged_fighter_tier2 = ShipAgent:new {
 	questLoot = "massassi_manifesto",
 	formationLocation = 3,
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(massassi_damaged_fighter_tier2, "massassi_damaged_fighter_tier2")

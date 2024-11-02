@@ -18,6 +18,16 @@ rogue_droid_alpha_tier1 = ShipAgent:new {
 	alliedFactions = {"pirate"},
 	enemyFactions = {"imperial", "rebel", "civilian", "merchant", "hutt", "rsf"},
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(rogue_droid_alpha_tier1, "rogue_droid_alpha_tier1")

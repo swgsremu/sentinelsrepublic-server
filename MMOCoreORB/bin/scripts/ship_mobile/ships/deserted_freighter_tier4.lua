@@ -20,6 +20,16 @@ deserted_freighter_tier4 = ShipAgent:new {
 	color2 = 42,
 	texture = 1,
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(deserted_freighter_tier4, "deserted_freighter_tier4")

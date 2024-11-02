@@ -20,6 +20,16 @@ debris_smuggler_fighter = ShipAgent:new {
 
 	color1 = 6,
 	color2 = 40,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(debris_smuggler_fighter, "debris_smuggler_fighter")

@@ -20,6 +20,16 @@ endor_trade_guild_collector_tier5 = ShipAgent:new {
 	color1 = 28,
 	color2 = 14,
 	texture = 1,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(endor_trade_guild_collector_tier5, "endor_trade_guild_collector_tier5")

@@ -18,6 +18,16 @@ scavenger_guardian_tier3_dantooine = ShipAgent:new {
 	alliedFactions = {"pirate", "blacksun", "nym"},
 	enemyFactions = {"civilian", "rebel", "imperial", "hutt", "merchant"},
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(scavenger_guardian_tier3_dantooine, "scavenger_guardian_tier3_dantooine")

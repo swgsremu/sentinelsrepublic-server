@@ -16,6 +16,16 @@ yavin_mining_executive_transport_tier2 = ShipAgent:new {
 
 	spaceFaction = "merchant",
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(yavin_mining_executive_transport_tier2, "yavin_mining_executive_transport_tier2")

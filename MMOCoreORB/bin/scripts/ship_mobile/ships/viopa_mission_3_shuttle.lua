@@ -21,6 +21,16 @@ viopa_mission_3_shuttle = ShipAgent:new {
 	tauntAttackChance = 0.1,
 	tauntDefendChance = 0.05,
 	tauntDieChance = 0.1,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(viopa_mission_3_shuttle, "viopa_mission_3_shuttle")

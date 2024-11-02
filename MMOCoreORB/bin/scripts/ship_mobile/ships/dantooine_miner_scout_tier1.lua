@@ -17,6 +17,16 @@ dantooine_miner_scout_tier1 = ShipAgent:new {
 	spaceFaction = "civilian",
 	alliedFactions = {"civilian"},
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(dantooine_miner_scout_tier1, "dantooine_miner_scout_tier1")

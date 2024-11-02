@@ -17,6 +17,16 @@ endor_artisan_diplomat = ShipAgent:new {
 	spaceFaction = "civilian",
 	alliedFactions = {"civilian"},
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(endor_artisan_diplomat, "endor_artisan_diplomat")

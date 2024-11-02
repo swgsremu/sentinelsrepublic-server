@@ -21,6 +21,16 @@ death_watch_eradicator_tier3 = ShipAgent:new {
 	color1 = 35,
 	color2 = 35,
 	texture = 3,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(death_watch_eradicator_tier3, "death_watch_eradicator_tier3")

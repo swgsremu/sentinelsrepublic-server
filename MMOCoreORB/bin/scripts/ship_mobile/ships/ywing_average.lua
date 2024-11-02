@@ -28,6 +28,16 @@ ywing_average = ShipAgent:new {
 	tauntDefendChance = 0.05,
 	tauntDieChance = 0.1,
 	tauntAggressiveness = 0.05,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(ywing_average, "ywing_average")

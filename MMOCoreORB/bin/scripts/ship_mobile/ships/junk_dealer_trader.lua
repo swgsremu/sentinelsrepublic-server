@@ -22,6 +22,16 @@ junk_dealer_trader = ShipAgent:new {
 	color2 = 51,
 	texture = 2,
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(junk_dealer_trader, "junk_dealer_trader")

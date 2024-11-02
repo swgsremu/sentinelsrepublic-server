@@ -22,6 +22,16 @@ death_watch_prowler_tier3 = ShipAgent:new {
 	color2 = 35,
 	texture = 5,
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(death_watch_prowler_tier3, "death_watch_prowler_tier3")

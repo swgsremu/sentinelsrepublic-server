@@ -22,6 +22,16 @@ endor_artisan_peacekeeper_tier2 = ShipAgent:new {
 	color2 = 53,
 	texture = 3,
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(endor_artisan_peacekeeper_tier2, "endor_artisan_peacekeeper_tier2")

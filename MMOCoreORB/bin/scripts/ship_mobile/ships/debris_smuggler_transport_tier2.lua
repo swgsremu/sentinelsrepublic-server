@@ -16,6 +16,16 @@ debris_smuggler_transport_tier2 = ShipAgent:new {
 
 	spaceFaction = "pirate",
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(debris_smuggler_transport_tier2, "debris_smuggler_transport_tier2")

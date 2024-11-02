@@ -23,6 +23,16 @@ massassi_command_ship_tier2 = ShipAgent:new {
 	texture = 4,
 	formationLocation = 1,
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(massassi_command_ship_tier2, "massassi_command_ship_tier2")

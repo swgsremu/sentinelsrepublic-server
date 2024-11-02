@@ -20,6 +20,16 @@ rsf_royal_kylantha_freighter_tier5 = ShipAgent:new {
 	tauntAttackChance = 0.1,
 	tauntDefendChance = 0.05,
 	tauntDieChance = 0.1,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(rsf_royal_kylantha_freighter_tier5, "rsf_royal_kylantha_freighter_tier5")

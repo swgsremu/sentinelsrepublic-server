@@ -21,6 +21,16 @@ endor_trade_guild_bodyguard_tier5 = ShipAgent:new {
 	color1 = 13,
 	color2 = 36,
 	texture = 4,
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(endor_trade_guild_bodyguard_tier5, "endor_trade_guild_bodyguard_tier5")

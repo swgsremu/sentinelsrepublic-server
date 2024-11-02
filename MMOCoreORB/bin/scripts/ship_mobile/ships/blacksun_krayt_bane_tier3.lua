@@ -22,6 +22,16 @@ blacksun_krayt_bane_tier3 = ShipAgent:new {
 	color2 = 3,
 	texture = 4,
 	appearance = "blacksun",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(blacksun_krayt_bane_tier3, "blacksun_krayt_bane_tier3")

@@ -16,6 +16,16 @@ nebula_scientist_researcher_tier1 = ShipAgent:new {
 
 	spaceFaction = "imperial",
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(nebula_scientist_researcher_tier1, "nebula_scientist_researcher_tier1")

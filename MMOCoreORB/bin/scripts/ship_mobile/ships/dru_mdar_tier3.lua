@@ -22,6 +22,16 @@ dru_mdar_tier3 = ShipAgent:new {
 	color2 = 24,
 	texture = 1,
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(dru_mdar_tier3, "dru_mdar_tier3")

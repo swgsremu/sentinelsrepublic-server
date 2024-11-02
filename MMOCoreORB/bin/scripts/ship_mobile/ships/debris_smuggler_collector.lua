@@ -15,6 +15,16 @@ debris_smuggler_collector = ShipAgent:new {
 	aggressive = 0,
 
 	spaceFaction = "pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(debris_smuggler_collector, "debris_smuggler_collector")

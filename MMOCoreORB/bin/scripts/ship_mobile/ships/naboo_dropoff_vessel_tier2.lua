@@ -16,6 +16,16 @@ naboo_dropoff_vessel_tier2 = ShipAgent:new {
 
 	spaceFaction = "merchant",
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(naboo_dropoff_vessel_tier2, "naboo_dropoff_vessel_tier2")

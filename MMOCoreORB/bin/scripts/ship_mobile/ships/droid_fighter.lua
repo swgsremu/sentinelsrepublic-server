@@ -18,6 +18,16 @@ droid_fighter = ShipAgent:new {
 	alliedFactions = {"pirate"},
 	enemyFactions = {"rsf"},
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(droid_fighter, "droid_fighter")

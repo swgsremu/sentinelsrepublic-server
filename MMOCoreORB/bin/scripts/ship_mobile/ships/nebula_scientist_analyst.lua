@@ -18,6 +18,16 @@ nebula_scientist_analyst = ShipAgent:new {
 	alliedFactions = {"imperial"},
 	enemyFactions = {"pirate"},
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(nebula_scientist_analyst, "nebula_scientist_analyst")

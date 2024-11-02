@@ -24,6 +24,16 @@ reb_unmaned_xwing_tier2 = ShipAgent:new {
 	color2 = 10,
 	formationLocation = 2,
 	appearance = "rebel_pilot",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(reb_unmaned_xwing_tier2, "reb_unmaned_xwing_tier2")

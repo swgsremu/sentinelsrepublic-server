@@ -20,6 +20,16 @@ tuskcat_run_delivery_drone = ShipAgent:new {
 	color2 = 5,
 	texture = 6,
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(tuskcat_run_delivery_drone, "tuskcat_run_delivery_drone")

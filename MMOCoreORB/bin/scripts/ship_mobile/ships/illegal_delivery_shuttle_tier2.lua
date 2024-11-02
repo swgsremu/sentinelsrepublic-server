@@ -16,6 +16,16 @@ illegal_delivery_shuttle_tier2 = ShipAgent:new {
 
 	spaceFaction = "merchant",
 	appearance = "hutt",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(illegal_delivery_shuttle_tier2, "illegal_delivery_shuttle_tier2")

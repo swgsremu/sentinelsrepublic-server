@@ -22,6 +22,16 @@ spice_pirate_spy_tier5 = ShipAgent:new {
 	color2 = 31,
 	texture = 0,
 	appearance = "generic_pirate",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(spice_pirate_spy_tier5, "spice_pirate_spy_tier5")

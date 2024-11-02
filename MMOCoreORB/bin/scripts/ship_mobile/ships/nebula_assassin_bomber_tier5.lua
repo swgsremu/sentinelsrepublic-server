@@ -22,6 +22,16 @@ nebula_assassin_bomber_tier5 = ShipAgent:new {
 	color2 = 3,
 	texture = 4,
 	appearance = "nebula_assassin",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(nebula_assassin_bomber_tier5, "nebula_assassin_bomber_tier5")

@@ -17,6 +17,16 @@ ndc_transport_tier2 = ShipAgent:new {
 	spaceFaction = "rsf",
 	questLoot = "encrypted_documents",
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(ndc_transport_tier2, "ndc_transport_tier2")

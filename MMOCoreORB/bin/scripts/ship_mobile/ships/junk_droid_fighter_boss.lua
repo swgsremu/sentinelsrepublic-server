@@ -18,6 +18,16 @@ junk_droid_fighter_boss = ShipAgent:new {
 	alliedFactions = {"pirate"},
 	enemyFactions = {"civilian", "rebel", "imperial", "hutt", "merchant"},
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(junk_droid_fighter_boss, "junk_droid_fighter_boss")

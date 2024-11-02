@@ -17,6 +17,16 @@ imperial_cargo_tower = ShipAgent:new {
 	spaceFaction = "imperial",
 	imperialFactionReward = -40,
 	appearance = "imperial_pilot",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(imperial_cargo_tower, "imperial_cargo_tower")

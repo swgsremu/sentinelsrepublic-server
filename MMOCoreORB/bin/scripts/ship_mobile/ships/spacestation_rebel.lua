@@ -18,6 +18,16 @@ spacestation_rebel = ShipAgent:new {
 	tauntAttackChance = 0.1,
 	tauntDefendChance = 0.05,
 	tauntDieChance = 0.1,
+
+	pvpBitmask = NONE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED + INVULNERABLE,
+
+	customShipAiMap = "spaceStations",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", -- Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(spacestation_rebel, "spacestation_rebel")

@@ -21,6 +21,16 @@ ndc_transport_light_tier1 = ShipAgent:new {
 	texture = 4,
 	questLoot = "encrypted_documents",
 	appearance = "civilian",
+
+	pvpBitmask = ATTACKABLE,
+	shipBitmask = NONE,
+	optionsBitmask = AIENABLED,
+
+	customShipAiMap = "",
+
+	conversationTemplate = "",
+	conversationMobile = "",
+	conversationMessage = "", --Too Far Message
 }
 
 ShipAgentTemplates:addShipAgentTemplate(ndc_transport_light_tier1, "ndc_transport_light_tier1")
