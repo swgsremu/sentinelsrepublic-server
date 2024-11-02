@@ -252,10 +252,6 @@ public:
 
 		if (tokens.hasMoreTokens()) {
 			tokens.getStringToken(shipName);
-
-			if (!shipName.contains(".iff")) {
-				shipName = "object/ship/" + shipName + ".iff";
-			}
 		}
 
 		if (tokens.hasMoreTokens()) {
