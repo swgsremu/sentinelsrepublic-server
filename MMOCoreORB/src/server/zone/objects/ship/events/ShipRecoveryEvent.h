@@ -25,8 +25,11 @@ public:
 	void run() {
 		ManagedReference<ShipObject*> ship = weakShip.get();
 
-		if (ship == nullptr)
+		if (ship == nullptr) {
 			return;
+		}
+
+		Locker lock(ship);
 
 		ship->doRecovery(1000);
 	}
