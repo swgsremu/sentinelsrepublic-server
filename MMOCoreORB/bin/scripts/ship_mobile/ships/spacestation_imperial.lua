@@ -11,7 +11,7 @@ spacestation_imperial = ShipAgent:new {
 
 	aggressive = 0,
 
-	spaceFaction = "station",
+	spaceFaction = "imperial",
 	imperialFactionReward = -100,
 	rebelFactionReward = 250,
 	appearance = "imperial_officer",
