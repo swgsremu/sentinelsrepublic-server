@@ -89,10 +89,7 @@ public:
 	void initialize();
 	void stop();
 
-	int loadShipSpawnGroups();
-
 	static int checkArgumentCount(lua_State* L, int args);
-
 	static int includeFile(lua_State* L);
 	static int addShipSpawnGroup(lua_State* L);
 
@@ -157,8 +154,8 @@ public:
 	}
 
 private:
+	int loadShipSpawnGroups();
 	void loadShipComponentObjects(ShipObject* ship);
-
 	ShipControlDevice* createShipControlDevice(ShipObject* ship);
 
 public:

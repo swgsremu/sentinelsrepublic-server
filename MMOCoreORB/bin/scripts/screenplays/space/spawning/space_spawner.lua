@@ -56,7 +56,12 @@ function SpaceSpawnerScreenPlay:populateSpawns()
 		--print(self.screenplayName .. " -- Spawning a total of " ..totalSpawns .. " ships.")
 
 		for j = 1, totalSpawns, 1 do
-			self:spawnShipAgent(nil, tostring(i))
+			-- Prevent stacking of spawns
+			if (spawnType == SHIP_AI_GUARD_PATROL or spawnType == SHIP_AI_FIXED_PATROL) then
+				createEvent((getRandomNumber(5, 90) + 1) * 1000, self.screenplayName, "spawnShipAgent", nil, tostring(i))
+			else
+				self:spawnShipAgent(nil, tostring(i))
+			end
 		end
 	end
 end
@@ -78,9 +83,10 @@ function SpaceSpawnerScreenPlay:spawnShipAgent(pNil, indexString)
 	local x = spawnTable[2]
 	local z = spawnTable[3]
 	local y = spawnTable[4]
-	local shipType = spawnTable[5]
+	local spawnType = spawnTable[5]
 
-	if (shipType == SHIP_AI_SQUADRON_PATROL) then
+	-- TODO: Implement squadrons
+	if (spawnType == SHIP_AI_SQUADRON_PATROL) then
 		return
 	end
 

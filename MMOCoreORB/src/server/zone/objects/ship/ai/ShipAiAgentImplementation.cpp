@@ -1353,7 +1353,7 @@ bool ShipAiAgentImplementation::generatePatrol(int totalPoints, float distance, 
 
 		Vector<SpacePatrolPoint> patrolCopy;
 
-		patrolCopy = ShipAiPatrolPathFinder::generatePatrolCircle(Sphere(patrolPosition, randomPatrol), Matrix4(), totalPoints);
+		patrolCopy = ShipAiPatrolPathFinder::generatePatrolSphere(Sphere(patrolPosition, randomPatrol), Matrix4(), totalPoints);
 
 		patrolPoints.removeAll(totalPoints, totalPoints);
 		patrolPoints.addAll(patrolCopy);
