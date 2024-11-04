@@ -1831,6 +1831,16 @@ bool ShipAiAgentImplementation::isAggressive(TangibleObject* target) {
 				}
 			}
 		}
+	} else if (targetIsShipAgent) {
+		auto targetAgent = target->asShipAiAgent();
+
+		if (targetAgent != nullptr) {
+			auto targetSpaceFaction = targetAgent->getShipFaction().hashCode();
+
+			if (targetSpaceFaction > 0 && enemyFactions.contains(targetSpaceFaction)) {
+				return true;
+			}
+		}
 	}
 
 	// ShipAgent is not aggressive due to faction or standing, remaining aggressive check based on pvpStatusBitmask
@@ -1868,6 +1878,16 @@ bool ShipAiAgentImplementation::isAttackableBy(TangibleObject* attackerTano) {
 
 			if (owner != nullptr) {
 				return isAttackableBy(owner);
+			}
+		}
+	} else if (attackerTano->isShipAiAgent()) {
+		auto attackerAgent = attackerTano->asShipAiAgent();
+
+		if (attackerAgent != nullptr) {
+			auto attackerSpaceFaction = attackerAgent->getShipFaction().hashCode();
+
+			if (attackerSpaceFaction > 0 && alliedFactions.contains(attackerSpaceFaction)) {
+				return false;
 			}
 		}
 	}
