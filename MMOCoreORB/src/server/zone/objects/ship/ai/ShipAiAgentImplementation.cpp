@@ -60,6 +60,8 @@
 */
 
 void ShipAiAgentImplementation::loadTemplateData(SharedObjectTemplate* templateData) {
+	FighterShipObjectImplementation::loadTemplateData(templateData);
+
 	auto shipTemp = dynamic_cast<SharedShipObjectTemplate*>(templateData);
 
 	if (shipTemp == nullptr) {
@@ -76,13 +78,13 @@ void ShipAiAgentImplementation::loadTemplateData(SharedObjectTemplate* templateD
 	for (uint32 slot = 0; slot <= Components::CAPITALSLOTMAX; ++slot) {
 		String slotName = Components::shipComponentSlotToString(slot);
 
-		if (slotName == "") {
+		if (slotName.isEmpty()) {
 			continue;
 		}
 
 		String compName = componentNames.get(slotName);
 
-		if (compName == "") {
+		if (compName.isEmpty()) {
 			continue;
 		}
 
@@ -206,8 +208,6 @@ void ShipAiAgentImplementation::loadTemplateData(SharedObjectTemplate* templateD
 			}
 		};
 	}
-
-	FighterShipObjectImplementation::loadTemplateData(templateData);
 }
 
 void ShipAiAgentImplementation::loadTemplateData(ShipAgentTemplate* agentTemp) {
@@ -218,8 +218,8 @@ void ShipAiAgentImplementation::loadTemplateData(ShipAgentTemplate* agentTemp) {
 	// Store the ShipAgent Template
 	agentTemplate = agentTemp;
 
-	auto shipName = "@space/ships_name:" + agentTemplate->getTemplateName();
-	setShipNameCRC(shipName.hashCode(), false);
+	// Set Options Bitmask
+	optionsBitmask = agentTemplate->getOptionsBitmask();
 
 	// Set Faction
 	setShipFaction(agentTemplate->getSpaceFaction(), false);
