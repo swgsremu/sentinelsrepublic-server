@@ -92,12 +92,7 @@ void SpaceZoneComponent::updateZone(SceneObject* sceneObject, bool lightUpdate, 
 	bool zoneUnlocked = false;
 
 	// Updates objects in range
-	float spaceZoneRange = spaceZone->getZoneObjectRange();
-
-	if (sceneObject->isSpaceStation()) {
-		spaceZoneRange = ZoneServer::SPACESTATIONRANGE;
-	}
-	// TODO: Special mission ships range
+	float spaceZoneRange = sceneObject->getOutOfRangeDistance();
 
 	try {
 		if (sceneObject->isShipObject()) {

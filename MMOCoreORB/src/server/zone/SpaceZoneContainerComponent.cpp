@@ -209,12 +209,7 @@ bool SpaceZoneContainerComponent::transferObject(SceneObject* sceneObject, Scene
 	newSpaceZone->insert(object);
 
 	// Updates objects in range
-	float spaceZoneRange = newSpaceZone->getZoneObjectRange();
-
-	if (object->isSpaceStation()) {
-		spaceZoneRange = ZoneServer::SPACESTATIONRANGE;
-	}
-	// TODO: Special mission ships range
+	float spaceZoneRange = object->getOutOfRangeDistance();
 
 	newSpaceZone->inRange(object, spaceZoneRange);
 
@@ -273,12 +268,7 @@ bool SpaceZoneContainerComponent::removeObject(SceneObject* sceneObject, SceneOb
 			SortedVector<ManagedReference<TreeEntry*> > closeSceneObjects;
 
 			// Updates objects in range
-			float spaceZoneRange = spaceZone->getZoneObjectRange();
-
-			if (object->isSpaceStation()) {
-				spaceZoneRange = ZoneServer::SPACESTATIONRANGE;
-			}
-			// TODO: Special mission ships range
+			float spaceZoneRange = object->getOutOfRangeDistance();
 
 			spaceZone->getInRangeObjects(object->getPositionX(), object->getPositionZ(), object->getPositionY(), spaceZoneRange, &closeSceneObjects, false);
 

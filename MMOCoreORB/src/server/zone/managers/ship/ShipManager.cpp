@@ -663,6 +663,13 @@ ShipAiAgent* ShipManager::createAiShip(const String& shipName, uint32 shipCRC) {
 
 	// info(true) << "ShipManager::createAiShip -- ShipName: " << agentTemplate->getTemplateName() << " Game Object Type: " << shipTemp->getGameObjectType() << " Ship Hash: " << shipTemp->getServerObjectCRC() << " Full Template: " << shipTemp->getFullTemplateString();
 
+	// Set Special range
+	if (shipName.hashCode() == STRING_HASHCODE("star_destroyer")) {
+		shipAgent->setRadius(ZoneServer::SPACESTATIONRANGE);
+	} else if (shipName.contains("corvette")) {
+		shipAgent->setRadius(8192.f);
+	}
+
 	// Load data from ShipAgentTemplate
 	shipAgent->loadTemplateData(agentTemplate);
 

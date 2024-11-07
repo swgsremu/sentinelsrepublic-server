@@ -321,10 +321,22 @@ void ShipAiAgentImplementation::initializeTransientMembers() {
 }
 
 void ShipAiAgentImplementation::notifyInsertToZone(Zone* zone) {
-	/*
 	// Schedule space agents to activate
 	Reference<ShipAiAgent*> agentRef = asShipAiAgent();
-	int randomTime = (System::random(120) + 120) * 1000;
+
+	int randomTime = 500;
+
+	if (zone != nullptr) {
+		auto zoneServer = zone->getZoneServer();
+
+		if (zoneServer == nullptr) {
+			return;
+		}
+
+		if (zoneServer->isServerLoading()) {
+			randomTime = (System::random(120) + 120) * 1000;
+		}
+	}
 
 	Core::getTaskManager()->scheduleTask([agentRef] () {
 		if (agentRef == nullptr ) {
@@ -335,7 +347,6 @@ void ShipAiAgentImplementation::notifyInsertToZone(Zone* zone) {
 
 		agentRef->activateAiBehavior();
 	}, "activateShipAiLambda", randomTime);
-	*/
 
 	ShipObjectImplementation::notifyInsertToZone(zone);
 }
@@ -366,7 +377,6 @@ void ShipAiAgentImplementation::notifyInsert(TreeEntry* entry) {
 		sendPvpStatusTo(pilot);
 
 	numberOfPlayersInRange.increment();
-	activateAiBehavior();
 }
 
 void ShipAiAgentImplementation::notifyDissapear(TreeEntry* entry) {
@@ -412,8 +422,6 @@ void ShipAiAgentImplementation::notifyDissapear(TreeEntry* entry) {
 			}
 		}
 	}
-
-	activateAiBehavior();
 }
 
 void ShipAiAgentImplementation::notifyDespawn() {
@@ -479,15 +487,9 @@ void ShipAiAgentImplementation::activateAiBehavior(bool reschedule) {
 		return;
 	}
 
-#ifdef DEBUG_SPACE_AI
-	bool alwaysActive = ConfigManager::instance()->getAiAgentLoadTesting();
-#else  // DEBUG_SPACE_AI
-	bool alwaysActive = false;
-#endif // DEBUG_SPACE_AI
-
 	ZoneServer* zoneServer = getZoneServer();
 
-	if ((!alwaysActive && numberOfPlayersInRange.get() <= 0 && getFollowShipObject().get() == nullptr) || zoneServer == nullptr || zoneServer->isServerLoading() || zoneServer->isServerShuttingDown()) {
+	if (zoneServer == nullptr || zoneServer->isServerShuttingDown()) {
 		cancelBehaviorEvent();
 		cancelRecovery();
 
@@ -555,15 +557,11 @@ void ShipAiAgentImplementation::runBehaviorTree() {
 		if (peekBlackboard("aiDebug") && readBlackboard("aiDebug") == true) {
 			info(true) << getDisplayedName() << " - ID: " << getObjectID() << " runBehaviorTree -- called";
 		}
-
-		bool alwaysActive = ConfigManager::instance()->getAiAgentLoadTesting();
-#else  // DEBUG_SHIP_AI
-		bool alwaysActive = false;
 #endif // DEBUG_SHIP_AI
 
 		ZoneServer* zoneServer = getZoneServer();
 
-		if ((!alwaysActive && numberOfPlayersInRange.get() <= 0 && getFollowShipObject().get() == nullptr) || zoneServer == nullptr || zoneServer->isServerLoading() || zoneServer->isServerShuttingDown()) {
+		if (zoneServer == nullptr || zoneServer->isServerShuttingDown()) {
 			cancelBehaviorEvent();
 			cancelRecovery();
 
