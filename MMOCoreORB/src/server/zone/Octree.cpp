@@ -591,7 +591,7 @@ void Octree::safeInRange(TreeEntry* obj, float range) {
 	ReadLocker locker(&mutex);
 
 	// Space has a much lower number of objects and we need to be able to add space stations and special mission ships to cov at all times.
-	copyObjects(root, x, y, z, 16384.f, inRangeObjects);
+	copyObjects(root, x, y, z, 28347.f, inRangeObjects);
 
 	locker.release();
 
