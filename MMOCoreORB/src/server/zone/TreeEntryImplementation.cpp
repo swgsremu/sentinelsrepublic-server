@@ -245,7 +245,11 @@ float TreeEntryImplementation::getOutOfRangeDistance() {
 	float closeRange = ZoneServer::CLOSEOBJECTRANGE;
 
 	if (thisNode != nullptr && thisNode->dividerZ != -1) {
-		closeRange = ZoneServer::SPACEOBJECTRANGE;
+		if (getReceiverFlags() & CloseObjectsVector::SPACESTATIONTYPE) {
+			closeRange = ZoneServer::SPACESTATIONRANGE;
+		} else {
+			closeRange = ZoneServer::SPACECLOSEOBJECTRANGE;
+		}
 	}
 
 	if (radius > (closeRange * 0.5f)) {

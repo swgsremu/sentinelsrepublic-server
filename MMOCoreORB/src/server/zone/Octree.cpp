@@ -578,21 +578,20 @@ void Octree::safeInRange(TreeEntry* obj, float range) {
 		closeObjectsVector->safeCopyTo(closeObjectsCopy);
 	}
 
-	int rangeSq = range * range;
-
 	float x = obj->getPositionX();
 	float y = obj->getPositionY();
 	float z = obj->getPositionZ();
 
 #ifdef NO_ENTRY_REF_COUNTING
-	SortedVector<TreeEntry*> inRangeObjects(500, 250);
+	SortedVector<TreeEntry*> inRangeObjects(1000, 250);
 #else
-	SortedVector<ManagedReference<TreeEntry*> > inRangeObjects(500, 250);
+	SortedVector<ManagedReference<TreeEntry*> > inRangeObjects(1000, 250);
 #endif
 
 	ReadLocker locker(&mutex);
 
-	copyObjects(root, x, y, z, range, inRangeObjects);
+	// Space has a much lower number of objects and we need to be able to add space stations and special mission ships to cov at all times.
+	copyObjects(root, x, y, z, 16384.f, inRangeObjects);
 
 	locker.release();
 
@@ -604,45 +603,48 @@ void Octree::safeInRange(TreeEntry* obj, float range) {
 	for (int i = 0; i < inRangeObjects.size(); ++i) {
 		TreeEntry* nearEntry = inRangeObjects.getUnsafe(i);
 
-		if (nearEntry != obj) {
-			Vector3 nearObjPos = nearEntry->getPosition();
+		if (nearEntry == obj) {
+			if (obj->getCloseObjects() != nullptr) {
+				obj->addInRangeObject(obj, false);
+			}
 
-			float deltaX = x - nearObjPos.getX();
-			float deltaY = y - nearObjPos.getY();
-			float deltaZ = z - nearObjPos.getZ();
-			int deltaCalc = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
+			continue;
+		}
 
-			try {
-				float outOfRangeSqr = Math::sqr(Math::max(range, nearEntry->getOutOfRangeDistance()));
+		Vector3 nearObjPos = nearEntry->getPosition();
 
-				if (Octree::doLog()) {
-					SceneObject* nearSceneO = cast<SceneObject*>(nearEntry);
-					Logger::console.info(true) << "Octree::safeInRange -- Close Object #" << i << " " << nearSceneO->getDisplayedName() << " Out of Range Sq: " << outOfRangeSqr << " Delta Calc: " << deltaCalc << " Obj Position: " << nearObjPos.getX() << " " << nearObjPos.getZ() << " " << nearObjPos.getY();
-				}
+		float deltaX = x - nearObjPos.getX();
+		float deltaY = y - nearObjPos.getY();
+		float deltaZ = z - nearObjPos.getZ();
+		int deltaCalc = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
-				if (deltaCalc < outOfRangeSqr) {
-					CloseObjectsVector* objCloseObjects = obj->getCloseObjects();
+		try {
+			float outOfRangeSqr = Math::sqr(Math::max(range, nearEntry->getOutOfRangeDistance()));
 
-					if (objCloseObjects != nullptr) {
-						if (Octree::doLog()) {
-							SceneObject* nearSceneO = cast<SceneObject*>(nearEntry);
-							Logger::console.info(true) << "Added Object to COV: " << nearSceneO->getDisplayedName();
-						}
+			if (Octree::doLog()) {
+				SceneObject* nearSceneO = cast<SceneObject*>(nearEntry);
+				Logger::console.info(true) << "Octree::safeInRange -- Close Object #" << i << " " << nearSceneO->getDisplayedName() << " Out of Range Sq: " << outOfRangeSqr << " Delta Calc: " << deltaCalc << " Obj Position: " << nearObjPos.getX() << " " << nearObjPos.getZ() << " " << nearObjPos.getY();
+			}
 
-						obj->addInRangeObject(nearEntry, false);
+			if (deltaCalc < outOfRangeSqr) {
+				CloseObjectsVector* objCloseObjects = obj->getCloseObjects();
+
+				if (objCloseObjects != nullptr) {
+					if (Octree::doLog()) {
+						SceneObject* nearSceneO = cast<SceneObject*>(nearEntry);
+						Logger::console.info(true) << "Added Object to COV: " << nearSceneO->getDisplayedName();
 					}
 
-					CloseObjectsVector* oCloseObjects = nearEntry->getCloseObjects();
-
-					if (oCloseObjects != nullptr)
-						nearEntry->addInRangeObject(obj);
+					obj->addInRangeObject(nearEntry, false);
 				}
-			} catch (...) {
-				Logger::console.info(true) << "unreported exception caught in Octree::safeInRange()\n";
+
+				CloseObjectsVector* oCloseObjects = nearEntry->getCloseObjects();
+
+				if (oCloseObjects != nullptr)
+					nearEntry->addInRangeObject(obj);
 			}
-		} else {
-			if (obj->getCloseObjects() != nullptr)
-				obj->addInRangeObject(obj, false);
+		} catch (...) {
+			Logger::console.info(true) << "unreported exception caught in Octree::safeInRange()\n";
 		}
 	}
 }
@@ -677,7 +679,6 @@ void Octree::copyObjects(const Reference<TreeNode*>& node, float x, float y, flo
 }
 
 void Octree::copyObjects(const Reference<TreeNode*>& node, float x, float y, float z, float range, SortedVector<server::zone::TreeEntry*>& objects) {
-
 	if (Octree::doLog())
 		Logger::console.info(true) << "Octree::copyObjects -- called";
 

@@ -165,8 +165,9 @@ void SpaceZoneImplementation::inRange(TreeEntry* entry, float range) {
 	/*
 	SceneObject* sceneO = cast<SceneObject*>(entry);
 
-	if (sceneO != nullptr)
-		info(true) << "SpaceZoneImplementation::inRange - zone check: " + sceneO->getDisplayedName() << " ID: " << sceneO->getObjectID();
+	if (sceneO != nullptr) {
+		info(true) << "SpaceZoneImplementation::inRange - zone check: " << sceneO->getDisplayedName() << " ID: " << sceneO->getObjectID() << " Range: " << range;
+	}
 	*/
 
 	octree->safeInRange(entry, range);
@@ -455,7 +456,7 @@ float SpaceZoneImplementation::getBoundingRadius() {
 }
 
 float SpaceZoneImplementation::getZoneObjectRange() {
-	return ZoneServer::SPACEOBJECTRANGE;
+	return ZoneServer::SPACECLOSEOBJECTRANGE;
 }
 
 SpaceZone* SpaceZoneImplementation::asSpaceZone() {

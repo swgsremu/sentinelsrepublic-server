@@ -70,3 +70,9 @@ bool SpaceStationObjectImplementation::sendConversationStartTo(SceneObject* play
 
 	return true;
 }
+
+int SpaceStationObjectImplementation::getReceiverFlags() const {
+	int type = CloseObjectsVector::SPACESTATIONTYPE;
+
+	return type | TangibleObjectImplementation::getReceiverFlags();
+}
