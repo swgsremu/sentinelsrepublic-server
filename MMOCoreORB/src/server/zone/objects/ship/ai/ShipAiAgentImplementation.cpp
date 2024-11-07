@@ -246,6 +246,10 @@ void ShipAiAgentImplementation::loadTemplateData(ShipAgentTemplate* agentTemp) {
 
 	experienceValue = agentTemplate->getExperience();
 
+	lootChance = agentTemplate->getLootChance();
+	lootRolls = agentTemplate->getLootRolls();
+	lootTable = agentTemplate->getLootTable();
+
 	minCredits = agentTemplate->getMinCredits();
 	maxCredits = agentTemplate->getMaxCredits();
 
@@ -318,6 +322,10 @@ void ShipAiAgentImplementation::initializeTransientMembers() {
 	setHyperspacing(false);
 
 	missileLockTime = 0;
+
+	lootChance = 0.f;
+	lootRolls = 0;
+	lootTable = "";
 }
 
 void ShipAiAgentImplementation::notifyInsertToZone(Zone* zone) {
@@ -2192,6 +2200,10 @@ String ShipAiAgentImplementation::getShipAgentTemplateName() {
 	templateName = agentTemplate->getTemplateName();
 
 	return templateName;
+}
+
+String ShipAiAgentImplementation::getLootTable() {
+	return lootTable;
 }
 
 bool ShipAiAgentImplementation::checkLineOfSight(SceneObject* obj) {

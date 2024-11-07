@@ -9,6 +9,7 @@ import engine.core.ManagedService;
 import system.thread.atomic.AtomicInteger;
 import server.zone.objects.scene.SceneObject;
 import server.zone.objects.creature.ai.AiAgent;
+import server.zone.objects.ship.ai.ShipAiAgent;
 import server.zone.managers.crafting.CraftingManager;
 import server.zone.managers.object.ObjectManager;
 import engine.lua.LuaObject;
@@ -200,6 +201,9 @@ class LootManager extends ManagedService implements Logger {
 	public native TangibleObject createLootObject(@dereferenced TransactionLog trx, final LootItemTemplate templateObject, int level, boolean maxCondition = false);
 
 	@local
+	public native TangibleObject createShipComponent(@dereferenced TransactionLog trx, final LootItemTemplate templateObject);
+
+	@local
 	public native TangibleObject createLootResource(@dereferenced final string resourceTypeName, @dereferenced final string resourceZoneName);
 
 	@local
@@ -209,6 +213,9 @@ class LootManager extends ManagedService implements Logger {
 
 	@local
 	public native boolean createLoot(@dereferenced TransactionLog trx, SceneObject container, AiAgent creature);
+
+	@local
+	public native unsigned long createLoot(@dereferenced TransactionLog trx, SceneObject container, ShipAiAgent shipAgent);
 
 	@local
 	public native boolean createLootFromCollection(@dereferenced TransactionLog trx, SceneObject container, final LootGroupCollection collection, int level);

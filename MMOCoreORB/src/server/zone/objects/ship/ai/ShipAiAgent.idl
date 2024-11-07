@@ -185,6 +185,12 @@ class ShipAiAgent extends FighterShipObject {
 
 	protected transient int experienceValue;
 
+	protected transient float lootChance;
+	protected transient int lootRolls;
+
+	@dereferenced
+	protected transient string lootTable;
+
 	protected transient int minCredits;
 	protected transient int maxCredits;
 
@@ -620,6 +626,17 @@ class ShipAiAgent extends FighterShipObject {
 	public int getExperienceValue() {
 		return experienceValue;
 	}
+
+	public float getLootChance() {
+		return lootChance;
+	}
+
+	public int getLootRolls() {
+		return lootChance;
+	}
+
+	@dereferenced
+	public native string getLootTable();
 
 	public int getMinLootCredits() {
 		return minCredits;

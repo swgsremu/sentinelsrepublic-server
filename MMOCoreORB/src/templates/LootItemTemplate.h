@@ -316,6 +316,10 @@ public:
 		return isRandomResource;
 	}
 
+	bool isShipComponent() const {
+		return objectType & SceneObjectType::SHIPATTACHMENT;
+	}
+
 	uint32 getObjectType() const {
 		return objectType;
 	}

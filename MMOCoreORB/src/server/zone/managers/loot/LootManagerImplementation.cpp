@@ -19,6 +19,8 @@
 #include "server/zone/managers/resource/ResourceManager.h"
 #include "server/zone/Zone.h"
 #include "templates/params/creature/CreatureAttribute.h"
+#include "server/zone/objects/ship/components/ShipComponent.h"
+#include "server/zone/objects/ship/ai/ShipAiAgent.h"
 
 // #define DEBUG_LOOT_MAN
 
@@ -372,6 +374,10 @@ TangibleObject* LootManagerImplementation::createLootObject(TransactionLog& trx,
 		return createLootResource(templateObject->getTemplateName(), "tatooine");
 	}
 
+	if (templateObject->isShipComponent()) {
+		return createShipComponent(trx, templateObject);
+	}
+
 	ManagedReference<TangibleObject*> prototype = zoneServer->createObject(directTemplateObject.hashCode(), 2).castTo<TangibleObject*>();
 
 	if (prototype == nullptr) {
@@ -440,6 +446,34 @@ TangibleObject* LootManagerImplementation::createLootObject(TransactionLog& trx,
 #ifdef DEBUG_LOOT_MAN
 	info(true) << " ---------- LootManagerImplementation::createLootObject -- COMPLETE ----------";
 #endif
+
+	return prototype;
+}
+
+TangibleObject* LootManagerImplementation::createShipComponent(TransactionLog& trx, const LootItemTemplate* itemTemplate) {
+	if (itemTemplate == nullptr || !itemTemplate->isShipComponent()) {
+		return nullptr;
+	}
+
+	uint32 templateCRC = itemTemplate->getDirectObjectTemplate().hashCode();
+
+	if (templateCRC == 0) {
+		return nullptr;
+	}
+
+	ManagedReference<ShipComponent*> prototype = zoneServer->createObject(templateCRC, 2).castTo<ShipComponent*>();
+
+	if (prototype == nullptr) {
+		return nullptr;
+	}
+
+	Locker objLocker(prototype);
+
+	setCustomizationData(itemTemplate, prototype);
+	setCustomObjectName(prototype, itemTemplate, 0.f);
+
+	auto lootValues = LootValues(itemTemplate, 0, 1.f);
+	prototype->updateCraftingValues(&lootValues, true);
 
 	return prototype;
 }
@@ -636,6 +670,22 @@ bool LootManagerImplementation::createLoot(TransactionLog& trx, SceneObject* con
 	return createLootFromCollection(trx, container, lootCollection, creature->getLevel());
 }
 
+uint64 LootManagerImplementation::createLoot(TransactionLog& trx, SceneObject* container, ShipAiAgent* shipAgent) {
+	String lootMapEntry = shipAgent->getLootTable();
+
+	if (!lootGroupMap->lootGroupExists(lootMapEntry) && !lootGroupMap->lootItemExists(lootMapEntry)) {
+		return 0;
+	}
+
+	float lootChance = shipAgent->getLootChance();
+
+	if (System::frandom() > lootChance) {
+		return 0;
+	}
+
+	return createLoot(trx, container, lootMapEntry, 0, true);
+}
+
 bool LootManagerImplementation::createLootFromCollection(TransactionLog& trx, SceneObject* container, const LootGroupCollection* lootCollection, int level) {
 	uint64 objectID = 0;
 
@@ -733,6 +783,8 @@ uint64 LootManagerImplementation::createLoot(TransactionLog& trx, SceneObject* c
 		}
 
 		obj = createLootResource(lootEntry, zone->getZoneName());
+	} else if (itemTemplate->isShipComponent()) {
+		obj = createShipComponent(trx, itemTemplate);
 	} else {
 		obj = createLootObject(trx, itemTemplate, level, maxCondition);
 	}

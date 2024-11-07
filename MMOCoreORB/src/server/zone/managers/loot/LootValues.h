@@ -17,6 +17,7 @@ public:
 	constexpr static float DISTMIN = 0.15f;
 	constexpr static float LEVELMAX = 350;
 	constexpr static float LEVELMIN = 0;
+	constexpr static float DISTNORMAL = 2.82333f;
 
 	enum BonusType : int {
 		LEGENDARY = 9,
@@ -80,6 +81,9 @@ private:
 	inline void setUniformValue(const String& attribute);
 
 	template<typename Auto = float>
+	inline void setNormalValue(const String& attribute);
+
+	template<typename Auto = float>
 	inline void setDynamicValue(const String& attribute, float percentageMax);
 
 	inline void setModifierValue(const String& attribute, float percentageMax);
@@ -98,6 +102,10 @@ public:
 	static float getRandomValue(float min, float max);
 
 	static int getRandomValue(int min, int max);
+
+	static float getNormalValue(float minValue, float maxValue);
+
+	static int getNormalValue(int minValue, int maxValue);
 
 	static float getDistributedValue(float min, float max, int level, float distMin = 0.f, float distMax = 1.f);
 
