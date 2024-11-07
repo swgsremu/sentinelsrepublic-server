@@ -174,13 +174,13 @@ protected:
 	Mutex lockMutex;
 
 public:
-	ThreatMap(TangibleObject* me) : VectorMap<ManagedReference<TangibleObject*>, ThreatMapEntry>(1, 0) {
+	ThreatMap(TangibleObject* me) : VectorMap<ManagedReference<TangibleObject*>, ThreatMapEntry>(1, 0), Logger() {
 		self = me;
 		currentThreat = nullptr;
 		setNoDuplicateInsertPlan();
 	}
 
-	ThreatMap(const ThreatMap& map) : VectorMap<ManagedReference<TangibleObject*>, ThreatMapEntry>(map), lockMutex() {
+	ThreatMap(const ThreatMap& map) : VectorMap<ManagedReference<TangibleObject*>, ThreatMapEntry>(map), Logger(), lockMutex() {
 		setNoDuplicateInsertPlan();
 		self = map.self;
 		currentThreat = map.currentThreat;
