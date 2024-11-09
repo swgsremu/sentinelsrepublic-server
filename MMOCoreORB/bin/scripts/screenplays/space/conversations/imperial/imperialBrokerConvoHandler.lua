@@ -10,8 +10,9 @@ function imperialBrokerConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplat
 	local playerID = CreatureObject(pPlayer):getObjectID()
 	local playerGender = CreatureObject(pPlayer):getGender()
 
-	-- Does not have JTL check??
-	-- return convoTemplate:getScreen("no_jtl")
+	--if (not isJtlEnabled()) then
+		--	return convoTemplate:getScreen("no_jtl")
+	--end
 
 	-- Player is a Imperial pilot and is not on leave
 	if (SpaceHelpers:isImperialPilot(pPlayer) and faction == FACTIONIMPERIAL and playerFactionStatus > ONLEAVE) then

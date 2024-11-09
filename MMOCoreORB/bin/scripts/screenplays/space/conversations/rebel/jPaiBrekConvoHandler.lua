@@ -8,8 +8,9 @@ function jPaiBrekConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 	local faction = CreatureObject(pPlayer):getFaction()
 	local playerFactionStatus = CreatureObject(pPlayer):getFactionStatus()
 
-	-- Does not have JTL check??
-	-- return convoTemplate:getScreen("nothing_i_can")
+	--if (not isJtlEnabled()) then
+		-- return convoTemplate:getScreen("nothing_i_can")
+	--end
 
 	-- Player is a Rebel pilot
 	if (SpaceHelpers:isRebelPilot(pPlayer) and faction == FACTIONREBEL and playerFactionStatus > ONLEAVE) then
