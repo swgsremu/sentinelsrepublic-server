@@ -17,6 +17,10 @@ includeFile("space/conversations/rebel/jPaiBrekConvoHandler.lua")
 -- Imperial
 includeFile("space/conversations/imperial/imperialBrokerConvoHandler.lua")
 
+-- Greeters
+includeFile("space/conversations/greeters/kultonWoodleConvoHandler.lua")
+includeFile("space/conversations/greeters/j1p0ConvoHandler.lua")
+
 
 --[[
 	Space Stations
