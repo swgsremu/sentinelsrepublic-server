@@ -24,3 +24,9 @@ includeFile("conversations/space/rebel/j_pai_brek_convo.lua")
 
 -- Imperial
 includeFile("conversations/space/imperial/imperial_broker_convo.lua")
+
+
+-- Greeters
+
+includeFile("conversations/space/greeters/kulton_woodle_convo.lua")
+includeFile("conversations/space/greeters/j1_p0_convo.lua")
