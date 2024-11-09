@@ -28,5 +28,11 @@ includeFile("conversations/space/imperial/imperial_broker_convo.lua")
 
 -- Greeters
 
+-- Theed
 includeFile("conversations/space/greeters/kulton_woodle_convo.lua")
 includeFile("conversations/space/greeters/j1_p0_convo.lua")
+
+-- Mos Eisley
+includeFile("conversations/space/greeters/vincie_kalhoon_convo.lua")
+includeFile("conversations/space/greeters/mooch_davoney_convo.lua")
+includeFile("conversations/space/greeters/guillo_parootchie_convo.lua")

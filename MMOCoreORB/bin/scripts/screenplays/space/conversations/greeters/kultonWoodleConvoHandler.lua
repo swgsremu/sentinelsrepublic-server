@@ -21,7 +21,7 @@ function kultonWoodleConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc
 	local clonedConversation = LuaConversationScreen(pConvScreen)
 
 	if (screenID == "that_makes_sense") then
-		CreatureObject(pNpc):doAnimation("that_makes_sense")
+		CreatureObject(pNpc):doAnimation("nod_head_once")
 	elseif (screenID == "why_dont_you") then
 		CreatureObject(pNpc):doAnimation("explain")
 	end

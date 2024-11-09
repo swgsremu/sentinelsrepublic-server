@@ -18,8 +18,15 @@ includeFile("space/conversations/rebel/jPaiBrekConvoHandler.lua")
 includeFile("space/conversations/imperial/imperialBrokerConvoHandler.lua")
 
 -- Greeters
+
+-- Theed
 includeFile("space/conversations/greeters/kultonWoodleConvoHandler.lua")
 includeFile("space/conversations/greeters/j1p0ConvoHandler.lua")
+
+-- Mos Eisley
+includeFile("space/conversations/greeters/vincieKalhoonConvoHandler.lua")
+includeFile("space/conversations/greeters/moochDavoneyConvoHandler.lua")
+includeFile("space/conversations/greeters/guilloParootchieConvoHandler.lua")
 
 
 --[[
