@@ -28,12 +28,25 @@ public:
 		if (agent->peekBlackboard("aiDebug") && agent->readBlackboard("aiDebug") == true) {
 			agent->info(true) << agent->getDisplayedName() << " - LookForTargetSpace - called";
 		}
+
+		bool alwaysActive = ConfigManager::instance()->getAiAgentLoadTesting();
+#else  // DEBUG_SHIP_AI
+		bool alwaysActive = false;
 #endif // DEBUG_SHIP_AI
 
 		if (!(agent->getOptionsBitmask() & OptionBitmask::AIENABLED) || (agent->getPvpStatusBitmask() & ObjectFlag::NONE)) {
 #ifdef DEBUG_SHIP_AI
 			if (agent->peekBlackboard("aiDebug") && agent->readBlackboard("aiDebug") == true)
 				agent->info(true) << agent->getDisplayedName() << " - LookForTargetSpace - FAILURE at 1";
+#endif // DEBUG_SHIP_AI
+			return FAILURE;
+		}
+
+		if ((!alwaysActive && agent->getNumberOfPlayersInRange() <= 0)) {
+#ifdef DEBUG_SHIP_AI
+			if (agent->peekBlackboard("aiDebug") && agent->readBlackboard("aiDebug") == true) {
+				agent->info(true) << agent->getDisplayedName() << " - LookForTargetSpace - FAILURE at 2";
+			}
 #endif // DEBUG_SHIP_AI
 			return FAILURE;
 		}
