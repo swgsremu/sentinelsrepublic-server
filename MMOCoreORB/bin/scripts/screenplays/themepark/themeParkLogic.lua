@@ -84,6 +84,9 @@ function ThemeParkLogic:spawnNpcs()
 		if (npcSpawnData.mood ~= nil and npcSpawnData.mood ~= "") then
 			CreatureObject(pNpc):setMoodString(npcSpawnData.mood)
 		end
+		if (npcSpawnData.flags == AI_STATIC) then
+			AiAgent(pNpc):addObjectFlag(AI_STATIC)
+		end
 		if (self.npcMap[i].npcNumber > 0) then
 			CreatureObject(pNpc):setOptionBit(INTERESTING)
 		end
