@@ -60,6 +60,10 @@ includeFile("space/conversations/greeters/ioTsomcrenConvoHandler.lua")
 includeFile("space/conversations/greeters/ralMundiConvoHandler.lua")
 includeFile("space/conversations/greeters/tarthJaxxConvoHandler.lua")
 
+-- Mining Outpost, Dantooine
+includeFile("space/conversations/greeters/raneYarrowConvoHandler.lua")
+includeFile("space/conversations/greeters/fernYarrowConvoHandler.lua")
+includeFile("space/conversations/greeters/kessYarrowConvoHandler.lua")
 
 
 -- Spawning Sub Folder

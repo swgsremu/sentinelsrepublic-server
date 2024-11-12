@@ -41,3 +41,8 @@ includeFile("conversations/space/greeters/guillo_parootchie_convo.lua")
 includeFile("conversations/space/greeters/io_tsomcren_convo.lua")
 includeFile("conversations/space/greeters/ral_mundi_convo.lua")
 includeFile("conversations/space/greeters/tarth_jaxx_convo.lua")
+
+-- Mining Outpost, Dantooine
+includeFile("conversations/space/greeters/rane_yarrow_convo.lua")
+includeFile("conversations/space/greeters/fern_yarrow_convo.lua")
+includeFile("conversations/space/greeters/kess_yarrow_convo.lua")
