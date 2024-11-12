@@ -716,6 +716,9 @@ ShipObject* ShipManager::createPlayerShip(CreatureObject* owner, const String& s
 
 	Locker shipLock(ship, owner);
 
+	// Set ship owner
+	ship->setOwner(owner);
+
 	// Load ship template data
 	ship->loadTemplateData(shipTemp);
 
@@ -755,8 +758,6 @@ ShipObject* ShipManager::createPlayerShip(CreatureObject* owner, const String& s
 	}
 
 	owner->sendSystemMessage("@chassis_npc:succeed"); // You successfully add a ship control device to your datapad.
-
-	ship->setOwner(owner);
 
 	shipControlDevice->sendTo(owner, true);
 

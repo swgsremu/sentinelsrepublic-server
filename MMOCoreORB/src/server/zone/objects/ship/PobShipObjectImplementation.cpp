@@ -137,6 +137,7 @@ void PobShipObjectImplementation::createChildObjects() {
 		obj->setDirection(child->getDirection());
 
 		int totalCells = getTotalCellNumber();
+		uint64 ownerID = getOwnerID();
 
 		try {
 			if (totalCells >= child->getCellId()) {
@@ -145,10 +146,18 @@ void PobShipObjectImplementation::createChildObjects() {
 				ManagedReference<CellObject*> cellObject = getCell(child->getCellId() - 1);
 
 				if (cellObject != nullptr) {
-					if (!cellObject->transferObject(obj, child->getContainmentType(), true)) {
+					ContainerPermissions* permissions = obj->getContainerPermissionsForUpdate();
+
+					if (permissions == nullptr || !cellObject->transferObject(obj, child->getContainmentType(), true)) {
 						obj->destroyObjectFromDatabase(true);
 						continue;
 					}
+
+					permissions->setOwner(ownerID);
+
+					permissions->setInheritPermissionsFromParent(false);
+					permissions->setDefaultDenyPermission(ContainerPermissions::MOVECONTAINER);
+					permissions->setDenyPermission("owner", ContainerPermissions::MOVECONTAINER);
 
 					if (obj->isPilotChair()) {
 						setPilotChair(obj);
@@ -165,16 +174,13 @@ void PobShipObjectImplementation::createChildObjects() {
 						plasmaAlarms.add(obj->getObjectID());
 					} else if (childHash == STRING_HASHCODE("object/tangible/container/drum/pob_ship_loot_box.iff")) {
 						shipLootBox = obj;
+
+						permissions->setDenyPermission("owner", ContainerPermissions::MOVEIN);
+
+						permissions->setAllowPermission("owner", ContainerPermissions::OPEN);
+						permissions->setAllowPermission("owner", ContainerPermissions::MOVEOUT);
 					}
 
-					ContainerPermissions* permissions = obj->getContainerPermissionsForUpdate();
-
-					if (permissions != nullptr) {
-						permissions->setOwner(getObjectID());
-						permissions->setInheritPermissionsFromParent(false);
-						permissions->setDefaultDenyPermission(ContainerPermissions::MOVECONTAINER);
-						permissions->setDenyPermission("owner", ContainerPermissions::MOVECONTAINER);
-					}
 				} else {
 					error("Cell null for create child objects on PobShip");
 					obj->destroyObjectFromDatabase(true);
