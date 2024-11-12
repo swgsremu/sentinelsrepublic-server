@@ -865,7 +865,7 @@ bool ShipManager::createDeedFromChassis(CreatureObject* player, ShipChassisCompo
 		auto planetManager = zone->getPlanetManager();
 
 		if (planetManager != nullptr) {
-			auto travelPoint = planetManager->getNearestPlanetTravelPoint(player->getWorldPosition(), 128.f);
+			auto travelPoint = planetManager->getNearestPlanetTravelPoint(player->getWorldPosition());
 
 			if (travelPoint != nullptr) {
 				auto travelPointName = travelPoint->getPointName();
