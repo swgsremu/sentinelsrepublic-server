@@ -142,8 +142,8 @@ void ShipWeaponComponentImplementation::installAmmo(CreatureObject* pilot, ShipO
 	float ammoShield = 0.f;
 	float ammoArmor = 0.f;
 	float ammoEnergy = 0.f;
-	float ammoRefire = ammo->getAttributeValue("fltrefirerate");
-	float ammoCount = ammo->getAttributeValue("fltmaxammo");
+	float ammoRefire = ammo->getAttributeValue("refire_rate");
+	float ammoCount = ammo->getAttributeValue("ammo");
 
 	if (ammo->getClientGameObjectType() == SceneObjectType::SHIPCOUNTERMEASURE) {
 		ammoMin = ammo->getAttributeValue("fltmineffectiveness");
