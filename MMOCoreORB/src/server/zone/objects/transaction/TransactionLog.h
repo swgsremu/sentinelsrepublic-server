@@ -104,6 +104,7 @@ enum class TrxCode {
 	SHIPDEEDPURCHASE,           // Purchase of a ship deed from chassis dealer
 	SHIPREDEED,                 // ReDeeding a ship from datapad
 	SLICECONTAINER,             // Slicing session on a container
+	SPACELOOTSOLD,              // Selling of space loot to chassis dealer
 	STRUCTUREDEED,              // Structure deed trxs
 	TRANSFERITEMMISC,           // /transferitemmisc command
 	TRANSFERSTRUCT,             // Transfer Structure

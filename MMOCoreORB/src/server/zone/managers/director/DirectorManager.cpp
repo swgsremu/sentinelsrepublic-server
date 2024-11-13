@@ -8,7 +8,6 @@
 #include "DirectorManager.h"
 #include "server/zone/objects/cell/CellObject.h"
 #include "server/zone/objects/creature/LuaCreatureObject.h"
-#include "server/zone/objects/ship/LuaShipObject.h"
 #include "templates/params/creature/ObjectFlag.h"
 #include "server/zone/objects/scene/LuaSceneObject.h"
 #include "server/zone/objects/building/LuaBuildingObject.h"
@@ -48,7 +47,6 @@
 #include "templates/params/creature/CreatureState.h"
 #include "templates/params/creature/CreaturePosture.h"
 #include "server/zone/objects/creature/ai/LuaAiAgent.h"
-#include "server/zone/objects/ship/ai/LuaShipAiAgent.h"
 #include "server/zone/objects/area/LuaActiveArea.h"
 #include "server/zone/objects/creature/conversation/ConversationScreen.h"
 #include "server/zone/objects/creature/conversation/ConversationTemplate.h"
@@ -101,6 +99,10 @@
 #include "templates/params/ship/ShipFlag.h"
 #include "templates/params/creature/PlayerArrangement.h"
 #include "server/zone/objects/ship/components/ShipChassisComponent.h"
+
+#include "server/zone/objects/ship/LuaShipObject.h"
+#include "server/zone/objects/ship/ai/LuaShipAiAgent.h"
+#include "server/zone/objects/ship/components/LuaShipComponent.h"
 
 int DirectorManager::DEBUG_MODE = 0;
 int DirectorManager::ERROR_CODE = NO_ERROR;
@@ -536,6 +538,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 
 	// JTL
 	luaEngine->registerFunction("generateShipDeed", generateShipDeed);
+	luaEngine->registerFunction("sellSpaceLoot", sellSpaceLoot);
 
 	//Navigation Mesh Management
 	luaEngine->registerFunction("createNavMesh", createNavMesh);
@@ -797,6 +800,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	Luna<LuaCreatureObject>::Register(luaEngine->getLuaState());
 	Luna<LuaShipObject>::Register(luaEngine->getLuaState());
 	Luna<LuaShipAiAgent>::Register(luaEngine->getLuaState());
+	Luna<LuaShipComponent>::Register(luaEngine->getLuaState());
 	Luna<LuaSceneObject>::Register(luaEngine->getLuaState());
 	Luna<LuaConversationScreen>::Register(luaEngine->getLuaState());
 	Luna<LuaConversationSession>::Register(luaEngine->getLuaState());
@@ -4771,4 +4775,59 @@ int DirectorManager::generateShipDeed(lua_State* L) {
 	lua_pushboolean(L, false);
 
 	return 1;
+}
+
+int DirectorManager::sellSpaceLoot(lua_State* L) {
+	if (checkArgumentCount(L, 3) == 1) {
+		String err = "incorrect number of arguments passed to DirectorManager::sellSpaceLoot";
+		printTraceError(L, err);
+		ERROR_CODE = INCORRECT_ARGUMENTS;
+		return 0;
+	}
+
+	CreatureObject* player = (CreatureObject*)lua_touserdata(L, -3);
+	ShipComponent* lootComponent = (ShipComponent*)lua_touserdata(L, -2);
+	CreatureObject* chassisDealer = (CreatureObject*)lua_touserdata(L, -1);
+
+	if (player == nullptr || lootComponent == nullptr || chassisDealer == nullptr) {
+		return 0;
+	}
+
+	Locker lock(player);
+	Locker clock(lootComponent, player);
+
+	TransactionLog trx(chassisDealer, player, lootComponent, TrxCode::SPACELOOTSOLD, true);
+
+	int rELevel = lootComponent->getReverseEngineeringLevel();
+
+	StringIdChatParameter soldMsg("@space/space_loot:sold_item");
+	StringBuffer itemName;
+	itemName << "@space/space_item:" << lootComponent->getObjectName()->getStringID();
+
+	int itemValue = 1000;
+
+	if (rELevel < 10) {
+		itemValue *= rELevel;
+	} else {
+		itemValue = 500;
+	}
+
+	soldMsg.setTO(itemName.toString());
+	soldMsg.setDI(itemValue);
+
+	// Send player sold message
+	player->sendSystemMessage(soldMsg);
+
+	trx.addState("sellValue", itemValue);
+
+	// Give player credits to bank
+	player->addBankCredits(itemValue, true);
+
+	// Destroy the loot component
+	lootComponent->destroyObjectFromWorld(true);
+	lootComponent->destroyObjectFromDatabase(true);
+
+	trx.commit();
+
+	return 0;
 }

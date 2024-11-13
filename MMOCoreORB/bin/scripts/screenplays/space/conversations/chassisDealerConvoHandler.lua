@@ -6,6 +6,7 @@ chassisDealerConvoHandler = conv_handler:new {}
 function chassisDealerConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen)
 	local screen = LuaConversationScreen(pConvScreen)
 	pConvScreen = screen:cloneScreen()
+	local clonedConversation = LuaConversationScreen(pConvScreen)
 
 	local screenID = screen:getScreenID()
 	local suiManager = LuaSuiManager()
@@ -17,11 +18,10 @@ function chassisDealerConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNp
 	-- Ship Chassis Purchase
 	if (screenID == "chassis_dealer_buy_chassis") then
 		local shipOptions = ChassisDealer:getValidBlueprints(pPlayer)
+		local tableSize = #shipOptions
 
-		if (#shipOptions <= 0) then
-			local clonedConversation = LuaConversationScreen(pConvScreen)
-
-			clonedConversation:setDialogTextTO("@chassis_npc:no_deeds")
+		if (tableSize < 1) then
+			clonedConversation:setDialogTextStringId("@chassis_npc:no_deeds")
 
 			return pConvScreen
 		end
@@ -30,17 +30,15 @@ function chassisDealerConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNp
 	-- Ship Components Sale
 	elseif (screenID == "chassis_dealer_sell_components") then
 		local componentTable = ChassisDealer:getShipComponents(pPlayer)
+		local tableSize = #componentTable
 
-		if (#componentTable <= 0) then
-			local clonedConversation = LuaConversationScreen(pConvScreen)
-			clonedConversation:setDialogTextTO("@conversation/chassis_npc:s_3310c404")
-
-			clonedConversation:setDialogTextTO("@chassis_npc:no_deeds")
+		if (tableSize < 1) then
+			clonedConversation:setDialogTextStringId("@conversation/chassis_npc:s_3310c404")
 
 			return pConvScreen
 		end
 
-		suiManager:sendListBox(pNpc, pPlayer, "@chassis_npc:buy_ship_title", "@chassis_npc:buy_ship_prompt", 2, "@cancel", "", "@ok", "chassisDealerConvoHandler", "sellComponentCallback", 32, componentTable)
+		suiManager:sendListBox(pNpc, pPlayer, "@space/space_loot:sell_loot_title", "@space/space_loot:sell_loot_prompt", 2, "@cancel", "", "@space/space_loot:sell_loot_button", "chassisDealerConvoHandler", "sellComponentCallback", 32, componentTable)
 	end
 
 	return pConvScreen
@@ -52,7 +50,8 @@ function chassisDealerConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate
 	end
 
 	local convoTemplate = LuaConversationTemplate(pConvTemplate)
-	local npcID = SceneObject(pNpc):getObjectID()
+
+	CreatureObject(pNpc):doAnimation("wave1")
 
 	return convoTemplate:getScreen("chassis_dealer_greeting")
 end
@@ -64,29 +63,46 @@ function chassisDealerConvoHandler:sellComponentCallback(pPlayer, pSui, eventInd
 		return
 	end
 
-	--local suiManager = LuaSuiManager()
-	local selection = arg0 + 1
+	local listBox = LuaSuiListBox(pSui)
+	local pNpc = listBox:getUsingObject()
 
-	local componentTable = ChassisDealer:getValidBlueprints(pPlayer)
-	local componentID = componentTable[selection][2]
-
-	if (ChassisDealer.CHASSIS_DEBUG) then
-		print("sellComponentCallback - Selected Component ID: " .. componentID)
-	end
-
-	local suiBox = LuaSuiBox(pSui)
-	local pNpc = suiBox:getUsingObject()
-
-	if (pNpc == nil) then
+	if pNpc == nil then
 		return
 	end
 
+	local pInventory = CreatureObject(pPlayer):getSlottedObject("inventory")
 
+	if pInventory == nil then
+		return
+	end
 
+	local selection = arg0
 
-	-- TODO - Finish component sale
+	local componentID = listBox:getMenuObjectID(selection)
+	local pComponent = SceneObject(pInventory):getContainerObjectById(componentID)
 
+	if (pComponent == nil) then
+		return
+	end
 
+	if (ChassisDealer.CHASSIS_DEBUG) then
+		print("sellComponentCallback - Selected Component ID: " .. componentID )
+	end
+
+	-- Sell component through DirectorManager and produce trx
+	sellSpaceLoot(pPlayer, pComponent, pNpc)
+
+	local componentTable = ChassisDealer:getShipComponents(pPlayer)
+	local tableSize = #componentTable
+
+	if (tableSize < 1) then
+		local noItems = LuaStringIdChatParameter("@conversation/chassis_npc:s_3310c404")
+		spatialChat(pNpc, noItems:_getObject())
+
+		return
+	end
+
+	LuaSuiManager():sendListBox(pNpc, pPlayer, "@space/space_loot:sell_loot_title", "@space/space_loot:sell_loot_prompt", 2, "@cancel", "", "@space/space_loot:sell_loot_button", "chassisDealerConvoHandler", "sellComponentCallback", 32, componentTable)
 end
 
 function chassisDealerConvoHandler:purchaseChassisConfirmation(pPlayer, pSui, eventIndex, arg0)

@@ -949,6 +949,7 @@ const String TransactionLog::trxCodeToString(TrxCode code) {
 	case TrxCode::SHIPDEEDPURCHASE:         return "shipdeedpurchase";          // Purchase of a ship deed from chassis dealer
 	case TrxCode::SHIPREDEED:               return "shipredeed";                // ReDeeding a ship from datapad
 	case TrxCode::SLICECONTAINER:           return "slicecontainer";            // Slicing session on a container
+	case TrxCode::SPACELOOTSOLD:            return "spacelootsold";             // Selling of space loot to chassis dealer
 	case TrxCode::STRUCTUREDEED:            return "structuredeed";             // Structure deed trxs
 	case TrxCode::TRANSFERITEMMISC:         return "transferitemmisc";          // /transferitemmisc command
 	case TrxCode::TRANSFERSTRUCT:           return "transferstruct";            // Transfer Structure
