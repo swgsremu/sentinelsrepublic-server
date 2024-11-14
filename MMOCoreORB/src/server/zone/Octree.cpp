@@ -582,6 +582,12 @@ void Octree::safeInRange(TreeEntry* obj, float range) {
 	float y = obj->getPositionY();
 	float z = obj->getPositionZ();
 
+	if (obj->getReceiverFlags() & CloseObjectsVector::CREOTYPE) {
+		x = obj->getWorldPositionX();
+		y = obj->getWorldPositionY();
+		z = obj->getWorldPositionZ();
+	}
+
 #ifdef NO_ENTRY_REF_COUNTING
 	SortedVector<TreeEntry*> inRangeObjects(1000, 250);
 #else
@@ -619,7 +625,8 @@ void Octree::safeInRange(TreeEntry* obj, float range) {
 		int deltaCalc = deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
 
 		try {
-			float outOfRangeSqr = Math::sqr(Math::max(range, nearEntry->getOutOfRangeDistance()));
+			float nearEntryOutOfRange = Math::max(nearEntry->getOutOfRangeDistance(), range);
+			float outOfRangeSqr = Math::sqr(nearEntryOutOfRange);
 
 			if (Octree::doLog()) {
 				SceneObject* nearSceneO = cast<SceneObject*>(nearEntry);
