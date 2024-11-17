@@ -326,6 +326,9 @@ void ShipAiAgentImplementation::initializeTransientMembers() {
 
 	lastDeltaTime = 0.f;
 	deltaTime = 0.f;
+
+	nextBehaviorInterval = BEHAVIORINTERVALMIN;
+	updateZoneTime = 0;
 }
 
 void ShipAiAgentImplementation::notifyInsertToZone(Zone* zone) {
@@ -512,22 +515,34 @@ void ShipAiAgentImplementation::activateAiBehavior(bool reschedule) {
 
 	Locker locker(&behaviorEventMutex);
 
+	int interval = Math::clamp((int)BEHAVIORINTERVALMIN, nextBehaviorInterval, (int)BEHAVIORINTERVALMAX);
+
 	if (behaviorEvent == nullptr) {
 		behaviorEvent = new ShipAiBehaviorEvent(asShipAiAgent());
-		behaviorEvent->schedule(Math::max(10, nextBehaviorInterval));
+		behaviorEvent->schedule(interval);
 	} else {
 		if (reschedule) {
 			try {
 				if (!behaviorEvent->isScheduled())
-					behaviorEvent->schedule(Math::max(10, nextBehaviorInterval));
+					behaviorEvent->schedule(interval);
 			} catch (IllegalArgumentException& e) {
 			}
 		}
 	}
 
-	nextBehaviorInterval = getNextBehaviorInterval();
+	int iterate = behaviorIntervalIterator.get() % 1000;
+	int timeLast = behaviorIntervalSchedule.get();
+	int timeNow = System::getMiliTime() % 1000;
 
-	scheduleRecovery();
+	if (timeNow <= timeLast) {
+		iterate += 1;
+	} else {
+		iterate = 0;
+	}
+
+	nextBehaviorInterval = getNextBehaviorInterval() + iterate;
+	behaviorIntervalIterator.set(iterate);
+	behaviorIntervalSchedule.set(timeNow);
 }
 
 void ShipAiAgentImplementation::cancelBehaviorEvent() {
@@ -1250,6 +1265,7 @@ bool ShipAiAgentImplementation::findNextPosition(int maxDistance) {
 
 		updateZone(false, false);
 		removeOutOfRangeObjects();
+		doRecovery(deltaTime);
 	}
 
 	if (getPatrolPointSize() <= 0) {
@@ -1282,9 +1298,6 @@ void ShipAiAgentImplementation::updateTransform(bool lightUpdate) {
 }
 
 void ShipAiAgentImplementation::setDeltaTime() {
-	int stepMax = getNextBehaviorInterval();
-	int stepMin = stepMax * 0.5f;
-
 	long timeSync = (0xFFFFFFFF) & System::getMiliTime();
 	int deltaSync = Math::max(timeSync - syncStamp, 0ull);
 
@@ -1299,7 +1312,7 @@ int ShipAiAgentImplementation::getNextBehaviorInterval() {
 		case ShipAiAgent::WATCHING:
 		case ShipAiAgent::FOLLOWING:
 		case ShipAiAgent::PATROLLING: {
-			return UPDATEZONEINTERVAL;
+			return BEHAVIORINTERVALMAX;
 		}
 		case ShipAiAgent::ATTACKING:
 		case ShipAiAgent::FLEEING:

@@ -110,6 +110,12 @@ class ShipAiAgent extends FighterShipObject {
 	@dereferenced
 	protected transient AtomicInteger numberOfPlayersInRange;
 
+	@dereferenced
+	protected transient AtomicInteger behaviorIntervalSchedule;
+
+	@dereferenced
+	protected transient AtomicInteger behaviorIntervalIterator;
+
 	protected transient DespawnAiShipOnNoPlayersInRange despawnEvent;
 
 	@dereferenced
@@ -157,8 +163,10 @@ class ShipAiAgent extends FighterShipObject {
 	@weakReference
 	protected SceneObject homeObject;
 
-	public static final int UPDATEZONEINTERVAL = 1000; // msec
+	public static final int UPDATEZONEINTERVAL = 2000; // msec
+	public static final int BEHAVIORINTERVALMAX = 1000; // msec
 	public static final int BEHAVIORINTERVAL = 500; // msec
+	public static final int BEHAVIORINTERVALMIN = 200; // msec
 
 	public static final float DEFAULTAGGRORADIUS = 768.f;
 	public static final float MAX_ATTACK_DISTANCE = 1280.f;

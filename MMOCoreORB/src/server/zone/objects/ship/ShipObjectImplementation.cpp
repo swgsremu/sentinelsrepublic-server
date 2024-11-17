@@ -40,7 +40,7 @@
 void ShipObjectImplementation::initializeTransientMembers() {
 	hyperspacing = false;
 
-	if (shipRecoveryEvent == nullptr) {
+	if (shipRecoveryEvent == nullptr && !isShipAiAgent()) {
 		shipRecoveryEvent = new ShipRecoveryEvent(asShipObject());
 	}
 
