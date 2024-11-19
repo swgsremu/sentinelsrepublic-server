@@ -73,13 +73,13 @@ void QuadTree::insert(TreeEntry* obj) {
 		Logger::console.info("QuadTree::insert", true);
 	}
 
-	if (obj->getParent() != nullptr) {
+	if (obj->getParent().get() != nullptr) {
 		auto  scno = cast<SceneObject*>(obj);
 		auto objParent = obj->getParent().get().castTo<SceneObject*>();
 
 		Logger::console.info(true) << "Object Inserted to Quadtree still has a parent Object: " << scno->getDisplayedName() << " ID: " << scno->getObjectID() << " Parent: " << objParent->getDisplayedName() << " ID: " << objParent->getObjectID();
 
-		E3_ASSERT(obj->getParent() == nullptr);
+		E3_ASSERT(obj->getParent().get() == nullptr);
 	}
 
 	Locker locker(&mutex);
