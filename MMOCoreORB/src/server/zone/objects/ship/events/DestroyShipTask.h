@@ -83,7 +83,7 @@ public:
 				}
 
 				Vector3 randomPosition = Vector3(System::random(100) - 50.f, System::random(100) - 50.f, 0.f);
-				Vector3 stationPosition = spaceManager->getClosestSpaceStationPosition(ship->getPosition(), "neutral") + randomPosition;
+				Vector3 stationPosition = spaceManager->getClosestSpaceStationPosition(ship->getPosition(), "station") + randomPosition;
 				const String zoneName = zone->getZoneName();
 
 				ship->setDirection(1,0,0,0);

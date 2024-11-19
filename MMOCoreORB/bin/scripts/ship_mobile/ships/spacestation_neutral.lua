@@ -11,7 +11,7 @@ spacestation_neutral = ShipAgent:new {
 
 	aggressive = 0,
 
-	spaceFaction = "station",
+	spaceFaction = "stationDeepSpace",
 	appearance = "spacestation",
 	tauntAttackChance = 0.1,
 	tauntDefendChance = 0.05,

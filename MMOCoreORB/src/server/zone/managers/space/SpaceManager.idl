@@ -32,7 +32,7 @@ class SpaceManager extends ManagedService implements Logger {
 	@dereferenced
 	protected transient VectorMap jtlTravelDestinations;
 
-	@rawTemplate(value="String, VectorMap<uint64, Vector3>")
+	@rawTemplate(value="unsigned int, VectorMap<uint64, Vector3>")
 	@dereferenced
 	protected transient VectorMap spaceStationMap;
 
@@ -101,7 +101,7 @@ class SpaceManager extends ManagedService implements Logger {
 
 	@local
 	@dereferenced
-	public native unsigned long getClosestSpaceStationObjectID(@dereferenced final Vector3 position, @dereferenced final string faction);
+	public native unsigned long getClosestSpaceStationObjectID(@dereferenced final Vector3 position, unsigned int factionHash);
 
 	@local
 	@dereferenced

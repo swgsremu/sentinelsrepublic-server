@@ -38,9 +38,10 @@ void SpaceManagerImplementation::initialize() {
 	stationMap.setNoDuplicateInsertPlan();
 	stationMap.setNullValue(Vector3::ZERO);
 
-	spaceStationMap.put("rebel", stationMap);
-	spaceStationMap.put("neutral", stationMap);
-	spaceStationMap.put("imperial", stationMap);
+	spaceStationMap.put(STRING_HASHCODE("rebel"), stationMap);
+	spaceStationMap.put(STRING_HASHCODE("station"), stationMap);
+	spaceStationMap.put(STRING_HASHCODE("stationDeepSpace"), stationMap);
+	spaceStationMap.put(STRING_HASHCODE("imperial"), stationMap);
 
 	info(true) << "loading space manager " << spaceZoneName;
 
@@ -415,19 +416,11 @@ void SpaceManagerImplementation::loadLuaConfig() {
 
 			shipAgent->createChildObjects();
 
-			String faction = shipAgent->getShipFaction();
-
-			if (faction.isEmpty() || !spaceStationMap.contains(faction)) {
-				faction = "neutral";
-
-				shipAgent->setFaction(Factions::FACTIONNEUTRAL);
-				shipAgent->setOptionBit(OptionBitmask::INVULNERABLE, false);
-			}
-
+			uint32 factionHash = shipAgent->getShipFaction().hashCode();
 			uint64 stationID = shipAgent->getObjectID();
 			Vector3 stationPosition = shipAgent->getPosition();
 
-			spaceStationMap.get(faction).put(stationID, stationPosition);
+			spaceStationMap.get(factionHash).put(stationID, stationPosition);
 
 			// info(true) << "SpaceStation Added: " << shipAgent->getDisplayedName() << " Location: " + shipAgent->getPosition().toString();
 
@@ -488,16 +481,16 @@ Vector3 SpaceManagerImplementation::getJtlLaunchLocationss() {
 }
 
 Vector3 SpaceManagerImplementation::getClosestSpaceStationPosition(const Vector3& shipPosition, const String& shipFaction) {
-	uint64 objectID = getClosestSpaceStationObjectID(shipPosition, shipFaction);
+	uint64 objectID = getClosestSpaceStationObjectID(shipPosition, shipFaction.hashCode());
 
 	if (objectID == 0) {
 		return shipPosition;
 	}
 
-	return spaceStationMap.get(shipFaction).get(objectID);
+	return spaceStationMap.get(shipFaction.hashCode()).get(objectID);
 }
 
-uint64 SpaceManagerImplementation::getClosestSpaceStationObjectID(const Vector3& shipPosition, const String& shipFaction) {
+uint64 SpaceManagerImplementation::getClosestSpaceStationObjectID(const Vector3& shipPosition, const uint32 factionHash) {
 	uint64 stationObjectID = 0;
 	float stationDistance = FLT_MAX;
 
@@ -505,7 +498,7 @@ uint64 SpaceManagerImplementation::getClosestSpaceStationObjectID(const Vector3&
 		const auto& stationKey = spaceStationMap.elementAt(i).getKey();
 		const auto& stationMap = spaceStationMap.elementAt(i).getValue();
 
-		if (shipFaction != stationKey) {
+		if (factionHash != stationKey) {
 			continue;
 		}
 
