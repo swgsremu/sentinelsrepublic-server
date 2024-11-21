@@ -1289,16 +1289,35 @@ void PobShipObjectImplementation::awardLootItems(ShipAiAgent* destructedShip, in
 	// Main Loot TransactionLog
 	TransactionLog trx(TrxCode::NPCLOOT, destructedShip);
 
-	auto creditChip = zoneServer->createObject(STRING_HASHCODE("object/tangible/item/loot_credit_chip.iff"), 1).castTo<CreditChipObject*>();
+	CreditChipObject* creditChip = nullptr;
+	uint32 creditChipHash = STRING_HASHCODE("object/tangible/item/loot_credit_chip.iff");
+
+	for (int i = 0; i < shipLootBox->getContainerObjectsSize(); i++) {
+		auto sceneO = shipLootBox->getContainerObject(i);
+
+		if (sceneO == nullptr || sceneO->getServerObjectCRC() != creditChipHash) {
+			continue;
+		}
+
+		creditChip = sceneO.castTo<CreditChipObject*>();
+		break;
+	}
+
+	// No existing credit chip was found, create a new one
+	if (creditChip == nullptr) {
+		creditChip = zoneServer->createObject(creditChipHash, 1).castTo<CreditChipObject*>();
+	}
 
 	if (creditChip != nullptr) {
 		Locker creditsClock(creditChip, destructedShip);
 
-		// Set the CreditChip value
-		creditChip->setUseCount(payout);
-
 		// Create CreditChip TransactionLog
 		TransactionLog trxChip(TrxCode::CREDITCHIP, shipLootBox, creditChip, true);
+
+		// Set the CreditChip value
+		creditChip->setUseCount(payout + creditChip->getUseCount());
+
+		trxChip.addState("addedValue", payout);
 
 		trxChip.addState("pilotID", pilot->getObjectID());
 
