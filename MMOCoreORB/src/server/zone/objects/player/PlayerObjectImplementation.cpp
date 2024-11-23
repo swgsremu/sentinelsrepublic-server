@@ -33,6 +33,7 @@
 #include "server/zone/packets/chat/ChatOnChangeFriendStatus.h"
 #include "server/zone/packets/chat/ChatOnChangeIgnoreStatus.h"
 #include "server/zone/packets/chat/ChatFriendsListUpdate.h"
+#include "server/zone/packets/scene/ServerTimeMessage.h"
 #include "server/zone/packets/zone/CmdSceneReady.h"
 #include "server/zone/objects/waypoint/WaypointObject.h"
 #include "server/zone/objects/creature/CreatureObject.h"
@@ -2162,6 +2163,12 @@ void PlayerObjectImplementation::doRecovery(int latency) {
 
 				cooldownTimerMap->updateToCurrentAndAddMili("weatherEvent", 3000);
 			}
+		}
+
+		if (!getZoneServer()->isServerLoading() && cooldownTimerMap->isPast("planetTimeEvent") && creature->getZone() != nullptr) {
+			ServerTimeMessage* stm = new ServerTimeMessage(creature->getZone());
+			sendMessage(stm);
+			cooldownTimerMap->updateToCurrentAndAddMili("planetTimeEvent", 60000);
 		}
 
 		miliSecsPlayed += latency;
