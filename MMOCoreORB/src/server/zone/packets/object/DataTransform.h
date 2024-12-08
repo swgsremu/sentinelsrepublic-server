@@ -257,13 +257,13 @@ public:
 		CloseObjectsVector* closeObjects = creO->getCloseObjects();
 		CollisionManager::getWorldFloorCollisions(transform.getPositionX(), transform.getPositionY() , zone, &intersections, closeObjects);
 
-		float positionZ = planetManager->findClosestWorldFloor(transform.getPositionX(), transform.getPositionY() ,transform.getPositionZ() , creO->getSwimHeight(), &intersections, closeObjects);
+		float positionZ = planetManager->findClosestWorldFloor(transform.getPositionX(), transform.getPositionY(), transform.getPositionZ() , creO->getSwimHeight(), &intersections, closeObjects);
 
 		if (!creO->isMovementAllowed()) {
 			return updateError(creO, "!animationLock", true);
 		}
 
-		if (!playerManager->checkSpeedHackTests(creO, ghost, transform.getPosition(), transform.getTimeStamp(), nullptr)) {
+		if (!playerManager->checkSpeedHackTests(creO, ghost, transform.getPosition(), transform.getTimeStamp(), positionZ, nullptr)) {
 			return updateError(creO, "!checkSpeedHackTests_POSITION", true);
 		}
 
@@ -315,7 +315,7 @@ public:
 
 		auto transformPosition = transform.getPosition();
 
-		if (!playerManager->checkSpeedHackTests(creO, ghost, transformPosition, transform.getTimeStamp(), nullptr)) {
+		if (!playerManager->checkSpeedHackTests(creO, ghost, transformPosition, transform.getTimeStamp(), transformPosition.getZ(), nullptr)) {
 			return updateError(creO, "!checkSpeedHackTests_STATIC", true);
 		}
 

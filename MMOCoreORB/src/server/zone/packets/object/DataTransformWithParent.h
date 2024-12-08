@@ -404,7 +404,7 @@ public:
 			}
 		}
 
-		if (!playerManager->checkSpeedHackTests(creO, ghost, transform.getPosition(), transform.getTimeStamp(), parent)) {
+		if (!playerManager->checkSpeedHackTests(creO, ghost, transform.getPosition(), transform.getTimeStamp(), transform.getPositionZ(), parent)) {
 			return updateError(creO, "!checkSpeedHackTests");
 		}
 

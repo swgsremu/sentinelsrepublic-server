@@ -4102,15 +4102,10 @@ bool PlayerManagerImplementation::checkPlayerSpeedTest(CreatureObject* player, S
 	return true;
 }
 
-bool PlayerManagerImplementation::checkSpeedHackTests(CreatureObject* player, PlayerObject* ghost, const Vector3& newPosition, uint32 newStamp, SceneObject* newParent) {
+bool PlayerManagerImplementation::checkSpeedHackTests(CreatureObject* player, PlayerObject* ghost, const Vector3& newPosition, uint32 newStamp, float floorZ, SceneObject* newParent) {
 	if (player == nullptr || ghost == nullptr) {
 		player->info()  << "checkSpeedHackTests -- FAILED -- null player or ghost";
 		return false;
-	}
-
-	// Not running tests again privileged characters
-	if (ghost->isPrivileged()) {
-		return true;
 	}
 
 	// newStamp - stamp;
@@ -4162,27 +4157,22 @@ bool PlayerManagerImplementation::checkSpeedHackTests(CreatureObject* player, Pl
 
 	float dist = newWorldPosition.distanceTo(lastValidatedWorldPosition);
 
-	if (dist < 1.f) {
-		player->info()  << "checkSpeedHackTests -- PASSED -- distance too small to check";
-		return true;
+	if (dist > 1.f) {
+		float speed = dist / (float) deltaTime * 1000.f;
+
+		StringBuffer msg;
+		msg <<  "Next Position Dist Sq: " << dist << " Player Position: " << lastValidatedWorldPosition.toString() << " Speed: " << speed;
+		player->info() << msg.toString();
+
+		// Run speed tests
+		if (!ghost->isPrivileged() && !checkPlayerSpeedTest(player, parent, speed, *lastValidatedPosition, newWorldPosition, 1.03f)) {
+			return false;
+		}
 	}
 
-	float speed = dist / (float) deltaTime * 1000.f;
+	lastValidatedPosition->setPosition(newPosition.getX(), floorZ, newPosition.getY());
 
-	StringBuffer msg;
-	msg <<  "Next Position Dist Sq: " << dist << " Player Position: " << lastValidatedWorldPosition.toString() << " Speed: " << speed;
-	player->info() << msg.toString();
-
-	// Run speed tests
-	if (!checkPlayerSpeedTest(player, parent, speed, *lastValidatedPosition, newWorldPosition, 1.03f)) {
-		return false;
-	}
-
-	player->info() << "Setting New Validated Position to - X: " << newWorldPosition.getX() << " Z: " << newWorldPosition.getZ() << " Y: " << newWorldPosition.getY();
-
-	lastValidatedPosition->setPosition(newPosition.getX(), newPosition.getZ(), newPosition.getY());
-
-	if (newParent != nullptr) {
+	if (parent != nullptr) {
 		lastValidatedPosition->setParent(newParent->getObjectID());
 	} else {
 		lastValidatedPosition->setParent(0);
@@ -4196,7 +4186,7 @@ bool PlayerManagerImplementation::checkSpeedHackTests(CreatureObject* player, Pl
 
 	ghost->incrementSessionMovement(dist);
 
-	player->info() << "checkSpeedHackTests -- PASSED -- Distance: " << dist << " Speed: " << speed;
+	player->info() << "checkSpeedHackTests -- PASSED -- Distance: " << dist;
 
 	return true;
 }
