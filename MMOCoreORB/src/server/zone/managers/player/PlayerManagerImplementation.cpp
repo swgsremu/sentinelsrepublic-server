@@ -4172,7 +4172,7 @@ bool PlayerManagerImplementation::checkSpeedHackTests(CreatureObject* player, Pl
 
 	lastValidatedPosition->setPosition(newPosition.getX(), floorZ, newPosition.getY());
 
-	if (parent != nullptr) {
+	if (newParent != nullptr) {
 		lastValidatedPosition->setParent(newParent->getObjectID());
 	} else {
 		lastValidatedPosition->setParent(0);
