@@ -2078,7 +2078,6 @@ class PlayerObject extends IntangibleObject {
 		launchPoint.setLocation(location);
 	}
 
-	@preLocked
 	public void incrementPilotTier() {
 		if (pilotTier > 4) {
 			return;
@@ -2087,7 +2086,6 @@ class PlayerObject extends IntangibleObject {
 		pilotTier = pilotTier + 1;
 	}
 
-	@preLocked
 	public void setPilotTier(int tier) {
 		if (tier > 5 || tier < 0) {
 			return;
@@ -2096,12 +2094,10 @@ class PlayerObject extends IntangibleObject {
 		pilotTier = tier;
 	}
 
-	@preLocked
 	public void resetPilotTier() {
 		pilotTier = 0;
 	}
 
-	@preLocked
 	public void setPilotSquadron(unsigned int squadron) {
 		pilotSquadron = squadron;
 	}
