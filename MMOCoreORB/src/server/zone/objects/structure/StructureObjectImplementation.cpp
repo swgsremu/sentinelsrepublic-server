@@ -192,13 +192,14 @@ void StructureObjectImplementation::notifyInsertToZone(Zone* zone) {
 		maxCondition = getBaseMaintenanceRate() * 24 * 7 * 4;
 
 		scheduleMaintenanceExpirationEvent();
-	} else if(getOwnerObjectID() != 0 && getCityRegion().get() == nullptr && !isTurret() && !isMinefield() && !isScanner()) {
+	} else if((getOwnerObjectID() > 0) && (getCityRegion().get() == nullptr) && !isTurret() && !isMinefield() && !isScanner()) {
 		auto ssot = dynamic_cast<SharedStructureObjectTemplate*>(templateObject.get());
 
-		if (ssot == nullptr)
-			error("SharedStructureObjectTemplate is null?");
-		else if (ssot->getCityRankRequired() > 0 || ssot->isCivicStructure())
+		if (ssot == nullptr) {
+			error() << "SharedStructureObjectTemplate is null";
+		} else if (ssot->getCityRankRequired() > 0 || ssot->isCivicStructure()) {
 			destroyOrphanCivicStructure();
+		}
 	}
 
 	if (isGCWBase() && !isClientObject()) {
@@ -214,10 +215,11 @@ void StructureObjectImplementation::notifyInsertToZone(Zone* zone) {
 }
 
 void StructureObjectImplementation::destroyOrphanCivicStructure() {
-	error("Civic structure but not in a city!");
-
-	if (!ConfigManager::instance()->getBool("Core3.Tweaks.StructureObject.DestoryOrphans", false))
+	if (!ConfigManager::instance()->getBool("Core3.Tweaks.StructureObject.DestoryOrphans", false)) {
 		return;
+	}
+
+	error() << "Civic structure but not in a city!";
 
 	auto chatManager = getZoneServer()->getChatManager();
 	auto structureManager = StructureManager::instance();
