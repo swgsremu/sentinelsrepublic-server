@@ -4079,7 +4079,7 @@ bool PlayerManagerImplementation::checkPlayerSpeedTest(CreatureObject* player, S
 			float allowed = allowedSpeedBase * oldSpeedMod * errorMultiplier;
 
 			if (allowed >= parsedSpeed) {
-				player->info(true) << "checkPlayerSpeedTest -- PASSED";
+				player->info() << "checkPlayerSpeedTest -- PASSED";
 
 				return true; // no hack detected
 			}
