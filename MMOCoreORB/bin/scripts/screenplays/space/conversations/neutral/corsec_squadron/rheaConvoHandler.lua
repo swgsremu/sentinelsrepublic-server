@@ -140,11 +140,17 @@ function rheaConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 end
 
 function rheaConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selectedOption, pConvScreen)
-	local stringFile = "@conversation/rhea"
+	if (pPlayer == nil or pConvScreen == nil) then
+		return
+	end
+
 	local screen = LuaConversationScreen(pConvScreen)
 	local screenID = screen:getScreenID()
+
 	local pConvScreen = screen:cloneScreen()
 	local clonedConversation = LuaConversationScreen(pConvScreen)
+
+	clonedConversation:setDialogTextTU(CreatureObject(pPlayer):getFirstName())
 
 	--print("runScreenHandlers -- Screen ID: " .. screenID)
 
@@ -267,7 +273,7 @@ function rheaConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, select
 
 	-- Missions
 	elseif (screenID == "slow_down") then
-		--clonedConversation:setDialogTextNU(SceneObject(pPlayer):getObjectID())
+		CreatureObject(pNpc):doAnimation("slow_down")
 	elseif (screenID == "yes_im_ready") then
 		SpaceHelpers:activateSpaceQuest(pPlayer, pNpc, "patrol", "corellia_privateer_1", 1)
 

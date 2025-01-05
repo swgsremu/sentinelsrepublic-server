@@ -11,7 +11,6 @@
 #include "server/zone/managers/conversation/ConversationManager.h"
 
 #include "server/zone/objects/scene/SceneObject.h"
-#include "server/zone/packets/object/NpcConversationMessage.h"
 #include "server/zone/packets/object/StartNpcConversation.h"
 #include "server/zone/packets/object/StringList.h"
 #include "server/zone/managers/stringid/StringIdManager.h"
