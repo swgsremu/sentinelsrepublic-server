@@ -437,6 +437,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	luaEngine->registerFunction("createObserver", createObserver);
 	luaEngine->registerFunction("dropObserver", dropObserver);
 	luaEngine->registerFunction("hasObserver", hasObserver);
+	luaEngine->registerFunction("hasObserverType", hasObserverType);
 	luaEngine->registerFunction("spawnMobile", spawnMobile);
 	luaEngine->registerFunction("spawnEventMobile", spawnEventMobile);
 	luaEngine->registerFunction("spawnShipAgent", spawnShipAgent);
@@ -3195,6 +3196,47 @@ int DirectorManager::createObserver(lua_State* L) {
 
 int DirectorManager::hasObserver(lua_State* L) {
 	int numberOfArguments = lua_gettop(L);
+
+	if (numberOfArguments != 4) {
+		String err = "incorrect number of arguments passed to DirectorManager::hasObserver";
+		printTraceError(L, err);
+		ERROR_CODE = INCORRECT_ARGUMENTS;
+		return 0;
+	}
+
+	SceneObject* sceneObject = (SceneObject*) lua_touserdata(L, -1);
+	String key = lua_tostring(L, -2);
+	String play = lua_tostring(L, -3);
+	uint32 eventType = lua_tointeger(L, -4);
+
+	SortedVector<ManagedReference<Observer* > > observers = sceneObject->getObservers(eventType);
+	bool ret = false;
+
+	for (int i = 0; i < observers.size(); i++) {
+		Observer* observer = observers.get(i).get();
+
+		if (observer == nullptr || !observer->isObserverType(ObserverType::SCREENPLAY)) {
+			continue;
+		}
+
+		auto screenplayObserver = cast<ScreenPlayObserver*>(observer);
+
+		if (screenplayObserver == nullptr || !(screenplayObserver->getScreenPlay() == play && screenplayObserver->getScreenKey() == key)) {
+			continue;
+		}
+
+		ret = true;
+		break;
+	}
+
+	lua_pushboolean(L, ret);
+
+	return 1;
+}
+
+int DirectorManager::hasObserverType(lua_State* L) {
+	int numberOfArguments = lua_gettop(L);
+
 	if (numberOfArguments != 2) {
 		String err = "incorrect number of arguments passed to DirectorManager::hasObserver";
 		printTraceError(L, err);
