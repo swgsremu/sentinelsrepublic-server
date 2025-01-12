@@ -177,10 +177,10 @@ int ShipDeedImplementation::handleObjectMenuSelect(CreatureObject* player, byte 
 		// Player is locked, cross lock the ship to the player
 		Locker slocker(ship, player);
 
-		ship->setMaxCondition(getMaxHitPoints(), false);
-		ship->setConditionDamage(getHitPointsDamage(), false);
+		ship->setChassisMaxHealth(getMaxHitPoints(), true);
+		ship->setCurrentChassisHealth(getMaxHitPoints() - getHitPointsDamage(), true);
 
-		ship->setChassisMaxMass(getMass(), false);
+		ship->setChassisMaxMass(getMass(), true);
 
 		uint64 controlDeviceID = ship->getControlDeviceID();
 
