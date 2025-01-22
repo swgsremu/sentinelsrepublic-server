@@ -60,6 +60,7 @@ void ShipWeaponComponentImplementation::updateCraftingValues(CraftingValues* val
 
 	for (int i = 0; i < values->getTotalExperimentalAttributes(); ++i) {
 		const auto& attribute = values->getAttribute(i);
+		const auto& group = values->getAttributeGroup(attribute);
 		auto value = values->getCurrentValue(attribute);
 
 		if (attribute == "damage_max" || attribute == "ship_component_weapon_damage_maximum" || attribute == "fltmaxdamage") {
@@ -84,6 +85,10 @@ void ShipWeaponComponentImplementation::updateCraftingValues(CraftingValues* val
 			chaffMaxEffectiveness = value;
 		} else if (attribute == "ammo" || attribute == "fltmaxammo") {
 			ammunition = value;
+		}
+
+		if (firstUpdate && group == "misc") {
+			values->setHidden(attribute);
 		}
 	}
 }
