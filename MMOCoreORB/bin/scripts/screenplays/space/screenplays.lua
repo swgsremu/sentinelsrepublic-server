@@ -34,6 +34,8 @@ includeFile("space/ship_components/ship_interior_component_menu_component.lua")
 --[[
 	Conversation Handlers
 ]]
+
+includeFile("space/conversations/defaultShipConvoHandler.lua")
 includeFile("space/conversations/chassisDealerConvoHandler.lua")
 
 -- Greeters
