@@ -3696,7 +3696,7 @@ void CreatureObjectImplementation::addSpaceMissionObject(uint64 missionOwnerID, 
 	}
 
 	// Add Mission object to DeltaSet
-	spaceMissionObjects.add(missionOwnerID, missionObjectID);
+	spaceMissionObjects.addWithKey(missionOwnerID, missionObjectID);
 
 	if (notifyClient) {
 		CreatureObjectDeltaMessage4* delta4 = new CreatureObjectDeltaMessage4(asCreatureObject());
@@ -3704,7 +3704,7 @@ void CreatureObjectImplementation::addSpaceMissionObject(uint64 missionOwnerID, 
 		if (delta4 != nullptr) {
 			delta4->startUpdate(0x0D);
 
-			spaceMissionObjects.insertToMessage(delta4);
+			spaceMissionObjects.insertKeyAndValuesToMessage(delta4);
 
 			delta4->close();
 
@@ -3744,7 +3744,7 @@ void CreatureObjectImplementation::removeSpaceMissionObject(uint64 missionOwnerI
 		if (delta4 != nullptr) {
 			delta4->startUpdate(0x0D);
 
-			spaceMissionObjects.insertToMessage(delta4);
+			spaceMissionObjects.insertKeyAndValuesToMessage(delta4);
 
 			delta4->close();
 

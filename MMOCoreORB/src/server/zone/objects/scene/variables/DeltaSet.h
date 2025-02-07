@@ -60,16 +60,15 @@ public:
 	virtual int add(const K& key, const V& value, DeltaMessage* message = nullptr, int updates = 1) {
 		int pos = vectorMap.put(key, value);
 
-		// Increase update Counter
-		updateCounter += updates;
-
 		if (message != nullptr) {
-			message->startList(updates, updateCounter);
+			if (updates != 0) {
+				message->startList(updates, updateCounter += updates);
+			}
 
 			message->insertByte(0x01);
 
-			TypeInfo<K>::toBinaryStream(const_cast<K*>(&key), message);
-			TypeInfo<V>::toBinaryStream(const_cast<V*>(&value), message);
+			K& nonconstK = const_cast<K&>(key);
+			TypeInfo<K>::toBinaryStream(&nonconstK, message);
 		}
 
 		return pos;
@@ -88,14 +87,34 @@ public:
 		updateCounter += updates;
 
 		if (message != nullptr) {
-			message->startList(updates, updateCounter);
+			if (updates != 0) {
+				message->startList(updates, updateCounter += updates);
+			}
 
-			message->insertByte(0);
+			message->insertByte(0x00);
 
 			TypeInfo<K>::toBinaryStream(const_cast<K*>(&key), message);
 		}
 
 		return true;
+	}
+
+	virtual int addWithKey(const K& key, const V& value, DeltaMessage* message = nullptr, int updates = 1) {
+		int pos = vectorMap.put(key, value);
+
+		// Increase update Counter
+		updateCounter += updates;
+
+		if (message != nullptr) {
+			message->startList(updates, updateCounter);
+
+			message->insertByte(0x01);
+
+			TypeInfo<K>::toBinaryStream(const_cast<K*>(&key), message);
+			TypeInfo<V>::toBinaryStream(const_cast<V*>(&value), message);
+		}
+
+		return pos;
 	}
 
 	virtual bool dropByValue(const K& removeKey, const V& removeValue, DeltaMessage* message = nullptr, int updates = 1) {
@@ -137,6 +156,17 @@ public:
 	}
 
 	virtual void insertToMessage(BaseMessage* msg) {
+		msg->insertInt(size());
+		msg->insertInt(getUpdateCounter());
+
+		for (int i = 0; i < size(); ++i) {
+			K& key = getKeyAt(i);
+
+			TypeInfo<K>::toBinaryStream(&key, msg);
+		}
+	}
+
+	virtual void insertKeyAndValuesToMessage(BaseMessage* msg) {
 		msg->insertInt(size());
 		msg->insertInt(getUpdateCounter());
 
