@@ -51,6 +51,7 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/cell/CellObject.h"
+#include "server/zone/objects/staticobject/AsteroidObject.h"
 #include "server/zone/objects/staticobject/SpaceObject.h"
 #include "server/zone/objects/staticobject/StaticObject.h"
 #include "server/zone/objects/group/GroupObject.h"

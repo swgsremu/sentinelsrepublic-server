@@ -4,11 +4,10 @@
 
 package server.zone.objects.staticobject;
 
-import server.zone.objects.staticobject.StaticObject;
+import server.zone.objects.staticobject.SpaceObject;
 
-@json
-class SpaceObject extends StaticObject {
-	public SpaceObject() {
+class AsteroidObject extends SpaceObject {
+	public AsteroidObject() {
 	}
 
 	@dirty
