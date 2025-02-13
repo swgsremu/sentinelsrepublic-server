@@ -48,22 +48,25 @@ SpaceHelpers = {
 
 	pilotSkills = {
 		neutralPilot = {
-			"pilot_neutral_master", "pilot_neutral_droid_04", "pilot_neutral_procedures_04", "pilot_neutral_starships_04",
-			"pilot_neutral_weapons_04", "pilot_neutral_droid_03", "pilot_neutral_procedures_03", "pilot_neutral_starships_03", "pilot_neutral_weapons_03",
+			"pilot_neutral_master",
+			"pilot_neutral_droid_04", "pilot_neutral_procedures_04", "pilot_neutral_starships_04", "pilot_neutral_weapons_04",
+			"pilot_neutral_droid_03", "pilot_neutral_procedures_03", "pilot_neutral_starships_03", "pilot_neutral_weapons_03",
 			"pilot_neutral_droid_02", "pilot_neutral_procedures_02", "pilot_neutral_starships_02", "pilot_neutral_weapons_02",
 			"pilot_neutral_droid_01", "pilot_neutral_procedures_01", "pilot_neutral_starships_01", "pilot_neutral_weapons_01",
 			"pilot_neutral_novice"
 		},
 		rebelPilot = {
-			"pilot_rebel_navy_master", "pilot_rebel_navy_droid_04", "pilot_rebel_navy_procedures_04", "pilot_rebel_navy_starships_04",
-			"pilot_rebel_navy_weapons_04", "pilot_rebel_navy_droid_03", "pilot_rebel_navy_procedures_03", "pilot_rebel_navy_starships_03", "pilot_rebel_navy_weapons_03",
+			"pilot_rebel_navy_master",
+			"pilot_rebel_navy_droid_04", "pilot_rebel_navy_procedures_04", "pilot_rebel_navy_starships_04", "pilot_rebel_navy_weapons_04",
+			"pilot_rebel_navy_droid_03", "pilot_rebel_navy_procedures_03", "pilot_rebel_navy_starships_03", "pilot_rebel_navy_weapons_03",
 			"pilot_rebel_navy_droid_02", "pilot_rebel_navy_procedures_02", "pilot_rebel_navy_starships_02", "pilot_rebel_navy_weapons_02",
 			"pilot_rebel_navy_droid_01", "pilot_rebel_navy_procedures_01", "pilot_rebel_navy_starships_01", "pilot_rebel_navy_weapons_01",
 			"pilot_rebel_navy_novice"
 		},
 		imperialPilot = {
-			"pilot_imperial_navy_master", "pilot_imperial_navy_droid_04", "pilot_imperial_navy_procedures_04", "pilot_imperial_navy_starships_04",
-			"pilot_imperial_navy_weapons_04", "pilot_imperial_navy_droid_03", "pilot_imperial_navy_procedures_03", "pilot_imperial_navy_starships_03", "pilot_imperial_navy_weapons_03",
+			"pilot_imperial_navy_master",
+			"pilot_imperial_navy_droid_04", "pilot_imperial_navy_procedures_04", "pilot_imperial_navy_starships_04", "pilot_imperial_navy_weapons_04",
+			"pilot_imperial_navy_droid_03", "pilot_imperial_navy_procedures_03", "pilot_imperial_navy_starships_03", "pilot_imperial_navy_weapons_03",
 			"pilot_imperial_navy_droid_02", "pilot_imperial_navy_procedures_02", "pilot_imperial_navy_starships_02", "pilot_imperial_navy_weapons_02",
 			"pilot_imperial_navy_droid_01", "pilot_imperial_navy_procedures_01", "pilot_imperial_navy_starships_01", "pilot_imperial_navy_weapons_01",
 			"pilot_imperial_navy_novice"
@@ -78,6 +81,7 @@ SpaceHelpers = {
 ]]
 
 -- @param pPlayer pointer grants the novice pilot box
+-- @param skillName - pilot skill name to correlate with the pilotSkills table
 function SpaceHelpers:grantNovicePilot(pPlayer, skillName)
 	if (pPlayer == nil) then
 		return
@@ -94,6 +98,25 @@ function SpaceHelpers:grantNovicePilot(pPlayer, skillName)
 
 	local messageString = LuaStringIdChatParameter("@skill_teacher:" .. "prose_skill_learned")
 	messageString:setTO("@skl_n:" .. noviceSkill)
+
+	CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
+end
+
+-- @param pPlayer pointer grants the novice pilot box
+-- @param skillString - string for skill to grant the player
+function SpaceHelpers:grantSpaceSkill(pPlayer, skillString)
+	if (pPlayer == nil) then
+		return
+	end
+
+	if (CreatureObject(pPlayer):hasSkill(skillString)) then
+		return
+	end
+
+	awardSkill(pPlayer, skillString)
+
+	local messageString = LuaStringIdChatParameter("@skill_teacher:" .. "prose_skill_learned")
+	messageString:setTO("@skl_n:" .. skillString)
 
 	CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
 end
@@ -388,6 +411,7 @@ function SpaceHelpers:surrenderPilot(pPlayer)
 	if (pilotSquadron == CORSEC_SQUADRON or pilotSquadron == SMUGGLER_SQUADRON or pilotSquadron == RSF_SQUADRON) then
 		pilotProfession = "neutralPilot"
 
+		-- All the Space Quests need to be reset here
 		CorsecSquadronScreenplay:resetRheaQuests(pPlayer)
 
 	elseif (pilotSquadron == BLACK_EPSILON_SQUADRON or pilotSquadron == STORM_SQUADRON or pilotSquadron == INQUISITION_SQUADRON) then
@@ -580,6 +604,92 @@ function SpaceHelpers:addImperialInquisitionSquadWaypoint(pPlayer)
 
 	PlayerObject(pGhost):addWaypoint("naboo", "@npc_spawner_n:barn_sinkko", "@npc_spawner_n:barn_sinkko", 5182, 0, 6750, WAYPOINT_BLUE, true, true, 0)
 end
+
+-- @param pPlayer pointer to check for skills
+function SpaceHelpers:hasNeutralTier1Skill(pPlayer)
+	if (pPlayer == nil) then
+		return false
+	end
+
+	local skillsTable = {"pilot_neutral_droid_01", "pilot_neutral_procedures_01", "pilot_neutral_starships_01", "pilot_neutral_weapons_01"}
+
+	for i = 1, #skillsTable, 1 do
+		local checkSkill = skillsTable[i]
+
+		if (CreatureObject(pPlayer):hasSkill(checkSkill)) then
+			return true
+		end
+	end
+
+	return false
+end
+
+-- @param pPlayer pointer to check for skills
+function SpaceHelpers:hasNeutralTier2Skill(pPlayer)
+	if (pPlayer == nil) then
+		return false
+	end
+
+	local skillsTable = {"pilot_neutral_droid_02", "pilot_neutral_procedures_02", "pilot_neutral_starships_02", "pilot_neutral_weapons_02"}
+
+	for i = 1, #skillsTable, 1 do
+		local checkSkill = skillsTable[i]
+
+		if (CreatureObject(pPlayer):hasSkill(checkSkill)) then
+			return true
+		end
+	end
+
+	return false
+end
+
+-- @param pPlayer pointer to check for skills
+function SpaceHelpers:hasNeutralTier3Skill(pPlayer)
+	if (pPlayer == nil) then
+		return false
+	end
+
+	local skillsTable = {"pilot_neutral_droid_03", "pilot_neutral_procedures_03", "pilot_neutral_starships_03", "pilot_neutral_weapons_03"}
+
+	for i = 1, #skillsTable, 1 do
+		local checkSkill = skillsTable[i]
+
+		if (CreatureObject(pPlayer):hasSkill(checkSkill)) then
+			return true
+		end
+	end
+
+	return false
+end
+
+-- @param pPlayer pointer to check for skills
+function SpaceHelpers:hasNeutralTier4Skill(pPlayer)
+	if (pPlayer == nil) then
+		return false
+	end
+
+	local skillsTable = {"pilot_neutral_droid_04", "pilot_neutral_procedures_04", "pilot_neutral_starships_04", "pilot_neutral_weapons_04"}
+
+	for i = 1, #skillsTable, 1 do
+		local checkSkill = skillsTable[i]
+
+		if (CreatureObject(pPlayer):hasSkill(checkSkill)) then
+			return true
+		end
+	end
+
+	return false
+end
+
+-- @param pPlayer pointer to check for skills
+function SpaceHelpers:hasNeutralMasterSkill(pPlayer)
+	if (pPlayer == nil) then
+		return false
+	end
+
+	return CreatureObject(pPlayer):hasSkill("pilot_neutral_master")
+end
+
 
 --[[
 
@@ -1019,7 +1129,14 @@ function SpaceHelpers:spaceItemReward(pPlayer, itemString)
 		return
 	end
 
-	giveItem(pInventory, itemString, -1)
+	local pItem = giveItem(pInventory, itemString, -1)
+
+	if (pItem ~= nil) then
+		local messageString = LuaStringIdChatParameter("@space/quest:quest_rewarded")
+		messageString:setTO(SceneObject(pItem):getDisplayedName())
+
+		CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject()) -- " \\#pcontrast3 Reward Received: < \\#pcontrast1 %TO \\#pcontrast3 >"
+	end
 end
 
 -- @param pPlayer pointer to player to receive message
