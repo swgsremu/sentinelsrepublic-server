@@ -4014,7 +4014,7 @@ bool PlayerManagerImplementation::checkPlayerSpeedTest(CreatureObject* player, S
 			teleportPoint.setZ(zone->getHeight(teleportPoint.getX(), teleportPoint.getY()));
 		}
 
-		if (parsedSpeed > 40.f) {
+		if (parsedSpeed > 100.f) {
 			player->setRootedState(7 * 24 * 60 * 60);
 			player->setState(CreatureState::FROZEN, true);
 			player->setSpeedMultiplierBase(0.f, true);
@@ -4104,7 +4104,7 @@ bool PlayerManagerImplementation::checkPlayerSpeedTest(CreatureObject* player, S
 
 bool PlayerManagerImplementation::checkSpeedHackTests(CreatureObject* player, PlayerObject* ghost, const Vector3& newPosition, uint32 newStamp, float floorZ, SceneObject* newParent) {
 	if (player == nullptr || ghost == nullptr) {
-		player->info()  << "checkSpeedHackTests -- FAILED -- null player or ghost";
+		// player->info()  << "checkSpeedHackTests -- FAILED -- null player or ghost";
 		return false;
 	}
 
@@ -4112,7 +4112,7 @@ bool PlayerManagerImplementation::checkSpeedHackTests(CreatureObject* player, Pl
 	uint32 deltaTime = ghost->getServerMovementTimeDelta();
 
 	if (deltaTime < 1000) {
-		player->info()  << "checkSpeedHackTests -- PASSED -- deltaTime hasnt passed yet";
+		// player->info()  << "checkSpeedHackTests -- PASSED -- deltaTime hasnt passed yet";
 		return true;
 	}
 
@@ -4129,12 +4129,11 @@ bool PlayerManagerImplementation::checkSpeedHackTests(CreatureObject* player, Pl
 	ValidatedPosition* lastValidatedPosition = ghost->getLastValidatedPosition();
 	Vector3 lastValidatedWorldPosition = lastValidatedPosition->getWorldPosition(server);
 
-	player->info() << "checkSpeedHackTests ---- Checking - new Position X = " << newWorldPosition.getX() << " Z = " << newWorldPosition.getZ() << " Y = " << newWorldPosition.getY();
-
 	if (newParent != nullptr) {
 		ManagedReference<SceneObject*> root = newParent->getRootParent();
 
 		if (!root->isBuildingObject() && !root->isShipObject()) {
+			player->info()  << "checkSpeedHackTests -- FAILED due to improper root parent type.";
 			return false;
 		}
 
@@ -4148,7 +4147,9 @@ bool PlayerManagerImplementation::checkSpeedHackTests(CreatureObject* player, Pl
 		newWorldPosition.setY(root->getPositionY() + (cos(angle) * length));
 		newWorldPosition.setZ(root->getPositionZ() + newPosition.getZ());
 
-		player->info()  << "checkSpeedHackTests -- Parent Transform newWorldPosition X = " << newWorldPosition.getX() << " Z = " << newWorldPosition.getZ() << " Y = " << newWorldPosition.getY() << " Distance Length = " << length;
+		player->info()  << "checkSpeedHackTests -- Parent Transform with newWorldPosition X = " << newWorldPosition.getX() << " Z = " << newWorldPosition.getZ() << " Y = " << newWorldPosition.getY() << " Distance Length = " << length;
+	} else {
+		player->info() << "checkSpeedHackTests ---- Checking - new Position X = " << newWorldPosition.getX() << " Z = " << newWorldPosition.getZ() << " Y = " << newWorldPosition.getY();
 	}
 
 	// Hills cause issues
