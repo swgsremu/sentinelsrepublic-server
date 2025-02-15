@@ -4014,36 +4014,40 @@ bool PlayerManagerImplementation::checkPlayerSpeedTest(CreatureObject* player, S
 			teleportPoint.setZ(zone->getHeight(teleportPoint.getX(), teleportPoint.getY()));
 		}
 
-		if (parsedSpeed > 100.f) {
-			player->setRootedState(7 * 24 * 60 * 60);
-			player->setState(CreatureState::FROZEN, true);
-			player->setSpeedMultiplierBase(0.f, true);
+		if (parsedSpeed > 50.f) {
+			if (parsedSpeed < 150.f) {
+				player->error() << "Player Speed Abnormality. - Player: " << player->getDisplayedName() << " ID: " << player->getObjectID() << " Speed Variable: " << parsedSpeed << " Max Allowed Speed: " << maxAllowedSpeed << " Error Multiplier: " << errorMultiplier << " Last Validated World Position: " << teleportPoint.toString() << " Last Valid Parent: " << teleportPosition.getParent() << " New World Position: " << newWorldPosition.toString();
+			} else {
+				player->setRootedState(7 * 24 * 60 * 60);
+				player->setState(CreatureState::FROZEN, true);
+				player->setSpeedMultiplierBase(0.f, true);
 
-			player->sendSystemMessage("You have been frozen by the system. Please go to SWGEmu Support.");
+				player->sendSystemMessage("You have been frozen by the system. Please go to SWGEmu Support.");
 
-			player->error() << "Possible Speed Hack Attempt. Player has been frozen. - Player: " << player->getDisplayedName() << " ID: " << player->getObjectID() << " Speed Variable: " << parsedSpeed << " Last Validated World Position: " << teleportPoint.toString() << " Last Valid Parent: " << teleportPosition.getParent() << " New World Position: " << newWorldPosition.toString();
+				player->error() << "Possible Speed Hack Attempt. Player has been frozen. - Player: " << player->getDisplayedName() << " ID: " << player->getObjectID() << " Speed Variable: " << parsedSpeed << " Max Allowed Speed: " << maxAllowedSpeed << " Error Multiplier: " << errorMultiplier << " Last Validated World Position: " << teleportPoint.toString() << " Last Valid Parent: " << teleportPosition.getParent() << " New World Position: " << newWorldPosition.toString();
 
-			Reference<CreatureObject*> playerRef = player;
+				Reference<CreatureObject*> playerRef = player;
 
-			Core::getTaskManager()->scheduleTask([playerRef, teleportPoint, teleportParentID] () {
-				if (playerRef == nullptr) {
-					return;
-				}
+				Core::getTaskManager()->scheduleTask([playerRef, teleportPoint, teleportParentID] () {
+					if (playerRef == nullptr) {
+						return;
+					}
 
-				auto zone = playerRef->getZone();
+					auto zone = playerRef->getZone();
 
-				if (zone == nullptr) {
-					return;
-				}
+					if (zone == nullptr) {
+						return;
+					}
 
-				Locker lock(playerRef);
+					Locker lock(playerRef);
 
-				playerRef->info() << "switchZone for player -- Position: " << teleportPoint.toString() << " ID: " << teleportParentID;
+					playerRef->info() << "switchZone for player -- Position: " << teleportPoint.toString() << " ID: " << teleportParentID;
 
-				playerRef->switchZone(zone->getZoneName(), teleportPoint.getX(), teleportPoint.getZ(), teleportPoint.getY(), teleportParentID);
-			}, "SpeedHackTransportLambda", 5000);
+					playerRef->switchZone(zone->getZoneName(), teleportPoint.getX(), teleportPoint.getZ(), teleportPoint.getY(), teleportParentID);
+				}, "SpeedHackTransportLambda", 5000);
 
-			return false;
+				return false;
+			}
 		}
 
 		if (changeBuffer->size() == 0) { // no speed changes
