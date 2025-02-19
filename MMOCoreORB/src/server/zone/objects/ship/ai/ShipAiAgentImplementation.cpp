@@ -1938,8 +1938,6 @@ void ShipAiAgentImplementation::addSpaceFactionEnemy(uint32 factionHash) {
 		return;
 	}
 
-	info(true) << getDisplayedName() << " addSpaceFactionEnemy -- adding enemy faction: " << factionHash;
-
 	enemyFactions.add(factionHash);
 	broadcastPvpStatusBitmask();
 }
