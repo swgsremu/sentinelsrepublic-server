@@ -4170,7 +4170,7 @@ bool PlayerManagerImplementation::checkSpeedHackTests(CreatureObject* player, Pl
 		player->info() << msg.toString();
 
 		// Run speed tests
-		if (!ghost->isPrivileged() && !checkPlayerSpeedTest(player, parent, speed, *lastValidatedPosition, newWorldPosition, 1.03f)) {
+		if (!ghost->isPrivileged() && !checkPlayerSpeedTest(player, parent, speed, *lastValidatedPosition, newWorldPosition, 1.05f)) {
 			return false;
 		}
 	}
