@@ -4111,7 +4111,9 @@ bool PlayerManagerImplementation::checkPlayerSpeedTest(CreatureObject* player, S
 		return false;
 	}
 
+#ifdef DEBUG_SPEED_HACK
 	player->info() << "checkPlayerSpeedTest -- PASSED";
+#endif // DEBUG_SPEED_HACK
 
 	return true;
 }
