@@ -362,7 +362,7 @@ public:
 		auto transformPosition = transform.getPosition();
 		Vector3 lastValidatedWorldPosition = validPosition.getWorldPosition(zoneServer);
 
-		if (!playerManager->checkSpeedHackTests(creO, ghost, lastValidatedWorldPosition, transformPosition, transform.getTimeStamp(), transformPosition.getZ(), nullptr)) {
+		if (!ghost->isPrivileged() && !playerManager->checkSpeedHackTests(creO, ghost, lastValidatedWorldPosition, transformPosition, transform.getTimeStamp(), transformPosition.getZ(), nullptr)) {
 			return updateError(creO, "!DT-checkSpeedHackTests_STAT", true);
 		}
 
