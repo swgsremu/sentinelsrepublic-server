@@ -26,15 +26,17 @@ public:
 			return GENERALERROR;
 		}
 
-		PlayerObject* ghost = creature->getPlayerObject();
+		auto ghost = creature->getPlayerObject();
 
-		if (ghost == nullptr)
+		if (ghost == nullptr) {
 			return GENERALERROR;
+		}
 
-		ZoneServer* zoneServer = creature->getZoneServer();
+		auto zoneServer = creature->getZoneServer();
 
-		if (zoneServer == nullptr)
+		if (zoneServer == nullptr) {
 			return GENERALERROR;
+		}
 
 		ManagedReference<SceneObject*> object = zoneServer->getObject(target);
 
@@ -55,28 +57,26 @@ public:
 				if (validPosition == nullptr)
 					return GENERALERROR;
 
-				Vector3 creaturePos = validPosition->getPosition();
-				uint64 playerPaentID = validPosition->getParent();
+				Vector3 playerPosition = validPosition->getPosition();
+				uint64 playerParentID = validPosition->getParent();
 
-				Vector3 agentPos = agent->getPosition();
+				Vector3 agentPosition = agent->getPosition();
 				uint64 agentParentID = agent->getParentID();
 
 				// No conversing from different cells
-				if (playerPaentID != agentParentID) {
+				if (playerParentID != agentParentID) {
 					return TOOFAR;
 				}
 
 				// If the conversing NPC is outdoors, we will acount for distance based on x, y only. LoS also checked below
 				if (agentParentID == 0) {
-					agentPos -= creaturePos;
-
 					// Calculate the distance squared without use of the z coordinate. We also check LoS below
-					float distanceSq = (agentPos.getX() * agentPos.getX() + agentPos.getY() * agentPos.getY());
+					float distanceSq = playerPosition.squaredDistanceTo2d(agentPosition);
 
 					if (distanceSq > 25) {
 						return TOOFAR;
 					}
-				} else if (creaturePos.squaredDistanceTo(agentPos) > 25) {
+				} else if (playerPosition.squaredDistanceTo(agentPosition) > 25) {
 					return TOOFAR;
 				}
 

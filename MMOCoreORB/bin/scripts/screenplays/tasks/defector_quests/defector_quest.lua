@@ -102,12 +102,7 @@ function DefectorQuest:spawnActiveAreas(questCrc)
 
 			local questAreaID = SceneObject(pQuestArea):getObjectID()
 
-			if questCrc == self.REBEL_CRC then
-				writeData(questAreaID .. ":DefectorQuestRebelCrc:", questCrc)
-			elseif questCrc == self.IMPERIAL_CRC then
-				writeData(questAreaID .. ":DefectorQuestImperialCrc:", questCrc)
-			end
-
+			writeData(questAreaID .. ":DefectorQuest:AreaCRC:", questCrc)
 			writeData(questAreaID .. ":DefectorTaskIndex:", taskIndex)
 		end
 	end
@@ -118,15 +113,71 @@ function DefectorQuest:activeTask(ghost, questCrc, taskIndex)
 		return false
 	end
 
-	return ghost:isJournalQuestActive(questCrc) and ghost:isJournalQuestTaskActive(questCrc, taskIndex) and
-			not ghost:isJournalQuestComplete(questCrc) and not ghost:isJournalQuestTaskComplete(questCrc, taskIndex)
+	return ghost:isJournalQuestActive(questCrc) and ghost:isJournalQuestTaskActive(questCrc, taskIndex) and	not ghost:isJournalQuestComplete(questCrc) and not ghost:isJournalQuestTaskComplete(questCrc, taskIndex)
 end
 
 function DefectorQuest:startMissionTimer(pPlayer)
-
 	-- 20-Minute Overall Mission Timer
 	createEvent(20 * 60 * 1000, "DefectorQuest", "failMission", pPlayer, "")
+end
 
+function DefectorQuest:failMission(pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	local pGhost = CreatureObject(pPlayer):getPlayerObject()
+
+	if (pGhost == nil) then
+		return
+	end
+
+	local ghost = LuaPlayerObject(pGhost)
+	local questCrc = self.REBEL_CRC
+
+	if ghost:isJournalQuestActive(self.IMPERIAL_CRC) then
+		questCrc = self.IMPERIAL_CRC
+	end
+
+	ghost:clearJournalQuest(questCrc, true)
+
+	CreatureObject(pPlayer):sendSystemMessage("@quest/quests:task_failure")
+
+	-- Remove waypoints from the player
+	local waypoints = self.waypointNames
+
+	for i = 1, #waypoints do
+		local waypointID = tonumber(readScreenPlayData(pPlayer, "DefectorQuest", waypoints[i]))
+
+		if (waypointID ~= nil and waypointID ~= 0) then
+			ghost:removeWaypoint(waypointID, true)
+
+			deleteScreenPlayData(pPlayer, "DefectorQuest", waypointID)
+		end
+	end
+
+	-- Drop observers and cancel spawn events
+	dropObserver(OBJECTDESTRUCTION, "DefectorQuest", "notifyAmbushMobileKilled", pMobile)
+
+	-- Despawn any ambush mobiles
+	self:despawnAmbushMobiles(pPlayer)
+
+	-- Clean up remaining data
+	self:cleanUp(pPlayer)
+end
+
+function DefectorQuest:cleanUp(pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local totalAmbushMobiles = readData(SceneObject(pPlayer):getObjectID() .. ":DefectorQuest:totalAmbushMobiles:")
+	deleteData(SceneObject(pPlayer):getObjectID() .. ":DefectorQuest:totalAmbushMobiles:")
+
+	for i = 1, totalAmbushMobiles, 1 do
+		deleteData(playerID .. ":DefectorQuest:AmbushMobile" .. i .. ":")
+	end
 end
 
 function DefectorQuest:spawnAttack(pPlayer)
@@ -147,11 +198,11 @@ function DefectorQuest:spawnAttack(pPlayer)
 	local mobilesTable = self.imperialAmbushMobiles
 	local numMobiles = 0
 
-	if not (ghost:isJournalQuestActive(self.REBEL_CRC) or ghost:isJournalQuestActive(IMPERIAL_CRC)) then
+	if (not ghost:isJournalQuestActive(self.REBEL_CRC) and not ghost:isJournalQuestActive(self.IMPERIAL_CRC)) then
 		return
 	end
 
-	if ghost:isJournalQuestActive(self.IMPERIAL_CRC) then
+	if (ghost:isJournalQuestActive(self.IMPERIAL_CRC)) then
 		questCrc = self.IMPERIAL_CRC
 		mobilesTable = self.rebelAmbushMobiles
 	end
@@ -160,7 +211,7 @@ function DefectorQuest:spawnAttack(pPlayer)
 	local pDefectorTasks = getQuestTasks(questCrc)
 
 	if pDefectorTasks == nil then
-		Logger:log("ERROR: Could not load Defector Quests correctly. Quest line will not function correctly.", LT_ERROR)
+		Logger:log("ERROR: Could not load Defector Quests tasks in spawnAttack.", LT_ERROR)
 		return
 	end
 
@@ -170,17 +221,21 @@ function DefectorQuest:spawnAttack(pPlayer)
 	if ghost:isJournalQuestTaskActive(questCrc, self.TIMER3) then
 		ghost:completeJournalQuestTask(questCrc, self.TIMER3, false)
 		ghost:activateJournalQuestTask(questCrc, self.ENCOUNTER3, true)
-
 	elseif ghost:isJournalQuestTaskActive(questCrc, self.TIMER2) then
 		ghost:completeJournalQuestTask(questCrc, self.TIMER2, false)
 		ghost:activateJournalQuestTask(questCrc, self.ENCOUNTER2, true)
-		pQuestTask = defectorTasks:getTask(self.ENCOUNTER2)
 
+		pQuestTask = defectorTasks:getTask(self.ENCOUNTER2)
 	elseif ghost:isJournalQuestTaskActive(questCrc, self.TIMER1) then
 		ghost:completeJournalQuestTask(questCrc, self.TIMER1, false)
 		ghost:activateJournalQuestTask(questCrc, self.ENCOUNTER1, true)
-		pQuestTask = defectorTasks:getTask(self.ENCOUNTER1)
 
+		pQuestTask = defectorTasks:getTask(self.ENCOUNTER1)
+	end
+
+	if pQuestTask == nil then
+		Logger:log("Defector Quest: pQuestTask is nil in spawnAttack", LT_ERROR)
+		return
 	end
 
 	-- Spawn mobiles
@@ -190,14 +245,7 @@ function DefectorQuest:spawnAttack(pPlayer)
 
 	local totalMobiles = 0
 
-	if pQuestTask == nil then
-		Logger:log("Defector Quest: pQuestTask is nil", LT_ERROR)
-		return
-	end
-
-	local questTask = LuaQuestTask(pQuestTask)
-
-	for i = 1, questTask:getCount(), 1 do
+	for i = 1, LuaQuestTask(pQuestTask):getCount(), 1 do
 		local x = playerX + getRandomNumber(-10, 10)
 		local y = playerY + getRandomNumber(-10, 10)
 
@@ -207,8 +255,11 @@ function DefectorQuest:spawnAttack(pPlayer)
 			-- add death observer
 			createObserver(OBJECTDESTRUCTION, "DefectorQuest", "notifyAmbushMobileKilled", pMobile)
 
+			local mobileID = SceneObject(pMobile):getObjectID()
+
 			-- Store owning player's ID on the mobile
-			writeData(SceneObject(pMobile):getObjectID() .. ":DefectorQuest:ambushMobilePlayerID:", playerID)
+			writeData(mobileID .. ":DefectorQuest:ambushMobilePlayerID:", playerID)
+			writeData(playerID .. ":DefectorQuest:AmbushMobile" .. i .. ":", mobileID)
 
 			totalMobiles = totalMobiles + 1
 
@@ -218,6 +269,34 @@ function DefectorQuest:spawnAttack(pPlayer)
 	end
 
 	writeData(playerID .. ":DefectorQuest:totalAmbushMobiles:", totalMobiles)
+end
+
+function DefectorQuest:despawnAmbushMobiles(pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local totalMobiles = readData(playerID .. ":DefectorQuest:totalAmbushMobiles:")
+
+	for i = 1, totalMobiles, 1 do
+		local mobileID = readData(playerID .. ":DefectorQuest:AmbushMobile" .. i .. ":")
+		local pAgent = getSceneObject(mobileID)
+
+		if (pAgent == nil or not SceneObject(pMobile):isAiAgent() or CreatureObject(pMobile):isDead()) then
+			goto skip
+		end
+
+		-- Remove the observer
+		dropObserver(OBJECTDESTRUCTION, "DefectorQuest", "notifyAmbushMobileKilled", pMobile)
+
+		deleteData(mobileID .. ":DefectorQuest:ambushMobilePlayerID:")
+
+		-- Destroy agent from world
+		SceneObject(pAgent):destroyObjectFromWorld()
+
+		::skip::
+	end
 end
 
 --[[
@@ -244,24 +323,20 @@ function DefectorQuest:notifyEnteredQuestArea(pActiveArea, pPlayer)
 	local ghost = LuaPlayerObject(pGhost)
 	local activeAreaID = SceneObject(pActiveArea):getObjectID()
 	local taskIndex = readData(activeAreaID .. ":DefectorTaskIndex:")
-	local questCrc = nil
+	local questCrc = readData(activeAreaID .. ":DefectorQuest:AreaCRC:")
 
-	if ghost:isJournalQuestActive(self.REBEL_CRC) then
-		questCrc = readData(activeAreaID .. ":DefectorQuestRebelCrc:")
-	elseif ghost:isJournalQuestActive(self.IMPERIAL_CRC) then
-		questCrc = readData(activeAreaID .. ":DefectorQuestImperialCrc:")
+	if (questCrc == 0 or not ghost:isJournalQuestActive(questCrc)) then
+		return 0
 	end
 
 	local pDefectorTasks = getQuestTasks(questCrc)
 
 	if pDefectorTasks == nil then
-		Logger:log("ERROR: Could not load Defector Quests correctly. Quest line will not function correctly.", LT_ERROR)
-		return
+		Logger:log("ERROR: Could not load Defector Quests Tasks in notifyEnteredQuestArea.", LT_ERROR)
+		return 0
 	end
 
-	local defectorTasks = LuaQuestTasks(pDefectorTasks)
-
-	local pQuestTask = defectorTasks:getTask(taskIndex)
+	local pQuestTask = LuaQuestTasks(pDefectorTasks):getTask(taskIndex)
 
 	if pQuestTask == nil then
 		Logger:log("Defector Quest: pQuestTask is nil", LT_ERROR)
@@ -276,42 +351,6 @@ function DefectorQuest:notifyEnteredQuestArea(pActiveArea, pPlayer)
 	return 0
 end
 
-function DefectorQuest:failMission(pPlayer)
-	if (pPlayer == nil) then
-		return
-	end
-
-	local pGhost = CreatureObject(pPlayer):getPlayerObject()
-
-	if (pGhost == nil) then
-		return
-	end
-
-	local ghost = LuaPlayerObject(pGhost)
-	local questCrc = self.REBEL_CRC
-
-	if ghost:isJournalQuestActive(self.IMPERIAL_CRC) then
-		questCrc = self.IMPERIAL_CRC
-	end
-
-	ghost:clearJournalQuest(questCrc, true)
-
-	-- Remove waypoints from the player
-	local waypoints = self.waypointNames
-
-	for i = 1, #waypoints do
-		local waypointID = readScreenPlayData(pPlayer, "DefectorQuest", waypoints[i])
-		ghost:removeWaypoint(waypointID, true)
-
-		deleteScreenPlayData(pPlayer, "DefectorQuest", waypointID)
-	end
-
-	-- Drop observers and cancel spawn events
-	dropObserver(ENTEREDAREA, "DefectorQuest", "notifyEnteredQuestArea", pQuestArea)
-	dropObserver(OBJECTDESTRUCTION, "DefectorQuest", "notifyAmbushMobileKilled", pMobile)
-
-end
-
 function DefectorQuest:notifyAmbushMobileKilled(pMobile, pKiller)
 	if (pMobile == nil) then
 		return 1
@@ -321,6 +360,7 @@ function DefectorQuest:notifyAmbushMobileKilled(pMobile, pKiller)
 
 	local playerID = readData(mobileID .. ":DefectorQuest:ambushMobilePlayerID:")
 	local totalMobiles = readData(playerID .. ":DefectorQuest:totalAmbushMobiles:")
+	deleteData(playerID .. ":DefectorQuest:totalAmbushMobiles:")
 
 	deleteData(mobileID .. ":DefectorQuest:ambushMobilePlayerID:")
 
@@ -350,13 +390,13 @@ function DefectorQuest:notifyAmbushMobileKilled(pMobile, pKiller)
 		if ghost:isJournalQuestTaskActive(questCrc, self.ENCOUNTER3) then
 			ghost:completeJournalQuestTask(questCrc, self.ENCOUNTER3, true)
 			ghost:activateJournalQuestTask(questCrc, self.TIMER2, false)
-			createEvent(getRandomNumber(190, 230) * 1000, "DefectorQuest", "spawnAttack", pPlayer, "")
 
+			createEvent(getRandomNumber(190, 230) * 1000, "DefectorQuest", "spawnAttack", pPlayer, "")
 		elseif ghost:isJournalQuestTaskActive(questCrc, self.ENCOUNTER2) then
 			ghost:completeJournalQuestTask(questCrc, self.ENCOUNTER2, true)
 			ghost:activateJournalQuestTask(questCrc, self.TIMER1, false)
-			createEvent(getRandomNumber(410, 470) * 1000, "DefectorQuest", "spawnAttack", pPlayer, "")
 
+			createEvent(getRandomNumber(410, 470) * 1000, "DefectorQuest", "spawnAttack", pPlayer, "")
 		elseif ghost:isJournalQuestTaskActive(questCrc, self.ENCOUNTER1) then
 			ghost:completeJournalQuestTask(questCrc, self.ENCOUNTER1, true)
 
