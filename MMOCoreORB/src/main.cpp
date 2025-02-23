@@ -5,7 +5,7 @@
 #ifndef PLATFORM_WIN
 #include "CoreProcess.h"
 #endif
-
+#include "server/zone/srcustom/SRInit.h"
 #include "server/ServerCore.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/chat/ChatManager.h"
@@ -76,6 +76,8 @@ int main(int argc, char* argv[]) {
 			NavMeshManager::instance()->dumpMeshesToFiles();
 		} else {
 			bool truncateData = arguments.contains("clean");
+
+			SRInitialize(); // SR Modification to init custom
 
 			ServerCore core(truncateData, arguments);
 			core.start();
