@@ -30,10 +30,10 @@ void SRConfigManager::loadCustomConfig() {
 	// Append custom settings from SRConfig table
     LuaObject srConfig = lua->getGlobalObject("SRConfig");
     	if (srConfig.isValidTable()) {
-		String packupEnabled = srConfig.getStringField("structurePackupEnabled");
+		const String packupEnabled = srConfig.getStringField("structurePackupEnabled");
 		setBool("SRConfig.structurePackupEnabled", packupEnabled == "true" ? true : false);
 
-		String inactivePackupEnabled = srConfig.getStringField("inactiveStructurePackupEnabled");
+		const String inactivePackupEnabled = srConfig.getStringField("inactiveStructurePackupEnabled");
 		setBool("SRConfig.inactiveStructurePackupEnabled", inactivePackupEnabled == "true" ? true : false);
 
 		setInt("SRConfig.inactiveStructurePackupDays", static_cast<int>(srConfig.getIntField("inactiveStructurePackupDays")));
