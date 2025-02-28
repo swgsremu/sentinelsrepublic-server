@@ -7,13 +7,4 @@ void SRPreInitialize() {
 }
 
 void SRPostInitialize() {
-  //   ZoneServer* zoneServer = ServerCore::getZoneServer();
-  //   std::cout << zoneServer << std::endl;
-  //   if (zoneServer != nullptr) {
-		// const auto srCommandManager = new SRCommandConfigManager(zoneServer);
-		// const auto objectController = zoneServer->getObjectController();
-  //       if (objectController != nullptr) {
-  //           srCommandManager->loadSlashCommandsFile();
-  //       }
-  //   }
 }

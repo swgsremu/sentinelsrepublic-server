@@ -1,6 +1,6 @@
 #include "SRConfigManager.h"
 
-SRConfigManager::SRConfigManager() : ConfigManager() {
+SRConfigManager::SRConfigManager() {
 	loadConfigData();	// Load base config
 	loadCustomConfig(); // Load custom config
 }
