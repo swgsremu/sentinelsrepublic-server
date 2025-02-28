@@ -36,7 +36,7 @@ void SRConfigManager::loadCustomConfig() {
 		String inactivePackupEnabled = srConfig.getStringField("inactiveStructurePackupEnabled");
 		setBool("SRConfig.inactiveStructurePackupEnabled", inactivePackupEnabled == "true" ? true : false);
 
-		setInt("SRConfig.inactiveStructurePackupDays", srConfig.getIntField("inactiveStructurePackupDays"));
+		setInt("SRConfig.inactiveStructurePackupDays", static_cast<int>(srConfig.getIntField("inactiveStructurePackupDays")));
 	} else {
 		error() << "SRConfig table not found in conf/custom/config.lua";
 	}
