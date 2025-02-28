@@ -5,7 +5,7 @@
 #include "server/zone/managers/director/DirectorManager.h"
 #include "conf/custom/SRConfigManager.h"
 #include "server/zone/managers/objectcontroller/ObjectController.h"
-#include "server/zone/srcustom/managers/SRCommandConfigManager.h"
+// #include "server/zone/srcustom/managers/SRCommandConfigManager.h"
 
 
 
