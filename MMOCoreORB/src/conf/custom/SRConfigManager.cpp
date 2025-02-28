@@ -18,7 +18,7 @@ int SRConfigManager::getInactiveStructurePackupDays() {
 }
 
 void SRConfigManager::loadCustomConfig() {
-	Lua* lua = new Lua();
+	const auto lua = new Lua();
 	lua->init();
 
 	if (!lua->runFile("conf/custom/config.lua")) {
