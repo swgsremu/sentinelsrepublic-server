@@ -77,9 +77,12 @@ int main(int argc, char* argv[]) {
 		} else {
 			bool truncateData = arguments.contains("clean");
 
-			SRInitialize(); // SR Modification to init custom
+			SRPreInitialize(); // SR Modification to init custom
 
 			ServerCore core(truncateData, arguments);
+			
+			SRPostInitialize(); // SR Modification to init custom
+			
 			core.start();
 		}
 
