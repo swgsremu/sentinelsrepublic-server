@@ -5,7 +5,7 @@
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/tangible/terminal/Terminal.h"
 
-class PackupStructureCommand : public QueueCommand {
+class PackupStructureCommand final : public QueueCommand {
 public:
 	PackupStructureCommand(const String& name, ZoneProcessServer* server);
 
