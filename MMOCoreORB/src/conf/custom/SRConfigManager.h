@@ -3,14 +3,14 @@
 
 #include "conf/ConfigManager.h"
 
-class SRConfigManager : public ConfigManager {
+class SRConfigManager final : public Singleton<SRConfigManager>, public ConfigManager {
 public:
     SRConfigManager();
-
     bool getStructurePackupEnabled();
     bool getInactiveStructurePackupEnabled();
     int getInactiveStructurePackupDays();
 
+    using Singleton<SRConfigManager>::instance;
 private:
     void loadCustomConfig();
 };
