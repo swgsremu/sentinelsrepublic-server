@@ -802,6 +802,13 @@ function SpaceEscortScreenplay:notifyEnteredQuestArea(pActiveArea, pShip)
 			return 0
 		end
 
+		local escortID = readData(playerID .. ":" .. self.className .. ":escortID:")
+
+		-- Prevent attacking ships triggering escort progress
+		if (escortID ~= shipAgentID) then
+			return 0
+		end
+
 		local pPlayer = getSceneObject(playerID)
 
 		if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature() or not SpaceHelpers:isSpaceQuestActive(pPlayer, self.questType, self.questName)) then
