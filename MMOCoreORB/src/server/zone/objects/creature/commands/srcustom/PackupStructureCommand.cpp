@@ -7,6 +7,9 @@
 #include <server/zone/objects/structure/StructureObject.h>
 
 
+const std::string PackupStructureCommand::PACKUP_MUST_BE_OWNER = "@player_structure:packup_must_be_owner";
+const std::string PackupStructureCommand::PACKUP_NOT_ELIGIBLE = "@player_structure:packup_not_eligible_01";
+
 /**
  * @brief Constructor for the PackupStructureCommand class.
  *
@@ -16,6 +19,8 @@
 PackupStructureCommand::PackupStructureCommand(const String& name, ZoneProcessServer* server)
 	: QueueCommand(name, server) {
 }
+
+
 
 /**
  * @brief Executes the PackupStructureCommand.
@@ -53,12 +58,12 @@ int PackupStructureCommand::doQueueCommand(CreatureObject* creature, const uint6
 		return GENERALERROR;
 
 	if (!ghost->isOwnedStructure(structure) && !ghost->isStaff()) {
-		creature->sendSystemMessage("@player_structure:packup_must_be_owner");
+		creature->sendSystemMessage(PACKUP_MUST_BE_OWNER);
 		return INVALIDTARGET;
 	}
 
 	if (!SRConfigManager::instance()->getStructurePackupEnabled()) {
-		creature->sendSystemMessage("@player_structure:packup_not_eligible_01");
+		creature->sendSystemMessage(PACKUP_NOT_ELIGIBLE);
 		return INVALIDTARGET;
 	}
 	//
