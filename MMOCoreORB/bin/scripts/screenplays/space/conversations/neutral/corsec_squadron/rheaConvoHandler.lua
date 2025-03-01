@@ -36,11 +36,11 @@ function rheaConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 	local questThreeComplete = SpaceHelpers:isSpaceQuestComplete(pPlayer, CorsecSquadronScreenplay.QUEST_STRING_3.type, CorsecSquadronScreenplay.QUEST_STRING_3.name) and SpaceHelpers:isSpaceQuestComplete(pPlayer, CorsecSquadronScreenplay.QUEST_STRING_3_SIDE.type, CorsecSquadronScreenplay.QUEST_STRING_3_SIDE.name)
 	local questFourComplete = SpaceHelpers:isSpaceQuestComplete(pPlayer, CorsecSquadronScreenplay.QUEST_STRING_4.type, CorsecSquadronScreenplay.QUEST_STRING_4.name)
 
-	local destroyDutyStarted = SpaceHelpers:isSpaceQuestActive(pPlayer, CorsecSquadronScreenplay.QUEST_STRING_DUTY_5.type, CorsecSquadronScreenplay.QUEST_STRING_DUTY_5.name)
-	local escortDutyStarted = SpaceHelpers:isSpaceQuestActive(pPlayer, CorsecSquadronScreenplay.QUEST_STRING_DUTY_6.type, CorsecSquadronScreenplay.QUEST_STRING_DUTY_6.name)
+	local destroyDutyStarted = SpaceHelpers:isSpaceQuestActive(pPlayer, CorsecSquadronScreenplay.QUEST_STRING_DUTY_4_1.type, CorsecSquadronScreenplay.QUEST_STRING_DUTY_4_1.name)
+	local escortDutyStarted = SpaceHelpers:isSpaceQuestActive(pPlayer, CorsecSquadronScreenplay.QUEST_STRING_DUTY_4_2.type, CorsecSquadronScreenplay.QUEST_STRING_DUTY_4_2.name)
 
-	local destroyDutyComplete = SpaceHelpers:isSpaceQuestComplete(pPlayer, CorsecSquadronScreenplay.QUEST_STRING_DUTY_5.type, CorsecSquadronScreenplay.QUEST_STRING_DUTY_5.name)
-	local escortDutyComplete = SpaceHelpers:isSpaceQuestComplete(pPlayer, CorsecSquadronScreenplay.QUEST_STRING_DUTY_6.type, CorsecSquadronScreenplay.QUEST_STRING_DUTY_6.name)
+	local destroyDutyComplete = SpaceHelpers:isSpaceQuestComplete(pPlayer, CorsecSquadronScreenplay.QUEST_STRING_DUTY_4_1.type, CorsecSquadronScreenplay.QUEST_STRING_DUTY_4_1.name)
+	local escortDutyComplete = SpaceHelpers:isSpaceQuestComplete(pPlayer, CorsecSquadronScreenplay.QUEST_STRING_DUTY_4_2.type, CorsecSquadronScreenplay.QUEST_STRING_DUTY_4_2.name)
 
 	if (isNeutralPilot and not SpaceHelpers:isCorsecSquadron(pPlayer)) then
 		return convoTemplate:getScreen("non_corsec_pilot") -- Ah, I've heard of you!  You're not a bad pilot from what I understand. What can the CorSec do for you?

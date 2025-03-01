@@ -279,8 +279,8 @@ CorsecSquadronScreenplay = ScreenPlay:new {
 	QUEST_STRING_3 = {type = "patrol", name = "corellia_privateer_3"},
 	QUEST_STRING_3_SIDE = {type = "escort", name = "corellia_privateer_3"},
 	QUEST_STRING_4 = {type = "assassinate", name = "corellia_privateer_tier1_4a"},
-	QUEST_STRING_DUTY_5 = {type = "destroy_duty", name = "corellia_privateer_6"},
-	QUEST_STRING_DUTY_6 = {type = "escort_duty", name = "corellia_privateer_7"},
+	QUEST_STRING_DUTY_4_1 = {type = "destroy_duty", name = "corellia_privateer_6"},
+	QUEST_STRING_DUTY_4_2 = {type = "escort_duty", name = "corellia_privateer_7"},
 }
 
 registerScreenPlay("CorsecSquadronScreenplay", false)
