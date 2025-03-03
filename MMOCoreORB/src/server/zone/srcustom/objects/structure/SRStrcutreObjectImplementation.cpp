@@ -5,10 +5,10 @@
 
 
 bool SRStructureObjectImplementation::unloadFromZone(bool sendSelfDestroy) {
-	ManagedReference<Zone*> zone = getZone();
-
-	if (zone == nullptr)
-		return false;
+	// ManagedReference<Zone*> zone = getZone();
+	//
+	// if (zone == nullptr)
+	// 	return false;
 
 	// ManagedReference<BuildingObject*> building = cast<BuildingObject*>(asSceneObject());
 
