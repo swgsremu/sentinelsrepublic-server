@@ -501,7 +501,8 @@ class StructureObject extends TangibleObject {
 
 	// SR Modified:
 	@local
-	public final SRStructureObject getSrStructureObject() {
+	@dirty
+	public SRStructureObject getSrStructureObject() {
 	    return srStructureObject;
 	}
 }

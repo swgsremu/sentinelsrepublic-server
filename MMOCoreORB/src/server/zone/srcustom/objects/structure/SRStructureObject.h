@@ -7,7 +7,8 @@
 /**
  * @brief Class representing a structure object in the SR system.
  */
-class SRStructureObject : public Object {
+class SRStructureObject : public Object
+{
     mutable ReadWriteLock lock; /**< Lock for thread-safe access. */
     ControlDevice* controlDevice; /**< Pointer to the control device associated with this structure. */
 
