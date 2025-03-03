@@ -1,10 +1,13 @@
 
 #include "PackupStructureCommand.h"
 
-#include <conf/custom/SRConfigManager.h>
-#include <server/zone/managers/player/PlayerManager.h>
-#include <server/zone/objects/player/PlayerObject.h>
-#include <server/zone/objects/structure/StructureObject.h>
+#include <server/zone/srcustom/objects/structure/SRStructureObject.h>
+
+#include "server/zone/srcustom/managers/configuration/SRConfigManager.h"
+#include "server/zone/managers/player/PlayerManager.h"
+#include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/objects/structure/StructureObject.h"
+#include "server/zone/srcustom/objects/scene/SRSessionFacadeType.h"
 
 
 const std::string PackupStructureCommand::PACKUP_MUST_BE_OWNER = "@player_structure:packup_must_be_owner";
@@ -36,11 +39,11 @@ int PackupStructureCommand::doQueueCommand(CreatureObject* creature, const uint6
 
 	if (!checkInvalidLocomotions(creature))
 		return INVALIDLOCOMOTION;
-	//
-	// if (creature->containsActiveSession(SessionFacadeType::PACKUPSTRUCTURE)) {
-	// 	creature->sendSystemMessage("@player_structure:pending_packup");
-	// 	return GENERALERROR;
-	// }
+
+	if (creature->containsActiveSession(SRSessionFacadeType::PACKUPSTRUCTURE)) {
+		creature->sendSystemMessage("@player_structure:pending_packup");
+		return GENERALERROR;
+	}
 
 	const ManagedReference<PlayerManager*> playerManager = server->getPlayerManager();
 
@@ -66,13 +69,13 @@ int PackupStructureCommand::doQueueCommand(CreatureObject* creature, const uint6
 		creature->sendSystemMessage(PACKUP_NOT_ELIGIBLE);
 		return INVALIDTARGET;
 	}
-	//
-	// String message = structure->getPackupMessage();
+
+	auto message = structure->getSrStructureObject()->getPackupMessage();
 	// if (!message.isEmpty()) {
 	// 	creature->sendSystemMessage("@player_structure:" + message);
 	// 	return INVALIDTARGET;
 	// }
-	//
+
 	// ManagedReference<PackupStructureSession*> session = new PackupStructureSession(creature, structure);
 	// session->initializeSession();
 

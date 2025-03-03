@@ -1,0 +1,38 @@
+package server.zone.srcustom.objects.structure;
+
+import server.zone.objects.intangible.ControlDevice;
+include engine.core.ManagedObject;
+
+@json
+class SRStructureObject extends ManagedObject  {
+
+    @weakReference
+	protected ControlDevice controlDevice;
+
+    public SRStructureObject() {
+        controlDevice = null;
+    }
+
+    @preLocked
+    public void setControlDevice(ControlDevice device) {
+        controlDevice = device;
+    }
+
+    @weakReference
+    @read
+    public ControlDevice getControlDevice() {
+        return controlDevice;
+    }
+
+    @dirty
+    public boolean isPackedUp() {
+        return controlDevice != null;
+    }
+
+    public native boolean unloadFromZone(boolean sendSelfDestroy);
+
+    @dirty
+    public abstract string getPackupMessage() {
+    		return "";
+    }
+}

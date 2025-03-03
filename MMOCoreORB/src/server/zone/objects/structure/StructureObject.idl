@@ -15,6 +15,7 @@ include server.zone.objects.structure.StructurePermissionList;
 import server.zone.objects.pathfinding.NavArea;
 import server.zone.objects.creature.credits.CreditObject;
 include server.zone.CloseObjectsVector;
+import server.zone.srcustom.objects.structure.SRStructureObject; /*SR Modification*/
 
 @json
 class StructureObject extends TangibleObject {
@@ -45,6 +46,8 @@ class StructureObject extends TangibleObject {
 
 	protected boolean permissionsFixed;
 
+    protected SRStructureObject srStructureObject; // SR Modified:
+
 	public StructureObject() {
 		Logger.setLoggingName("StructureObject");
 
@@ -67,6 +70,7 @@ class StructureObject extends TangibleObject {
 		permissionsFixed = false;
 
 		navArea = null;
+
 	}
 
 	public native void initializeTransientMembers();
@@ -493,4 +497,9 @@ class StructureObject extends TangibleObject {
 
 	@preLocked
 	public native abstract void createNavMesh();
+
+	// SR Modified:
+	public SRStructureObject getSrStructureObject() {
+	    return srStructureObject;
+	}
 }

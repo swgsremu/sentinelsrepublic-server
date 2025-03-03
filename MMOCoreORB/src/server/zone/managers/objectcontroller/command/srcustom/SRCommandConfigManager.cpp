@@ -1,5 +1,5 @@
 #include "../CommandConfigManager.h"
-#include "server/zone/objects/creature/commands/srcustom/PackupStructureCommand.h"
+#include "server/zone/srcustom/objects/creatures/commands/PackupStructureCommand.h"
 
 using namespace server::zone::managers::objectcontroller::command;
 
