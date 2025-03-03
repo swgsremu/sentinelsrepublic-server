@@ -327,6 +327,7 @@ add_subdirectory(src/server/ping)
 add_subdirectory(src/server/login)
 add_subdirectory(src/server/chat)
 
+
 if (ENABLE_BUILD_CLIENT)
 	add_subdirectory(src/client)
 endif()
