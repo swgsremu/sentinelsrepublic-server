@@ -104,7 +104,7 @@ See [linux/README.md](linux/README.md) for instructions.
   * boost
   * ninja-build
 
-#### Clang-18
+#### Clang-19
 
 The easiest way to get the clang19 to build with is to use the script provided by the llvm repo:
 
