@@ -106,14 +106,14 @@ See [linux/README.md](linux/README.md) for instructions.
 
 #### Clang-18
 
-The easiest way to get the clang18 to build with is to use the script provided by the llvm repo:
+The easiest way to get the clang19 to build with is to use the script provided by the llvm repo:
 
 ```
 sudo -i
 apt-get install -y apt-transport-https ca-certificates git gnupg lsb-release moreutils software-properties-common wget
 wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
 chmod +x /tmp/llvm.sh
-/tmp/llvm.sh 18 all
+/tmp/llvm.sh 19 all
 (set +x;cd /usr/bin;for i in ../lib/llvm-*/bin/*; do ln -sfv $i .; done)
 clang --version
 ld.lld --version
