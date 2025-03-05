@@ -43,7 +43,7 @@ void DroidObjectImplementation::fillAttributeList(AttributeListMessage* msg, Cre
 				continue;
 			}
 
-			module->fillAttributeList(msg, object);
+			module->fillAttributeList(msg, _this.getReferenceUnsafeStaticCast());
 		}
 	}
 }

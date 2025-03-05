@@ -40,9 +40,9 @@ public:
 
 	int handleObjectMenuSelect(CreatureObject* player, byte selectedID, PetControlDevice* controller);
 
-	String getModuleName() const;
-
 	int getStorageRating();
+
+	String getModuleName() const;
 
 	String toString() const;
 

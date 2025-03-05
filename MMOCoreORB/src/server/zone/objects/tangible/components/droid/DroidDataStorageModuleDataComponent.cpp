@@ -119,8 +119,56 @@ void DroidDataStorageModuleDataComponent::updateCraftingValues(CraftingValues* v
 }
 
 void DroidDataStorageModuleDataComponent::fillAttributeList(AttributeListMessage* alm, CreatureObject* droid) {
-	// convert module rating to actual rating
-	alm->insertAttribute("data_module", rating > 10 ? 10 : rating);
+	if (droid != nullptr) {
+		auto petControlDevice = droid->getControlDevice().get().castTo<PetControlDevice*>();
+
+		if (petControlDevice == nullptr) {
+			return;
+		}
+
+		auto droidDatapad = petControlDevice->getDatapad();
+
+		if (droidDatapad == nullptr) {
+			return;
+		}
+
+		int containerSize = droidDatapad->getContainerObjectsSize();
+		int currentDataSize = 0;
+		Vector<String> storedCommands;
+
+		for (int i = 0; i < containerSize; i++) {
+			auto commandModule = droidDatapad->getContainerObject(i).castTo<IntangibleObject*>();
+
+			if (commandModule == nullptr) {
+				continue;
+			}
+
+			currentDataSize += commandModule->getDataSize();
+			storedCommands.add(commandModule->getItemIdentifier());
+		}
+
+		// Used Memory
+		alm->insertAttribute("droid_program_expended_memory", currentDataSize);
+
+		// Loaded Droid Programs
+		int totalPrograms = storedCommands.size();
+
+		if (totalPrograms > 0) {
+			alm->insertAttribute("droid_program_loaded", "");
+
+			for (int i = 0; i < totalPrograms; i++) {
+				String programName = storedCommands.get(i);
+
+				alm->insertAttribute("droid_program", "@space/droid_commands:" + programName);
+			}
+		}
+
+		// Pilot's Required Cert
+		alm->insertAttribute("data_module_cert_needed", getStorageRating());
+	} else {
+		// convert module rating to actual rating
+		alm->insertAttribute("data_module", getStorageRating());
+	}
 }
 
 void DroidDataStorageModuleDataComponent::addToStack(BaseDroidModuleComponent* other) {
