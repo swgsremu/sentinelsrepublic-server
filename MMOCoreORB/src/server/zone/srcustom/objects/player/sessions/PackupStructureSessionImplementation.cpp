@@ -15,7 +15,6 @@
 
 
 int PackupStructureSessionImplementation::initializeSession() {
-	//TODO: Temporary until CreatureObject* dependency removed.
 	if (!creatureObject->isPlayerCreature())
 		return cancelSession();
 
