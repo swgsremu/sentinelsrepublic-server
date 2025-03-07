@@ -3,7 +3,7 @@
  */
 
 #include "server/zone/srcustom/objects/player/sessions/PackupStructureSession.h"
-#include "server/zone/managers/structure/StructureManager.h"
+//#include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 // #include "server/zone/objects/player/sui/callbacks/PackupStructureCodeSuiCallback.h"
