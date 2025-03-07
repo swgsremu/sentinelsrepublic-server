@@ -22,7 +22,7 @@ int PackupStructureSessionImplementation::initializeSession() {
 
 	Locker _lock(structureObject, creatureObject);
 
-	CreatureObject* player = cast<CreatureObject*>(creatureObject.get());
+	CreatureObject* player = creatureObject.get();
 
 	String no = "\\#FF6347 @player_structure:can_redeed_no_suffix \\#.";
 	String yes = "\\#32CD32 @player_structure:can_redeed_yes_suffix \\#.";
