@@ -34,22 +34,22 @@ private:
 /**
  * @brief Message indicating the player must be the owner to pack up the structure.
  */
-static const std::string PACKUP_MUST_BE_OWNER;
+	static const std::string PACKUP_MUST_BE_OWNER;
 
-/**
- * @brief Message indicating the structure is not eligible for pack up.
- */
-static const std::string PACKUP_NOT_ELIGIBLE;
+	/**
+	 * @brief Message indicating the structure is not eligible for pack up.
+	 */
+	static const std::string PACKUP_NOT_ELIGIBLE;
 
-/**
- * @brief Message indicating the packup process is pending.
- */
-static const std::string PACKUP_PENDING;
+	/**
+	 * @brief Message indicating the packup process is pending.
+	 */
+	static const std::string PACKUP_PENDING;
 
-/**
- * @brief Message indicating the player structure.
- */
-static const std::string PLAYER_STRUCTURE;
+	/**
+	 * @brief Message indicating the player structure.
+	 */
+	static const std::string PLAYER_STRUCTURE;
 };
 
 #endif // PACKUPSTRUCTURECOMMAND_H_

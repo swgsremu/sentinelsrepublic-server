@@ -58,8 +58,8 @@ int PackupStructureCommand::doQueueCommand(CreatureObject* creature, const uint6
 	const ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
 	if (ghost == nullptr)
-		return GENERALERROR;auto* structure = cast<StructureObject*>( obj.get());
-
+		return GENERALERROR;
+	auto* structure = cast<StructureObject*>(obj.get());
 
 	if (!ghost->isOwnedStructure(structure) && !ghost->isStaff()) {
 		creature->sendSystemMessage(PACKUP_MUST_BE_OWNER);
