@@ -7,7 +7,7 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 // #include "server/zone/objects/player/sui/callbacks/PackupStructureCodeSuiCallback.h"
-//#include "server/zone/objects/player/sui/callbacks/PackupStructureRequestSuiCallback.h"
+// #include "server/zone/objects/player/sui/callbacks/PackupStructureRequestSuiCallback.h"
 #include "server/zone/objects/player/sui/inputbox/SuiInputBox.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/objects/structure/StructureObject.h"
@@ -62,7 +62,6 @@ int PackupStructureSessionImplementation::initializeSession() {
 }
 
 int PackupStructureSessionImplementation::sendPackupCode() {
-	//TODO: Temporary until CreatureObject* dependency removed.
 	if (!creatureObject->isPlayerCreature())
 		return cancelSession();
 
