@@ -1,7 +1,7 @@
-///*
-// * PackupStructureSessionImplementation.cpp
-// */
-//
+/*
+ * PackupStructureSessionImplementation.cpp
+ */
+
 #include "server/zone/srcustom/objects/player/sessions/PackupStructureSession.h"
 #include "server/zone/managers/structure/StructureManager.h"
 #include "server/zone/objects/creature/CreatureObject.h"
@@ -13,35 +13,46 @@
 #include "server/zone/objects/structure/StructureObject.h"
 #include "server/zone/Zone.h"
 
+// Constants for pack-up code generation
+namespace PackupStructureConstants {
+constexpr int MIN_PACKUP_CODE = 100000;
+constexpr int MAX_PACKUP_CODE = 999999;
+}
+
 
 int PackupStructureSessionImplementation::initializeSession() {
-	if (!creatureObject->isPlayerCreature())
+	if (!creatureObject->isPlayerCreature()) {
 		return cancelSession();
+	}
 
 	creatureObject->addActiveSession(SRSessionFacadeType::PACKUPSTRUCTURE, _this.getReferenceUnsafeStaticCast());
 
-	Locker _lock(structureObject, creatureObject);
+	Locker structureLock(structureObject, creatureObject);
 
 	CreatureObject* player = creatureObject.get();
 
 	const String no = "\\#FF6347 @player_structure:can_redeed_no_suffix \\#.";
 	const String yes = "\\#32CD32 @player_structure:can_redeed_yes_suffix \\#.";
-
-	const String redeed = (structureObject->isRedeedable()) ? yes : no;
+	const String redeed = structureObject->isRedeedable() ? yes : no;
 
 	StringBuffer maint;
-	maint << "@player_structure:redeed_maintenance \\#" << ((structureObject->isRedeedable()) ? "32CD32 " : "FF6347 ") << structureObject->getSurplusMaintenance() << "/" << structureObject->getRedeedCost() << "\\#.";
+	maint << "@player_structure:redeed_maintenance \\#"
+		<< (structureObject->isRedeedable() ? "32CD32 " : "FF6347 ")
+		<< structureObject->getSurplusMaintenance() << "/"
+		<< structureObject->getRedeedCost() << "\\#.";
 
 	StringBuffer entry;
-	entry << "@player_structure:confirm_packup_d1 ";
-	entry << "@player_structure:confirm_packup_d2 \n\n";
-	entry << "@player_structure:confirm_packup_d3a ";
-	entry << "\\#32CD32 @player_structure:confirm_packup_d3b \\#. ";
-	entry << "@player_structure:confirm_packup_d4 \n\n";
-	entry << "@player_structure:packup_confirmation " << redeed;
+	entry << "@player_structure:confirm_packup_d1 "
+		<< "@player_structure:confirm_packup_d2 \n\n"
+		<< "@player_structure:confirm_packup_d3a "
+		<< "\\#32CD32 @player_structure:confirm_packup_d3b \\#. "
+		<< "@player_structure:confirm_packup_d4 \n\n"
+		<< "@player_structure:packup_confirmation " << redeed;
 
 	StringBuffer cond;
-	cond << "@player_structure:redeed_condition \\#32CD32 " << (structureObject->getMaxCondition() - structureObject->getConditionDamage()) << "/" << structureObject->getMaxCondition() << "\\#.";
+	cond << "@player_structure:redeed_condition \\#32CD32 "
+		<< (structureObject->getMaxCondition() - structureObject->getConditionDamage()) << "/"
+		<< structureObject->getMaxCondition() << "\\#.";
 
 	const ManagedReference<SuiListBox*> sui = new SuiListBox(player);
 	// sui->setCallback(new PackupStructureRequestSuiCallback(creatureObject->getZoneServer()));
@@ -62,28 +73,28 @@ int PackupStructureSessionImplementation::initializeSession() {
 }
 
 int PackupStructureSessionImplementation::sendPackupCode() {
-	if (!creatureObject->isPlayerCreature())
+	if (!creatureObject->isPlayerCreature()) {
 		return cancelSession();
+	}
 
 	Locker structureLock(structureObject);
-
-	Locker _lock(creatureObject, structureObject);
+	Locker creatureLock(creatureObject, structureObject);
 
 	const auto player = creatureObject.get();
 
-	packupCode = System::random(899999) + 100000;
+	using namespace PackupStructureConstants;
+	packupCode = System::random(MAX_PACKUP_CODE - MIN_PACKUP_CODE) + MIN_PACKUP_CODE;
 
 	const String no = "\\#FF6347 @player_structure:will_not_redeed_confirm \\#.";
 	const String yes = "\\#32CD32 @player_structure:will_redeed_confirm \\#.";
-	const String redeed = (structureObject->isRedeedable()) ? yes : no;
+	const String redeed = structureObject->isRedeedable() ? yes : no;
 
 	StringBuffer entry;
-	entry << "@player_structure:your_structure_prefix ";
-	entry << redeed << " @player_structure:will_packup_suffix \n\n";
-	entry << "Code: " << packupCode;
+	entry << "@player_structure:your_structure_prefix "
+		<< redeed << " @player_structure:will_packup_suffix \n\n"
+		<< "Code: " << packupCode;
 
 	const ManagedReference<SuiInputBox*> sui = new SuiInputBox(player);
-	// sui->setCallback(new PackupStructureCodeSuiCallback(player->getZoneServer()));
 	sui->setUsingObject(structureObject);
 	sui->setPromptTitle("@player_structure:confirm_packup_t");
 	sui->setPromptText(entry.toString());
@@ -97,10 +108,15 @@ int PackupStructureSessionImplementation::sendPackupCode() {
 }
 
 int PackupStructureSessionImplementation::packupStructure() {
+	// Lock the structure and creature objects for thread safety
+	Locker structureLock(structureObject);
+	Locker creatureLock(creatureObject, structureObject);
+
 	creatureObject->sendSystemMessage("@player_structure:processing_packup");
 
-	if (structureObject == nullptr || structureObject->getZone() == nullptr)
+	if (structureObject == nullptr || structureObject->getZone() == nullptr) {
 		return cancelSession();
+	}
 
 	if (!structureObject->isRedeedable()) {
 		creatureObject->sendSystemMessage("@player_structure:packup_items_maint");
