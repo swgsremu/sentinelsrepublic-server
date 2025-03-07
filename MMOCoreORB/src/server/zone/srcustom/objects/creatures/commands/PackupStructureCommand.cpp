@@ -12,7 +12,8 @@
 
 const std::string PackupStructureCommand::PACKUP_MUST_BE_OWNER = "@player_structure:packup_must_be_owner";
 const std::string PackupStructureCommand::PACKUP_NOT_ELIGIBLE = "@player_structure:packup_not_eligible_01";
-
+const std::string PackupStructureCommand::PACKUP_PENDING = "@player_structure:pending_packup";
+const std::string PackupStructureCommand::PLAYER_STRUCTURE = "@player_structure";
 /**
  * @brief Constructor for the PackupStructureCommand class.
  *
@@ -41,7 +42,7 @@ int PackupStructureCommand::doQueueCommand(CreatureObject* creature, const uint6
 		return INVALIDLOCOMOTION;
 
 	if (creature->containsActiveSession(SRSessionFacadeType::PACKUPSTRUCTURE)) {
-		creature->sendSystemMessage("@player_structure:pending_packup");
+		creature->sendSystemMessage(PACKUP_PENDING);
 		return GENERALERROR;
 	}
 
@@ -53,12 +54,12 @@ int PackupStructureCommand::doQueueCommand(CreatureObject* creature, const uint6
 	if (obj == nullptr || !obj->isStructureObject())
 		return INVALIDTARGET;
 
-	auto* structure = cast<StructureObject*>( obj.get());
 
 	const ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
 
 	if (ghost == nullptr)
-		return GENERALERROR;
+		return GENERALERROR;auto* structure = cast<StructureObject*>( obj.get());
+
 
 	if (!ghost->isOwnedStructure(structure) && !ghost->isStaff()) {
 		creature->sendSystemMessage(PACKUP_MUST_BE_OWNER);
@@ -70,11 +71,11 @@ int PackupStructureCommand::doQueueCommand(CreatureObject* creature, const uint6
 		return INVALIDTARGET;
 	}
 
-	auto message = structure->getSrStructureObject()->getPackupMessage();
-	// if (!message.isEmpty()) {
-	// 	creature->sendSystemMessage("@player_structure:" + message);
-	// 	return INVALIDTARGET;
-	// }
+	const auto message = SRStructureObject::getPackupMessage();
+	if (!message.isEmpty()) {
+		creature->sendSystemMessage(PLAYER_STRUCTURE + message);
+		return INVALIDTARGET;
+	}
 
 	// ManagedReference<PackupStructureSession*> session = new PackupStructureSession(creature, structure);
 	// session->initializeSession();
