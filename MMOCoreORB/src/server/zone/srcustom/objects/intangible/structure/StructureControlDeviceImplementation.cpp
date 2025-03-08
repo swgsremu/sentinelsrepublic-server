@@ -91,7 +91,7 @@ int StructureControlDeviceImplementation::handleObjectMenuSelect(CreatureObject*
   * @param player The CreatureObject placing the structure.
   * @param structure The StructureObject to be placed.
   */
-void StructureControlDeviceImplementation::placeStructureMode(CreatureObject* player, const StructureObject* structure) {
+void StructureControlDeviceImplementation::placeStructureMode(CreatureObject* player, StructureObject* structure) {
 	if (player->isRidingMount()) {
 		player->sendSystemMessage(SystemMessages::CANT_PLACE_MOUNTED);
 		return;
