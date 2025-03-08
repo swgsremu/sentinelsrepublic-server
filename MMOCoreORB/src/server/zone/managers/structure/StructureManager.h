@@ -50,6 +50,7 @@ class StructureManager : public Singleton<StructureManager>, public Logger, publ
 	ZoneServer* server;
 	TemplateManager* templateManager;
 	ManagedReference<SRStructureManager*> srStructureManager;
+
 public:
 	StructureManager();
 	void setZoneServer(ZoneServer* zoneServer) {
@@ -203,7 +204,6 @@ public:
 
 	// SR: Modified
 	SRStructureManager* getSRStructureManager();
-
 };
 
 #endif /*STRUCTUREMANAGER_H_*/

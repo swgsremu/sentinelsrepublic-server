@@ -15,9 +15,9 @@
 #include "templates/tangible/SharedStructureObjectTemplate.h"
 
 void StructureControlDeviceImplementation::fillObjectMenuResponse(ObjectMenuResponse* menuResponse, CreatureObject* player) {
-		menuResponse->addRadialMenuItem(18, 3, "@player_structure:management_status"); //Status
-		menuResponse->addRadialMenuItem(19, 3, "@player_structure:management_pay"); //Pay Maintenance
-		menuResponse->addRadialMenuItem(20, 3, "@player_structure:structure_unpack"); // Unpack Structure
+	menuResponse->addRadialMenuItem(18, 3, "@player_structure:management_status"); //Status
+	menuResponse->addRadialMenuItem(19, 3, "@player_structure:management_pay");    //Pay Maintenance
+	menuResponse->addRadialMenuItem(20, 3, "@player_structure:structure_unpack");  // Unpack Structure
 }
 
 int StructureControlDeviceImplementation::handleObjectMenuSelect(CreatureObject* player, const byte selectedID) {
@@ -29,23 +29,23 @@ int StructureControlDeviceImplementation::handleObjectMenuSelect(CreatureObject*
 		return 0;
 
 	switch (selectedID) {
-	case 18: {
-		player->executeObjectControllerAction(0x13F7E585, structure->getObjectID(), ""); //structureStatus
-		return 0;
-	}
+		case 18: {
+			player->executeObjectControllerAction(0x13F7E585, structure->getObjectID(), ""); //structureStatus
+			return 0;
+		}
 
-	case 19: {
-		player->executeObjectControllerAction(0xE7E35B30, structure->getObjectID(), ""); //payMaintenance
-		return 0;
-	}
+		case 19: {
+			player->executeObjectControllerAction(0xE7E35B30, structure->getObjectID(), ""); //payMaintenance
+			return 0;
+		}
 
-	case 20: {
-		placeStructureMode(player, structure);
-		return 0;
-	}
+		case 20: {
+			placeStructureMode(player, structure);
+			return 0;
+		}
 
-	default:
-		return 0;
+		default:
+			return 0;
 	};
 
 	return 0;

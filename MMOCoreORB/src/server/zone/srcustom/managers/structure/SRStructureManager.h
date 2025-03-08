@@ -6,11 +6,10 @@
 
 class StructureManager;
 
-class SRStructureManager : public ManagedObject, public Logger {
+class SRStructureManager : public ManagedObject, public Logger
+{
 private:
 	StructureManager* structureManager = nullptr;
-
-
 
 public:
 	SRStructureManager() = default;
