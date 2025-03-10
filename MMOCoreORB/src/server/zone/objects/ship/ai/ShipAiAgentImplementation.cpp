@@ -114,6 +114,9 @@ void ShipAiAgentImplementation::loadTemplateData(SharedObjectTemplate* templateD
 		setComponentMaxArmor(slot, armor);
 		setEfficiency(slot, 1.f);
 
+		bool targetable = isComponentTargetable(slot);
+		setComponentTargetable(slot, targetable, false);
+
 		switch (slot) {
 			case Components::REACTOR: {
 				setReactorGenerationRate(10000.0f);
@@ -347,7 +350,9 @@ void ShipAiAgentImplementation::initializeTransientMembers() {
 	deltaTime = 0.f;
 
 	nextBehaviorInterval = BEHAVIORINTERVALMIN;
+
 	updateZoneTime = 0;
+	doRecoveryTime = 0;
 }
 
 void ShipAiAgentImplementation::notifyInsertToZone(Zone* zone) {
@@ -1294,7 +1299,6 @@ bool ShipAiAgentImplementation::findNextPosition(int maxDistance) {
 
 		updateZone(false, false);
 		removeOutOfRangeObjects();
-		doRecovery(deltaTime);
 	}
 
 	if (getPatrolPointSize() <= 0) {
@@ -1308,6 +1312,14 @@ bool ShipAiAgentImplementation::findNextPosition(int maxDistance) {
 void ShipAiAgentImplementation::updateTransform(bool lightUpdate) {
 	if (lightUpdate && numberOfPlayersInRange < 1) {
 		return;
+	}
+
+	int64 timeNow = System::getMiliTime();
+	int64 deltaTime = timeNow - doRecoveryTime;
+
+	if (deltaTime >= DORECOVERYINTERVAL) {
+		doRecoveryTime = timeNow;
+		doRecovery(deltaTime);
 	}
 
 	setDeltaTime();

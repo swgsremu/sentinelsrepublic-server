@@ -859,6 +859,7 @@ void ShipObjectImplementation::doRecovery(int mselapsed) {
 
 	updateActualEngineValues(false, deltaVector);
 	updateComponentFlags(false, deltaVector);
+	updateComponentTargetableBitfield(false, deltaVector);
 
 	if (deltaVector != nullptr) {
 		deltaVector->sendMessages(asShipObject());
@@ -2195,6 +2196,77 @@ void ShipObjectImplementation::updateComponentFlags(bool notifyClient, ShipDelta
 		if (deltaVector != nullptr && notifyClient) {
 			deltaVector->sendMessages(asShipObject());
 		}
+	}
+}
+
+bool ShipObjectImplementation::isSlotTargetable(int slot) {
+	if (slot > Components::FIGHTERSLOTMAX && slot <= Components::CAPITALSLOTMAX) {
+		return true;
+	}
+
+	auto chassisData = ShipManager::instance()->getChassisData(chassisDataName);
+
+	if (chassisData == nullptr) {
+		return false;
+	}
+
+	auto slotData = chassisData->getComponentSlotData(slot);
+
+	if (slotData == nullptr) {
+		return false;
+	}
+
+	return slotData->isTargetable();
+}
+
+bool ShipObjectImplementation::isComponentTargetable(int slot) {
+	if (!isComponentFunctional(slot) || !isSlotTargetable(slot)) {
+		return false;
+	}
+
+	if (isComponentFunctional(Components::BRIDGE) && isSlotTargetable(Components::BRIDGE)) {
+		switch (slot) {
+			case Components::ENGINE: {
+				return (!isComponentFunctional(Components::SHIELD0) || !isSlotTargetable(Components::SHIELD0))
+					&& (!isComponentFunctional(Components::SHIELD1) || !isSlotTargetable(Components::SHIELD1));
+			}
+			case Components::REACTOR: {
+				return (!isComponentFunctional(Components::SHIELD0) || !isSlotTargetable(Components::SHIELD0))
+					&& (!isComponentFunctional(Components::SHIELD1) || !isSlotTargetable(Components::SHIELD1))
+					&& (!isComponentFunctional(Components::ENGINE) || !isSlotTargetable(Components::ENGINE));
+			}
+			case Components::BRIDGE: {
+				return (!isComponentFunctional(Components::SHIELD0) || !isSlotTargetable(Components::SHIELD0))
+					&& (!isComponentFunctional(Components::SHIELD1) || !isSlotTargetable(Components::SHIELD1))
+					&& (!isComponentFunctional(Components::ENGINE) || !isSlotTargetable(Components::ENGINE))
+					&& (!isComponentFunctional(Components::REACTOR) || !isSlotTargetable(Components::REACTOR));
+			}
+			case Components::TARGETING_STATION:
+			case Components::HANGAR: {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+void ShipObjectImplementation::updateComponentTargetableBitfield(bool notifyClient, ShipDeltaVector* deltaVector) {
+	bool updateFlags = false;
+
+	for (uint32 slot = 0; slot <= Components::CAPITALSLOTMAX; ++slot) {
+		bool clientTarget = getComponentTargetable(slot);
+		bool serverTarget = isComponentTargetable(slot);
+
+		if (serverTarget != clientTarget) {
+			setComponentTargetable(slot, serverTarget, false);
+			updateFlags = true;
+		}
+	}
+
+	if (updateFlags) {
+		bool value = getComponentTargetable(Components::REACTOR);
+		setComponentTargetable(Components::REACTOR, value, notifyClient, nullptr, deltaVector);
 	}
 }
 
