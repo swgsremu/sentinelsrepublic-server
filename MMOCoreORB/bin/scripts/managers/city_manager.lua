@@ -74,10 +74,10 @@ EnableCityWarn = false
 
 --The number of citizens required to achieve each city rank. (Outpost, Village, Township, City, Metropolis)
 CitizensPerRank = {5, 10, 20, 35, 50}
---CitizensPerRank = {10, 20, 35, 55, 85} -- SR Modified --
+--CitizensPerRank = {10, 20, 35, 55, 85}
 
 --The radius in meters of the city at each city rank. (Outpost, Village, Township, City, Metropolis)
-RadiusPerRank = {450, 450, 450, 450, 450} -- SR Modified --
+RadiusPerRank = {450, 450, 450, 450, 450}
 
 -- Maximum for each rank.  ex. rank 1 = DecorationsPerRank * 1, rank 5 = DecorationsPerRank * 5
 DecorationsPerRank = 10
