@@ -151,13 +151,12 @@ public:
 			const SkillModGroup* group = &mods.elementAt(i).getValue();
 
 			if (group->contains(skillMod)) {
-
 				int maxSkill = SkillModManager::instance()->getMaxSkill(modType);
 				int minSkill = SkillModManager::instance()->getMinSkill(modType);
 
 				int newSkillBonus = group->get(skillMod);
 
-				if(maxSkill != 0 && minSkill != 0) {
+				if (maxSkill != 0 && minSkill != 0) {
 					if (newSkillBonus >= 0)
 						newSkillBonus = Math::min(newSkillBonus, maxSkill);
 					else

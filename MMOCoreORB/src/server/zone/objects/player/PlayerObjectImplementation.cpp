@@ -3448,13 +3448,15 @@ void PlayerObjectImplementation::checkAndShowTOS() {
 void PlayerObjectImplementation::recalculateForcePower() {
 	ManagedReference<SceneObject*> parent = getParent().get();
 
-	if (parent == nullptr)
+	if (parent == nullptr) {
 		return;
+	}
 
 	CreatureObject* player = parent->asCreatureObject();
 
-	if (player == nullptr)
+	if (player == nullptr) {
 		return;
+	}
 
 	int maxForce = player->getSkillMod("jedi_force_power_max");
 
