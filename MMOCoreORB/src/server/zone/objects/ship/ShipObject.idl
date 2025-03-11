@@ -25,6 +25,7 @@ include server.zone.packets.DeltaMessage;
 include server.zone.objects.scene.variables.DeltaAutoVariable;
 include server.zone.objects.scene.variables.DeltaAutoMap;
 include server.zone.objects.scene.variables.DeltaAutoPackedMap;
+include server.zone.objects.scene.variables.DeltaAutoBitArray;
 include server.zone.objects.scene.variables.DeltaVectorMap;
 include server.zone.objects.scene.variables.DeltaBitArray;
 include server.zone.objects.manufactureschematic.craftingvalues.CraftingValues;
@@ -412,9 +413,9 @@ class ShipObject extends TangibleObject {
 	@dereferenced
 	protected DeltaAutoPackedMap componentRefireEfficiency;
 
-	// 6:14
+	@rawTemplate(value = "uint32, bool, 'SHIP', 6, 14")
 	@dereferenced
-	DeltaBitArray componentTargetableBitfield;
+	protected DeltaAutoBitArray componentTargetableBitfield;
 
 	@rawTemplate(value = "uint32, uint32, 'SHIP', 6, 15")
 	@dereferenced
@@ -953,6 +954,12 @@ class ShipObject extends TangibleObject {
 		componentRefireEfficiency.update(slot, value, message, command, vector);
 	}
 
+	// 6:14
+	@local
+	public void setComponentTargetable(int slot, boolean value, boolean notifyClient = true, DeltaMessage delta = null, ShipDeltaVector vector = null) {
+		componentTargetableBitfield.update(slot, value, notifyClient, this, delta, vector);
+	}
+
 	// 6:15
 	@local
 	public void setComponentCRC(int slot, unsigned int value, DeltaMessage message = null, byte command = 0, ShipDeltaVector vector = null) {
@@ -976,10 +983,6 @@ class ShipObject extends TangibleObject {
 
 	public void setTurretLadder(SceneObject object) {
 		turretLadder = object;
-	}
-
-	public void setComponentTargetable(int slot, boolean targetable) {
-		componentTargetableBitfield.setBit(slot, targetable);
 	}
 
 	@preLocked
@@ -1750,6 +1753,18 @@ class ShipObject extends TangibleObject {
 	@preLocked
 	@local
 	public native void updateComponentFlags(boolean notifyClient = true, ShipDeltaVector vector = null);
+
+	@preLocked
+	@local
+	public native void updateComponentTargetableBitfield(boolean notifyClient = true, ShipDeltaVector vector = null);
+
+	public native boolean isSlotTargetable(int slot);
+
+	public native boolean isComponentTargetable(int slot);
+
+	public boolean getComponentTargetable(int slot) {
+		return componentTargetableBitfield.getBitValue(slot);
+	}
 
 	public native void initializeUniqueID(boolean notifyClient = true);
 

@@ -128,8 +128,14 @@ int PlayerContainerComponent::notifyObjectInserted(SceneObject* sceneObject, Sce
 	}
 
 	if (object->isTangibleObject()) {
-		TangibleObject* tano = cast<TangibleObject*>(object);
-		tano->applySkillModsTo(creo);
+		ManagedReference<TangibleObject*> tano = object->asTangibleObject();
+
+		if (tano != nullptr) {
+			// creo->info(true) << "Adding template & wearable skill mods from: " << tano->getDisplayedName();
+
+			tano->addTemplateSkillMods(creo);
+			tano->applySkillModsTo(creo);
+		}
 	}
 
 	if (object->isInstrument() && creo->isEntertaining())
@@ -148,20 +154,15 @@ int PlayerContainerComponent::notifyObjectInserted(SceneObject* sceneObject, Sce
 		}
 	}
 
-	if (object->isTangibleObject()) {
-		ManagedReference<TangibleObject*> tano = object->asTangibleObject();
-		tano->addTemplateSkillMods(creo);
-	}
-
 	// Jedi stuff below.
-	PlayerObject* ghost = creo->getPlayerObject();
+	auto ghost = creo->getPlayerObject();
 
-	if (ghost && ghost->isJedi()) {
-
+	if (ghost != nullptr && ghost->isJedi()) {
 		if (object->isRobeObject()) {
 			ghost->recalculateForcePower();
 		} else if (object->isWeaponObject()) {
 			WeaponObject* weaponObject = cast<WeaponObject*>(object);
+
 			if (weaponObject->isJediWeapon()) {
 				VisibilityManager::instance()->increaseVisibility(creo, VisibilityManager::SABERVISMOD);
 			}
@@ -188,13 +189,18 @@ int PlayerContainerComponent::notifyObjectRemoved(SceneObject* sceneObject, Scen
 	}
 
 	if (object->isTangibleObject()) {
-		TangibleObject* tano = cast<TangibleObject*>(object);
-		tano->removeSkillModsFrom(creo);
+		ManagedReference<TangibleObject*> tano = object->asTangibleObject();
+
+		if (tano != nullptr) {
+			// creo->info(true) << "Removing template & wearable skill mods from: " << tano->getDisplayedName();
+
+			tano->removeTemplateSkillMods(creo);
+			tano->removeSkillModsFrom(creo);
+		}
 	}
 
-	if (object->isInstrument()) {
-		if (creo->isPlayingMusic())
-			creo->stopEntertaining();
+	if (object->isInstrument() && creo->isPlayingMusic()) {
+		creo->stopEntertaining();
 	}
 
 	//this it to update the equipment list
@@ -210,15 +216,10 @@ int PlayerContainerComponent::notifyObjectRemoved(SceneObject* sceneObject, Scen
 		}
 	}
 
-	if (object->isTangibleObject()) {
-		ManagedReference<TangibleObject*> tano = object->asTangibleObject();
-		tano->removeTemplateSkillMods(creo);
-	}
-
 	// Jedi stuff below.
 	PlayerObject* ghost = creo->getPlayerObject();
 
-	if (ghost && ghost->isJedi()) {
+	if (ghost != nullptr && ghost->isJedi()) {
 		if (object->isRobeObject()) {
 			ghost->recalculateForcePower();
 		}
