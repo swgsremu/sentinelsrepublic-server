@@ -13,6 +13,17 @@ private:
 
 public:
 	SRStructureManager() = default;
+
+	static const String DATAPAD_FULL_MESSAGE;
+    static const String BUILDING_NULL_OR_UNLOAD_FAILED_MESSAGE;
+    static const String SUCCESS_MESSAGE;
+
+    // Log message components
+    static const String LOG_PREFIX;
+    static const String LOG_OWNED_BY;
+    static const String LOG_SUFFIX;
+	static const uint32 CONTROL_DEVICE_HASH;
+
 	void setStructureManager(StructureManager* manager);
 
 	int packupStructure(CreatureObject* creature);

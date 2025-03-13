@@ -11,6 +11,7 @@
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/objects/structure/StructureObject.h"
 #include "server/zone/Zone.h"
+#include "server/zone/srcustom/objects/scene/SRSessionFacadeType.h" 
 
 namespace PackupStructureConstants {
 constexpr int MIN_PACKUP_CODE = 100000;

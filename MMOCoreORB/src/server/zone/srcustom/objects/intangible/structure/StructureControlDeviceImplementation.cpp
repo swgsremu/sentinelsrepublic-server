@@ -5,7 +5,6 @@
 
 #include "server/zone/objects/creature/CreatureObject.h"
 // #include "server/zone/objects/intangible/components/UnpackStructureComponent.h"
-#include "server/zone/srcustom/objects/structure/SRStructureObject.h"
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/objects/structure/StructureObject.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"

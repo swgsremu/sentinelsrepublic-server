@@ -11,22 +11,22 @@ include server.zone.srcustom.objects.scene.SRSessionFacadeType;
 
 class PackupStructureSession extends Facade {
 	protected CreatureObject creatureObject;
-
+	
 	protected StructureObject structureObject;
-
+	
 	protected unsigned int packupCode;
-
+	
 	public PackupStructureSession(CreatureObject creature, StructureObject structure) {
 		Logger.setLoggingName("PackupStructureSession");
 		Logger.setLogging(true);
-
+		
 		creatureObject = creature;
-
+		
 		structureObject = structure;
-
+		
 		packupCode = 0;
 	}
-
+	
 	public boolean isPackupCode(unsigned int code) {
 		return code == packupCode;
 	}
@@ -34,17 +34,17 @@ class PackupStructureSession extends Facade {
 	public native int initializeSession();
 	public native int sendPackupCode();
 	public native int packupStructure();
-
+	
 	public int cancelSession() {
 		creatureObject.dropActiveSession(SRSessionFacadeType.PACKUPSTRUCTURE);
-
+		
 		return 0;
 	}
-
+	
 	public int clearSession() {
 		return 0;
 	}
-
+	
 	public StructureObject getStructureObject() {
 		return structureObject;
 	}

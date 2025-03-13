@@ -8,6 +8,7 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/structure/StructureObject.h"
 #include "server/zone/srcustom/objects/scene/SRSessionFacadeType.h"
+#include "server/zone/srcustom/objects/player/sessions/PackupStructureSession.h"
 
 
 const std::string PackupStructureCommand::PACKUP_MUST_BE_OWNER = "@player_structure:packup_must_be_owner";
@@ -77,8 +78,8 @@ int PackupStructureCommand::doQueueCommand(CreatureObject* creature, const uint6
 		return INVALIDTARGET;
 	}
 
-	// ManagedReference<PackupStructureSession*> session = new PackupStructureSession(creature, structure);
-	// session->initializeSession();
+	ManagedReference<PackupStructureSession*> session = new PackupStructureSession(creature, structure);
+	session->initializeSession();
 
 	return SUCCESS;
 }
