@@ -172,6 +172,7 @@ class ShipAiAgent extends FighterShipObject {
 	public static final int BEHAVIORINTERVAL = 500; // msec
 	public static final int BEHAVIORINTERVALMIN = 200; // msec
 
+	public static final float VELOCITY_MAX = 512.f;
 	public static final float DEFAULTAGGRORADIUS = 768.f;
 	public static final float MAX_ATTACK_DISTANCE = 1280.f;
 	public static final float MAX_EVADE_DURATION = 5.f; // sec
@@ -949,4 +950,6 @@ class ShipAiAgent extends FighterShipObject {
 
 	@dirty
 	public native abstract float getOutOfRangeDistance(unsigned long specialRangeObjectID = 0);
+
+	public native float calculateTurnRate();
 }

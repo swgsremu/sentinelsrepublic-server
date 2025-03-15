@@ -1081,7 +1081,7 @@ float ShipAiAgentImplementation::getMinThrottle() {
 	case ShipAiAgent::PATROLLING:
 		return 0.25f;
 	case ShipAiAgent::ATTACKING:
-		return 0.75f;
+		return 0.5f;
 	case ShipAiAgent::FLEEING:
 	case ShipAiAgent::LEASHING:
 	case ShipAiAgent::EVADING:
@@ -1099,7 +1099,7 @@ float ShipAiAgentImplementation::getMaxTurnRate() {
 		case ShipAiAgent::WATCHING:
 		case ShipAiAgent::FOLLOWING:
 		case ShipAiAgent::PATROLLING: {
-			return 0.4f;
+			return 0.5f;
 		}
 		case ShipAiAgent::ATTACKING:
 		case ShipAiAgent::FLEEING:
@@ -1108,7 +1108,7 @@ float ShipAiAgentImplementation::getMaxTurnRate() {
 		case ShipAiAgent::PATHING_HOME:
 		case ShipAiAgent::FOLLOW_FORMATION:
 		default: {
-			return 0.8f;
+			return 1.f;
 		}
 	}
 }
@@ -1187,10 +1187,11 @@ void ShipAiAgentImplementation::setNextSpeed() {
 	if (distanceSqr > 0.f || currentSpeed > 0.f) {
 		float decelRate = getActualDecelerationRate() * 2.f;
 		float accelRate = getActualAccelerationRate();
+		float turnRate = calculateTurnRate();
 
 		float decelDistSqr = Math::sqr((speedMax * speedMax) / decelRate);
 		speed = decelDistSqr > distanceSqr ? qSqrt(distanceSqr / decelDistSqr) * speedMax : speedMax;
-		speed = Math::clamp(-decelRate * deltaTime, speed - currentSpeed, accelRate * deltaTime) + currentSpeed;
+		speed = Math::clamp(-decelRate * deltaTime, (speed * turnRate) - currentSpeed, accelRate * deltaTime) + currentSpeed;
 	}
 
 	lastSpeed = currentSpeed;
@@ -1219,13 +1220,13 @@ void ShipAiAgentImplementation::setNextDirection() {
 	Vector3 thrustV = nextDirection;
 	Vector3 thrustR = currentRotation;
 
-	float dotProduct = currentDirection.dotProduct(nextDirection);
-
-	if (dotProduct <= 0.999f || fabs(thrustR.getZ()) >= 0.001f) {
+	if (currentDirection.dotProduct(nextDirection) <= 0.999f || currentRotation.dotProduct(nextRotation) <= 0.999f) {
 		float rateMax = getMaxTurnRate() * deltaTime;
+		float rollDamp = Math::clamp(0.f, 1.f - (getBoundingRadius() / 128.f), 1.f);
+		float rollMax = M_PI_2 * rollDamp;
 
-		Vector3 accel = Vector3(getActualYawAccelerationRate(), getActualPitchAccelerationRate(), getActualRollAccelerationRate()) * rateMax;
-		Vector3 actual = Vector3(getActualYawRate(), getActualPitchRate(), getActualRollRate()) * rateMax;
+		Vector3 accel = Vector3(getActualYawAccelerationRate(), getActualPitchAccelerationRate(), getActualRollAccelerationRate() * rollDamp) * rateMax;
+		Vector3 actual = Vector3(getActualYawRate(), getActualPitchRate(), getActualRollRate() * rollDamp) * rateMax;
 		Vector3 delta;
 		Vector3 rate;
 
@@ -1241,7 +1242,7 @@ void ShipAiAgentImplementation::setNextDirection() {
 			rate[axis] = getRotationRate(Math::clamp(-actual[axis], thisDelta, actual[axis])) + currentRotation[axis];
 
 			if (axis == 2) {
-				rate[axis] = Math::clamp((float)-M_PI_2, rate[axis], (float)M_PI_2);
+				rate[axis] = Math::clamp(-rollMax, rate[axis], rollMax);
 			}
 		}
 
@@ -1250,7 +1251,15 @@ void ShipAiAgentImplementation::setNextDirection() {
 			setDirection(direction);
 			setRotationMatrix(direction);
 
-			thrustV = radiansToUnitVector(rate.getX(), rate.getY());
+			auto unitVector = radiansToUnitVector(rate.getX(), rate.getY());
+			float velocity = Math::clamp(0.f, currentSpeed / VELOCITY_MAX, 1.f);
+			float slipRate = Math::clamp(0.f, getSlip() * velocity, 1.f);
+
+			if (slipRate > 0.f) {
+				unitVector = Math::linearInterpolate(currentDirection, unitVector, 1.f - slipRate);
+			}
+
+			thrustV = unitVector;
 			thrustR = rate;
 		}
 	}
@@ -1284,10 +1293,6 @@ void ShipAiAgentImplementation::setNextPosition() {
 	}
 
 	nextStepPosition = SpacePatrolPoint(thrustV);
-
-#ifdef DEBUG_FINDNEXTPOSITION
-	info(true) << getDisplayedName() << " - setNextPosition set to: " << thisMove.toString();
-#endif
 }
 
 bool ShipAiAgentImplementation::findNextPosition(int maxDistance) {
@@ -1653,16 +1658,17 @@ bool ShipAiAgentImplementation::fireProjectileAtTarget(ShipObject* targetShip, c
 
 	uint32 weaponIndex = slot - Components::WEAPON_START;
 	Vector3 difference = targetPosition - position;
+	Vector3 direction = matrixToUnitVector();
 
-	float radius = Math::max(32.f, targetShip->getBoundingRadius());
-	float range = Math::max(512.f, projectileData->getRange());
-	float collisionDistance = SpaceCollisionManager::instance()->getPointIntersection(currentDirection * range, difference, radius, range);
+	float radius = Math::clamp(32.f, targetShip->getBoundingRadius(), 256.f);
+	float range = Math::clamp(256.f, projectileData->getRange(), 1024.f);
+	float collisionDistance = SpaceCollisionManager::instance()->getPointIntersection(direction * range, difference, radius, range);
 
 	if (collisionDistance == SpaceCollisionManager::MISS) {
 		return false;
 	}
 
-	auto projectile = new ShipProjectile(asShipAiAgent(), weaponIndex, projectileData->getIndex(), targetSlot, position, currentDirection * 7800.f, 0, 0, 1.f, System::getMiliTime());
+	auto projectile = new ShipProjectile(asShipAiAgent(), weaponIndex, projectileData->getIndex(), targetSlot, position, direction * 7800.f, 0, 0, 1.f, System::getMiliTime());
 	projectile->readProjectileData(projectileData);
 
 	SpaceCombatManager::instance()->addProjectile(asShipAiAgent(), projectile);
@@ -2405,6 +2411,22 @@ Vector3 ShipAiAgentImplementation::getLastRotationVector() const {
 
 float ShipAiAgentImplementation::getLastSpeed() const {
 	return lastSpeed;
+}
+
+float ShipAiAgentImplementation::calculateTurnRate() {
+	float rateY  = getRotationRate(currentRotation.getX(), lastRotation.getX());
+	float rateP = getRotationRate(currentRotation.getY(), lastRotation.getY());
+	float rate = 1.f;
+
+	if (fabs(rateY) > fabs(rateP)) {
+		float maxY = getActualYawRate() * getMaxTurnRate() * deltaTime;
+		rate -= rateY / (maxY == 0.f ? 1.f : maxY);
+	} else if (rateP != 0.f) {
+		float maxP = getActualPitchRate() * getMaxTurnRate() * deltaTime;
+		rate -= rateP / (maxP == 0.f ? 1.f : maxP);
+	}
+
+	return Math::clamp(0.f, rate, 1.f);
 }
 
 String ShipAiAgentImplementation::getShipAgentTemplateName() {
