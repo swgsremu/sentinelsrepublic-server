@@ -424,10 +424,12 @@ TangibleObject* ImageDesignManager::createHairObject(CreatureObject* imageDesign
 	if (imageDesigner->getSkillMod("hair") < skillMod)
 		return oldHair;
 
+	/*SR2 Edit:  SR-24-Add-New-Species-except-Hutt-Talz
 	if (hairAssetData->getServerPlayerTemplate() != targetObject->getObjectTemplate()->getFullTemplateString()) {
 		error("hair " + hairTemplate + " is not compatible with this creature player " + targetObject->getObjectTemplate()->getFullTemplateString());
 		return oldHair;
 	}
+	*/
 
 	ManagedReference<SceneObject*> hair = imageDesigner->getZoneServer()->createObject(hairTemplate.hashCode(), 1);
 
