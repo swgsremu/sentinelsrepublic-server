@@ -779,6 +779,7 @@ void PlayerCreationManager::addHair(CreatureObject* creature,
 		return;
 	}
 
+	/*SR2 Edit:  SR-24-Add-New-Species-except-Hutt-Talz
 	if (hairAssetData->getServerPlayerTemplate()
 			!= creature->getObjectTemplate()->getFullTemplateString()) {
 		error(
@@ -787,6 +788,7 @@ void PlayerCreationManager::addHair(CreatureObject* creature,
 						+ creature->getObjectTemplate()->getFullTemplateString());
 		return;
 	}
+	*/
 
 	if (!hairAssetData->isAvailableAtCreation()) {
 		error("hair " + hairTemplate + " not available at creation");
