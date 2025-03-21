@@ -14,9 +14,11 @@ If you have any questions, need support, or want to contribute to the SWGEmu pro
 
 ## Docker Build
 
+### Official Docker Build
+
 If you have docker (i.e. Linux docker daemon, Windows/MacOS [Docker Desktop](https://www.docker.com/products/docker-desktop/)) you can run the entire development environment and server in a container.
 
-### Setup
+#### Setup
 
 The docker build creates a container that includes everything needed to run the core3 engine except you need the tre files from the client.
 
@@ -34,7 +36,7 @@ patch_sku1_14_00.tre
 
 The docker container will use these files for your server in the container.
 
-### Build
+#### Build
 
 To build the container:
 
@@ -43,7 +45,7 @@ cd docker
 ./build.sh
 ```
 
-### Develop/Run
+#### Develop/Run
 
 Run the container with:
 
@@ -75,6 +77,36 @@ Inside the container type:
 ```
 run
 ```
+
+### SRSWGEmu Docker Build (GDB Debug Support)
+
+An enhanced Docker build with GDB debugging support and improved build tracking is available in the `srdocker` directory.
+
+#### Setup and Build
+
+```bash
+cd srdocker
+cp env.example .env  # Edit the .env file to customize your setup
+./build.sh
+```
+
+#### Run the Server
+
+```bash
+cd srdocker
+./run.sh
+```
+
+Key features of this Docker build:
+- Built-in GDB support for debugging
+- Automatic string reloading after builds
+- Build progress tracking
+- Environment variable configuration via `.env` file
+- Support for both GitHub token and deploy key authentication
+- Simplified setup of MariaDB
+- Enhanced error handling and container state detection
+
+See [srdocker/README.md](srdocker/README.md) for detailed instructions.
 
 ## Windows Subsystem for Linux Setup
 
