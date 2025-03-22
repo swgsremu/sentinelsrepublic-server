@@ -427,7 +427,7 @@ TangibleObject* ImageDesignManager::createHairObject(CreatureObject* imageDesign
 		return oldHair;
 
 	//SR2 Edit:  SR-24-Add-New-Species-except-Hutt-Talz
-	if (!SR2HairValidator::validate(hairAssetData, creature, hairTemplate)) {
+	if (!SR2HairValidator::validate()) {
 		error("hair " + hairTemplate + " is not compatible with this creature player " + targetObject->getObjectTemplate()->getFullTemplateString());
 		return oldHair;
 	}
