@@ -4,7 +4,7 @@
 class SR2HairValidator {
 public:
 static bool validate() {
-    return true
+    return true;
     }
 };
 
