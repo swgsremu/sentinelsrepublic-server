@@ -11,6 +11,8 @@
 #include "templates/creature/PlayerCreatureTemplate.h"
 #include "templates/customization/AssetCustomizationManagerTemplate.h"
 #include "templates/customization/BasicRangedIntCustomizationVariable.h"
+#include "server/zone/managers/player/creation/SR2HairValidator.h" //SR2 Edit: include hair check bypass.
+
 
 // #define DEBUG_ID
 
@@ -424,12 +426,12 @@ TangibleObject* ImageDesignManager::createHairObject(CreatureObject* imageDesign
 	if (imageDesigner->getSkillMod("hair") < skillMod)
 		return oldHair;
 
-	/*SR2 Edit:  SR-24-Add-New-Species-except-Hutt-Talz
-	if (hairAssetData->getServerPlayerTemplate() != targetObject->getObjectTemplate()->getFullTemplateString()) {
+	//SR2 Edit:  SR-24-Add-New-Species-except-Hutt-Talz
+	if (!SR2HairValidator::validate(hairAssetData, creature, hairTemplate)) {
 		error("hair " + hairTemplate + " is not compatible with this creature player " + targetObject->getObjectTemplate()->getFullTemplateString());
 		return oldHair;
 	}
-	*/
+	
 
 	ManagedReference<SceneObject*> hair = imageDesigner->getZoneServer()->createObject(hairTemplate.hashCode(), 1);
 
