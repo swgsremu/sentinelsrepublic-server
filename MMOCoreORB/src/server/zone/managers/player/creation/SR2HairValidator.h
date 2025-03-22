@@ -3,7 +3,7 @@
 
 class SR2HairValidator {
 public:
-static bool validateHairTemplate(const String& hairTemplate, CreatureObject* creature) {
+static bool validate(const String& hairTemplate, CreatureObject* creature) {
     return true
     }
 };
