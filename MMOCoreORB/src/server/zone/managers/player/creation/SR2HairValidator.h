@@ -3,7 +3,7 @@
 
 class SR2HairValidator {
 public:
-static bool validate() {
+static bool SR2HairCheckBypass() {
     return true;
     }
 };
