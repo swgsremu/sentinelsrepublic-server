@@ -5,6 +5,8 @@
 #ifndef STRUCTUREMANAGER_H_
 #define STRUCTUREMANAGER_H_
 
+#include "server/zone/srcustom/managers/structure/SRStructureManager.h"
+
 #include "templates/manager/TemplateManager.h"
 #include "templates/tangible/SharedStructureObjectTemplate.h"
 #include "server/zone/objects/scene/variables/CustomizationVariables.h"
@@ -41,16 +43,20 @@ using namespace server::zone::objects::structure;
 using namespace server::zone::objects::tangible;
 using namespace server::zone::objects::tangible::deed::structure;
 
+// SR: Modified to include SRStructureManager
+class SRStructureManager;
+
 class StructureManager : public Singleton<StructureManager>, public Logger, public Object {
 	ZoneServer* server;
 	TemplateManager* templateManager;
+	ManagedReference<SRStructureManager*> srStructureManager;
 
 public:
 	StructureManager();
-
 	void setZoneServer(ZoneServer* zoneServer) {
 		server = zoneServer;
 	}
+
 
 	IndexDatabase* createSubIndex();
 
@@ -195,6 +201,9 @@ public:
 	bool isInStructureFootprint(StructureObject* structure, float positionX, float positionY, int extraFootprintMargin);
 
 	void promptMaintenanceDroid(StructureObject* structure, CreatureObject* creature);
+
+	// SR: Modified
+	SRStructureManager* getSRStructureManager();
 };
 
 #endif /*STRUCTUREMANAGER_H_*/

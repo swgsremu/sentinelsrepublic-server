@@ -129,6 +129,7 @@ public:
 	void registerCommands2();
 	void registerCommands3();
 	void registerCommands4();
+	void registerSrCommands(); // SR: Modification for custom commands
 
 	void registerSpecialCommands(CommandList* sCommands);
 

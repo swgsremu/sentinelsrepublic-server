@@ -861,6 +861,7 @@ void CommandConfigManager::registerCommands() {
 	registerCommands2();
 	registerCommands3();
 	registerCommands4();
+	registerSrCommands();  // SR Modification for custom commands
 
 	//Space Commands
 	commandFactory.registerCommand<CommCommand>(String("comm").toLowerCase());

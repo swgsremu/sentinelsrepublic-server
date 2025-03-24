@@ -50,6 +50,7 @@
 #include "server/zone/objects/player/FactionStatus.h"
 #include "templates/building/CampStructureTemplate.h"
 #include "templates/customization/CustomizationIdManager.h"
+#include "server/zone/srcustom/managers/structure/SRStructureManager.h"
 
 namespace StorageManagerNamespace {
 int indexCallback(DB* secondary, const DBT* key, const DBT* data, DBT* result) {
@@ -83,10 +84,12 @@ int indexCallback(DB* secondary, const DBT* key, const DBT* data, DBT* result) {
 StructureManager::StructureManager() : Logger("StructureManager") {
 	server = nullptr;
 	templateManager = TemplateManager::instance();
-
+	srStructureManager = new SRStructureManager();
+	srStructureManager->setStructureManager(this);
 	setGlobalLogging(true);
 	setLogging(false);
 }
+
 
 IndexDatabase* StructureManager::createSubIndex() {
 	static auto initialized = [this]() -> IndexDatabase* { // this needs to run only once
@@ -1440,4 +1443,8 @@ bool StructureManager::isInStructureFootprint(StructureObject* structure, float 
 	BoundaryRectangle structureFootprint(x0, y0, x1, y1);
 
 	return structureFootprint.containsPoint(positionX, positionY);
+}
+
+SRStructureManager* StructureManager::getSRStructureManager() {
+	return srStructureManager;
 }

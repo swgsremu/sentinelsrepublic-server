@@ -4,3 +4,10 @@ luacov.stats.out
 .DS_Store
 .cache
 compile_commands.json
+
+# Docker configuration
+srdocker/.env
+srdocker/deploy_key
+srdocker/deploy_key.pub
+srdocker/deploy_key/
+build
