@@ -27,7 +27,7 @@ const static char* Species[] = {
     "moncal", // moncal female
     "wookiee", // wookiee female
     "sullustan", // sullustan female
-    "ithorian"  // DA E7   -   ithorian female
+    "ithorian",  // DA E7   -   ithorian female
     //SR2 Edit: SR-24-Add-New-Species-except-Hutt-Talz - Add species support
     "nautolan", 	// male Nautolan
 	"togruta", 	// female Togruta
