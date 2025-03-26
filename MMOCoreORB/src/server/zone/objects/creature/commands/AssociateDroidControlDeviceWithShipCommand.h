@@ -77,6 +77,17 @@ public:
 			return GENERALERROR;
 		}
 
+		PlayerObject* ghost = creature->getPlayerObject();
+
+		if (ghost == nullptr) {
+			return GENERALERROR;
+		}
+
+		if (!ghost->hasAbility(droidControl->getRequiredAstromechCert()) && !ghost->hasGodMode()) {
+			creature->sendSystemMessage("@space/space_interaction:droid_not_certified");
+			return GENERALERROR;
+		}
+
 		uint32 droidType = ShipDroidData::getDroidType(droidControl->getServerObjectCRC());
 		uint32 shipType = ShipDroidData::getShipDroidType(ship->getShipChassisName().hashCode());
 
