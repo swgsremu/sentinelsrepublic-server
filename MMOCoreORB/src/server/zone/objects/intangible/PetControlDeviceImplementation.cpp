@@ -1409,3 +1409,22 @@ int PetControlDeviceImplementation::getDataStorageCapacity() {
 	else
 		return datapadObject->getContainerVolumeLimit();
 }
+
+String PetControlDeviceImplementation::getRequiredAstromechCert() {
+	String requiredSkill = "cert_droid_astromech_";
+
+	auto flightDatapad = getDatapad();
+
+	if (flightDatapad == nullptr) {
+		return requiredSkill + "1";
+	}
+
+	auto templateData = flightDatapad->getObjectTemplate();
+
+	if (templateData == nullptr) {
+		return requiredSkill + "1";
+	}
+
+	String entry = templateData->getTemplateFileName();
+	return requiredSkill + entry.charAt(entry.length() - 1);
+}
