@@ -384,4 +384,7 @@ class PetControlDevice extends ControlDevice {
 
 	@dirty
 	public native int getDataStorageCapacity();
+
+	@dirty
+	public native string getRequiredAstromechCert();
 }

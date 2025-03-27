@@ -30,7 +30,15 @@ void NavicomputerDeedImplementation::loadTemplateData(SharedObjectTemplate* temp
 }
 
 void NavicomputerDeedImplementation::fillAttributeList(AttributeListMessage* alm, CreatureObject* object) {
-	alm->insertAttribute("volume", 1);
+	alm->insertAttribute("volume", volume);
+
+	if (!craftersName.isEmpty()) {
+		alm->insertAttribute("crafter", craftersName);
+	}
+
+	if (!objectSerial.isEmpty()) {
+		alm->insertAttribute("serial_number", objectSerial);
+	}
 }
 
 void NavicomputerDeedImplementation::initializeTransientMembers() {
