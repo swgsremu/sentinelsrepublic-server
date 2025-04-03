@@ -835,4 +835,6 @@ includeFile("weapon/ranged/vehicle/objects.lua")
 includeFile("weapon/ranged/objects.lua")
 includeFile("weapon/trap/objects.lua")
 includeFile("weapon/objects.lua")
-
+--SR2 Edit: SR-24-Add-New-Species-except-Hutt-Talz
+-- Custom content - Loads last to allow for overrides
+includeFile("../custom_scripts/object/custom_objects.lua")
