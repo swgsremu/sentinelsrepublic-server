@@ -73,7 +73,7 @@ OldCityGracePeriod = 4320
 EnableCityWarn = false
 
 --The number of citizens required to achieve each city rank. (Outpost, Village, Township, City, Metropolis)
-CitizensPerRank = {5, 10, 20, 35, 50}
+CitizensPerRank = {5, 10, 15, 20, 25}
 --CitizensPerRank = {10, 20, 35, 55, 85} -- SR Modified --
 
 --The radius in meters of the city at each city rank. (Outpost, Village, Township, City, Metropolis)
