@@ -16,6 +16,7 @@
 #include "server/zone/managers/crafting/ComponentMap.h"
 #include "server/zone/objects/manufactureschematic/ingredientslots/ComponentSlot.h"
 #include "server/zone/objects/tangible/tool/CraftingStation.h"
+#include "server/zone/srcustom/managers/configuration/SRConfigManager.h"
 
 #include "server/zone/packets/tangible/TangibleObjectDeltaMessage3.h"
 #include "server/zone/packets/player/PlayerObjectDeltaMessage9.h"
@@ -1412,7 +1413,6 @@ void CraftingSessionImplementation::createPrototype(int clientCounter, bool crea
 void CraftingSessionImplementation::startCreationTasks(int timer, bool practice) {
 	ManagedReference<CraftingTool*> craftingTool = this->craftingTool.get();
 	ManagedReference<CreatureObject*> crafter = this->crafter.get();
-
 	ManagedReference<ZoneServer*> server = crafter->getZoneServer();
 
 	if (server != nullptr) {
@@ -1420,6 +1420,9 @@ void CraftingSessionImplementation::startCreationTasks(int timer, bool practice)
 		craftingTool->setBusy();
 
 		int timer2 = 1;
+		auto srConfig = SRConfigManager::instance();
+		int timerInterval = srConfig->getCraftingTimerInterval();
+		int timerIncrement = srConfig->getCraftingTimerIncrement();
 
 		Reference<UpdateToolCountdownTask*> updateToolCountdownTask = nullptr;
 		Reference<CreateObjectTask*> createObjectTask = new CreateObjectTask(crafter, craftingTool, practice);
@@ -1427,8 +1430,8 @@ void CraftingSessionImplementation::startCreationTasks(int timer, bool practice)
 		while (timer > 0) {
 			updateToolCountdownTask = new UpdateToolCountdownTask(crafter, craftingTool, timer);
 			updateToolCountdownTask->schedule(timer2);
-			timer -= 5;
-			timer2 += 5000;
+			timer -= timerInterval;
+			timer2 += timerIncrement;
 		}
 
 		if (timer < 0) {

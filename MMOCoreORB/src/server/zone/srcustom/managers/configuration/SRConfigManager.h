@@ -9,7 +9,9 @@ public:
     bool getStructurePackupEnabled();
     bool getInactiveStructurePackupEnabled();
     int getInactiveStructurePackupDays();
-    int getFactoryTimerMultiplier();  
+    int getFactoryTimerMultiplier();
+    int getCraftingTimerInterval();  
+    int getCraftingTimerIncrement(); 
 
     using Singleton<SRConfigManager>::instance;
 private:
