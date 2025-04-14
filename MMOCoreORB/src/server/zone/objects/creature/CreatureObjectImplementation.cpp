@@ -4580,3 +4580,14 @@ float CreatureObjectImplementation::getOutOfRangeDistance(uint64 specialRangeID)
 
 	return TangibleObjectImplementation::getOutOfRangeDistance(specialRangeID);
 }
+
+bool CreatureObjectImplementation::isMissionRangeObject(const uint64& objectID) {
+	if (objectID == 0) {
+		return false;
+	}
+
+	Locker locker(&missionRangeObjectsMutex);
+	int index = missionRangeObjects.find(objectID);
+
+	return index != -1;
+}
