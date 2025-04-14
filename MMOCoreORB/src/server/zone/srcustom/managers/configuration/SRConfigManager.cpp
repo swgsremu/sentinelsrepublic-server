@@ -17,6 +17,10 @@ int SRConfigManager::getInactiveStructurePackupDays() {
 	return getInt("SRConfig.inactiveStructurePackupDays", 365);
 }
 
+int SRConfigManager::getFactoryTimerMultiplier() {
+    return getInt("SRConfig.factoryTimerMultiplier", 8);  // Default to 8 like the original
+}
+
 void SRConfigManager::loadCustomConfig() {
 	const auto lua = new Lua();
 	lua->init();
@@ -37,6 +41,9 @@ void SRConfigManager::loadCustomConfig() {
 		setBool("SRConfig.inactiveStructurePackupEnabled", inactivePackupEnabled == "true" ? true : false);
 
 		setInt("SRConfig.inactiveStructurePackupDays", static_cast<int>(srConfig.getIntField("inactiveStructurePackupDays")));
+        
+        // Add factory timer multiplier configuration
+        setInt("SRConfig.factoryTimerMultiplier", static_cast<int>(srConfig.getIntField("factoryTimerMultiplier")));
 	} else {
 		error() << "SRConfig table not found in conf/custom/config.lua";
 	}

@@ -1,0 +1,3 @@
+SRConfig = {
+    factoryTimerMultiplier = 2,
+}
