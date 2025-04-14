@@ -28,6 +28,8 @@
 #include "templates/installation/FactoryObjectTemplate.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 
+#include "server/zone/srcustom/objects/installation/factory/FactoryTimerConfig.h"
+
 // #define DEBUG_FACTORIES
 
 void FactoryObjectImplementation::loadTemplateData(SharedObjectTemplate* templateData) {
@@ -569,11 +571,7 @@ bool FactoryObjectImplementation::startFactory() {
 	info(true) << "Factory Testing Timer Set To: " << timer;
 #else
 	// SR Modified
-	#ifdef SR_CUSTOM_FACTORY_TIMER
-		timer = ((int)schematic->getComplexity()) * 2; // Custom faster timer
-	#else
-		timer = ((int)schematic->getComplexity()) * 8; // Original timer
-	#endif
+	timer = ((int)schematic->getComplexity()) * FactoryTimerConfig::getTimerMultiplier();
 #endif
 
 	if (!populateSchematicBlueprint(schematic))
