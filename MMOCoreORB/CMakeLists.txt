@@ -315,11 +315,6 @@ endif()
 
 add_definitions(-DDEFAULT_DYNAMIC_CAST)
 
-# SR Modified
-add_definitions(-DSR_CUSTOM_FACTORY_TIMER)
-
-# END SR Modified
-
 add_subdirectory(src)
 add_subdirectory(src/conf)
 add_subdirectory(src/terrain)
