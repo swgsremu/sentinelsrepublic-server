@@ -28,7 +28,7 @@
 #include "templates/installation/FactoryObjectTemplate.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 
-//#define DEBUG_FACTORIES
+// #define DEBUG_FACTORIES
 
 void FactoryObjectImplementation::loadTemplateData(SharedObjectTemplate* templateData) {
 	InstallationObjectImplementation::loadTemplateData(templateData);
@@ -49,14 +49,16 @@ void FactoryObjectImplementation::notifyLoadFromDatabase() {
 	setLoggingName("FactoryObject");
 
 	if (isActive()) {
-		Core::getTaskManager()->executeTask([factory = WeakReference<FactoryObject*>(_this.getReferenceUnsafeStaticCast())]() {
-			auto factoryStrong = factory.get();
+		Core::getTaskManager()->executeTask(
+			[factory = WeakReference<FactoryObject*>(_this.getReferenceUnsafeStaticCast())]() {
+				auto factoryStrong = factory.get();
 
-			if (factoryStrong != nullptr) {
-				Locker lock(factoryStrong);
-				factoryStrong->startFactory();
-			}
-		}, "StartFactoryLambda");
+				if (factoryStrong != nullptr) {
+					Locker lock(factoryStrong);
+					factoryStrong->startFactory();
+				}
+			},
+			"StartFactoryLambda");
 	}
 
 	hopperObserver = new FactoryHopperObserver(_this.getReferenceUnsafeStaticCast());
@@ -566,7 +568,12 @@ bool FactoryObjectImplementation::startFactory() {
 	timer = 30;
 	info(true) << "Factory Testing Timer Set To: " << timer;
 #else
-	timer = ((int)schematic->getComplexity()) * 8;
+	// SR Modified
+	#ifdef SR_CUSTOM_FACTORY_TIMER
+		timer = ((int)schematic->getComplexity()) * 2; // Custom faster timer
+	#else
+		timer = ((int)schematic->getComplexity()) * 8; // Original timer
+	#endif
 #endif
 
 	if (!populateSchematicBlueprint(schematic))
