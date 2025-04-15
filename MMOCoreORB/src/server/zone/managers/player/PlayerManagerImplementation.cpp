@@ -235,6 +235,7 @@ void PlayerManagerImplementation::loadLuaConfig() {
 	lua->init();
 
 	lua->runFile("scripts/managers/player_manager.lua");
+	lua->runFile("scripts/custom_scripts/managers/player_manager.lua");
 
 	allowSameAccountPvpRatingCredit = lua->getGlobalInt("allowSameAccountPvpRatingCredit");
 	onlineCharactersPerAccount = lua->getGlobalInt("onlineCharactersPerAccount");
@@ -246,6 +247,8 @@ void PlayerManagerImplementation::loadLuaConfig() {
 	groupExpMultiplier = lua->getGlobalFloat("groupExpMultiplier");
 
 	globalExpMultiplier = lua->getGlobalFloat("globalExpMultiplier");
+
+	info(true) << "Global XP multiplier: " << globalExpMultiplier;
 
 	baseStoredCreaturePets = lua->getGlobalInt("baseStoredCreaturePets");
 	baseStoredFactionPets = lua->getGlobalInt("baseStoredFactionPets");
