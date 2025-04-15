@@ -4,6 +4,7 @@
 
 #include "SuiManager.h"
 
+#include "conf/ConfigManager.h"
 #include "server/zone/ZoneProcessServer.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/sui/SuiWindowType.h"
@@ -461,9 +462,17 @@ void SuiManager::handleCharacterBuilderSelectItem(CreatureObject* player, SuiBox
 			} else if (templatePath == "clear_dots") {
 				player->clearDots();
 			} else if (templatePath == "frs_light_side") {
+				if (ConfigManager::instance()->getInt("Core3.PlayerManager.Jedi.NoJediProgression", 1)) {
+					player->sendSystemMessage("The 'frs light side' option is disabled on this server.");
+					return;
+				}
 				PlayerManager* pman = zserv->getPlayerManager();
 				pman->unlockFRSForTesting(player, 1);
 			} else if (templatePath == "frs_dark_side") {
+				if (ConfigManager::instance()->getInt("Core3.PlayerManager.Jedi.NoJediProgression", 1)) {
+					player->sendSystemMessage("The 'frs dark side' option is disabled on this server.");
+					return;
+				}
 				PlayerManager* pman = zserv->getPlayerManager();
 				pman->unlockFRSForTesting(player, 2);
 
@@ -486,9 +495,18 @@ void SuiManager::handleCharacterBuilderSelectItem(CreatureObject* player, SuiBox
 				player->sendSystemMessage("You have maximized all xp types.");
 
 			} else if (templatePath == "become_glowy") {
+				// SR: Modification
+				if (ConfigManager::instance()->getInt("Core3.PlayerManager.Jedi.NoJediProgression", 1)) {
+					player->sendSystemMessage("The 'become glowy' option is disabled on this server.");
+					return;
+				}
 				bluefrog->grantGlowyBadges(player);
 
 			} else if (templatePath == "unlock_jedi_initiate") {
+				if (ConfigManager::instance()->getInt("Core3.PlayerManager.Jedi.NoJediProgression", 1)) {
+					player->sendSystemMessage("The 'unlock jedi initiate' option is disabled on this server.");
+					return;
+				}
 				bluefrog->grantJediInitiate(player);
 
 			// Bio-Engineer Testing
