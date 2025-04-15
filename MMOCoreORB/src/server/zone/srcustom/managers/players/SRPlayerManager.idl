@@ -1,0 +1,40 @@
+
+package server.zone.srcustom.managers.players;
+
+import engine.core.ManagedObject;
+import engine.log.Logger;
+include server.zone.managers.player.PlayerManager;
+include engine.lua.Lua; 
+
+@dirty
+class SRPlayerManager extends ManagedObject implements Logger {
+    @weakReference
+    protected PlayerManager playerManager;
+    
+    protected float craftingExperienceModifier;
+    protected float globalExperienceModifier;
+    protected float jediExperienceModifier;
+    
+    public SRPlayerManager() {
+        playerManager = null;
+        craftingExperienceModifier = 1.0;
+        globalExperienceModifier = 1.0;
+        jediExperienceModifier = 1.0;
+        
+        Logger.setLoggingName("SRPlayerManager");
+    }
+    
+    @local
+    public synchronized void init(PlayerManager manager) {
+        playerManager = manager;
+    }
+    
+    public synchronized void release() {
+        playerManager = null;
+    }
+    @local
+    public native void loadSRLuaConfig();
+
+    public native void setCraftingExperience(float experienceModifier);
+    public native float getCraftingExperience();
+}

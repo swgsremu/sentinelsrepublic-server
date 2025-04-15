@@ -118,14 +118,23 @@
 
 #include "server/zone/managers/statistics/StatisticsManager.h"
 
+#include "server/zone/srcustom/managers/players/SRPlayerManager.h"
+
 // #define DEBUG_SPEED_HACK
 
 PlayerManagerImplementation::PlayerManagerImplementation(ZoneServer* zoneServer, ZoneProcessServer* impl, bool trackOnlineUsers) : Logger("PlayerManager") {
+	server = zoneServer;
+	processor = impl;
+	
+	// Initialize SRPlayerManager
+	srPlayerManager = Reference<SRPlayerManager*>(new SRPlayerManager());
+	srPlayerManager->init(_this.getReferenceUnsafeStaticCast());
+
 	playerLoggerFilename = "log/player.log";
-	playerLoggerLines = ConfigManager::instance()->getMaxLogLines();
+playerLoggerLines = ConfigManager::instance()->getMaxLogLines();
 	playerLogger.setLoggingName("PlayerLogger");
 	playerLogger.setFileLogger(playerLoggerFilename, true);
-
+	
 	server = zoneServer;
 	processor = impl;
 
@@ -305,6 +314,8 @@ void PlayerManagerImplementation::loadLuaConfig() {
 	}
 
 	jboxSongs.pop();
+
+	srPlayerManager->loadSRLuaConfig();
 
 	delete lua;
 	lua = nullptr;

@@ -52,6 +52,7 @@ include server.zone.managers.player.PlayerNameIterator;
 include server.zone.objects.region.CityRegion;
 include server.zone.objects.ship.ai.ShipAiAgent;
 import engine.util.u3d.Vector3;
+import server.zone.srcustom.managers.players.SRPlayerManager;
 
 @dirty
 class PlayerManager extends Observer implements Logger {
@@ -76,6 +77,9 @@ class PlayerManager extends Observer implements Logger {
 
 	@dereferenced
 	protected transient Time lastOnlinePlayerLogMsg;
+	
+	@reference
+	protected SRPlayerManager srPlayerManager;
 
 	// Used for frog/gm buffs
 	protected int performanceBuff;
