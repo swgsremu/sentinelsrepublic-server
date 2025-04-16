@@ -663,4 +663,7 @@ class PlayerManager extends Observer implements Logger {
 
 	@local
 	public native void iteratePlayerNames(@dereferenced final PlayerNameIterator iterator);
+
+	// SR Modification
+	public native void setGroupExperienceModifier(float groupExpMultiplier);
 }
