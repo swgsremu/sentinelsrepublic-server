@@ -37,4 +37,6 @@ class SRPlayerManager extends ManagedObject implements Logger {
 
     public native void setCraftingExperience(float experienceModifier);
     public native float getCraftingExperience();
+    
+    public native void setGroupExperienceModifier(float groupExpMultiplier);
 }

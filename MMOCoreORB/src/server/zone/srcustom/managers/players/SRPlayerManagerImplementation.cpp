@@ -1,6 +1,5 @@
 
 #include "server/zone/srcustom/managers/players/SRPlayerManager.h"
-#include "system/lang/ref/Reference.h"
 
 
 
@@ -45,4 +44,7 @@ void SRPlayerManagerImplementation::setCraftingExperience(float experienceModifi
 
 float SRPlayerManagerImplementation::getCraftingExperience() {
 	return craftingExperienceModifier;
+}
+
+void SRPlayerManagerImplementation::setGroupExperienceModifier(float groupExpMultiplier) {
 }
