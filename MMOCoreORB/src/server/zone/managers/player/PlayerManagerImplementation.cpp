@@ -3916,6 +3916,12 @@ void PlayerManagerImplementation::updateSwimmingState(CreatureObject* player, fl
 		return;
 	}
 
+	CreatureObject* mount = nullptr;
+
+	if (parent != nullptr && parent->isMount()) {
+		mount = parent->asCreatureObject();
+	}
+
 	float landHeight = zone->getHeight(player->getPositionX(), player->getPositionY());
 	float waterHeight = landHeight;
 	bool waterIsDefined = terrainManager->getWaterHeight(player->getPositionX(), player->getPositionY(), waterHeight);
@@ -3940,13 +3946,26 @@ void PlayerManagerImplementation::updateSwimmingState(CreatureObject* player, fl
 			}
 		}
 
-		//Player is in the water.
-		player->setState(CreatureState::SWIMMING, true);
+		// Player is in the water.
+		player->setState(CreatureState::SWIMMING);
+
+		if (mount != nullptr) {
+			Locker clock(mount, player);
+
+			mount->setState(CreatureState::SWIMMING);
+		}
+
 		return;
 	}
 
-	//Terrain is above water level.
-	player->clearState(CreatureState::SWIMMING, true);
+	// Terrain is above water level.
+	player->clearState(CreatureState::SWIMMING);
+
+	if (mount != nullptr) {
+		Locker clock(mount, player);
+
+		mount->clearState(CreatureState::SWIMMING);
+	}
 }
 
 bool PlayerManagerImplementation::checkPlayerSpeedTest(CreatureObject* player, SceneObject* parent, float parsedSpeed, ValidatedPosition* lastValidPosition, const Vector3& lastValidatedWorldPosition, const Vector3& newWorldPosition, float errorMultiplier) {
