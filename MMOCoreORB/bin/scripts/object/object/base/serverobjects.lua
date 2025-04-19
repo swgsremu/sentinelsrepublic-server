@@ -45,5 +45,5 @@
 --Children folder includes
 
 -- Server Objects
-includeFile("object/base/base_object.lua")
-includeFile("object/base/object_default.lua")
+includeFile("base/base_object.lua")
+includeFile("base/object_default.lua")
