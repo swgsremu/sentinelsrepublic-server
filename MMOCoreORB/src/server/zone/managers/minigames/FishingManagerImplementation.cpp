@@ -1101,14 +1101,14 @@ void FishingManagerImplementation::fishingProceed(CreatureObject* player, int ne
 		}
 	}
 
-	if (nextAction >= DONOTHING && nextAction <= CATCH) {
+	if (nextAction >= DONOTHING && nextAction < REELING) {
 		ManagedReference<FishingBaitObject*> bait = getBait(player);
 
 		if (bait != nullptr && System::random(100) < 5) {
 			bait->lessFresh();
 		}
 
-		if (player->isInRange(marker, 1.5)) {
+		if (player->isInRange(marker, 2.f)) {
 			stopFishing(player, boxID, true);
 		}
 	}
@@ -1509,7 +1509,7 @@ void FishingManagerImplementation::checkFishingOnPositionUpdate(CreatureObject* 
 
 	ManagedReference<FishingSession*> fishingSession = player->getActiveSession(SessionFacadeType::FISHING).castTo<FishingSession*>();
 
-	if (fishingSession == nullptr) {
+	if (fishingSession == nullptr || player->isSwimming()) {
 		stopFishing(player, 0, true);
 		return;
 	}
@@ -1528,9 +1528,14 @@ void FishingManagerImplementation::checkFishingOnPositionUpdate(CreatureObject* 
 		return;
 	}
 
-	// Player has moved and bobber is either too far or player is no reeling in a catch
-	if (!player->isInRange(marker, 1.5) || fishingState < REELING) {
+	float distance = player->getDistanceTo(marker);
+
+	// Player has moved and bobber is either too far or player got too close and scared the fish
+	if ((distance < 2.f && fishingState < REELING) || distance > 20.f) {
 		stopFishing(player, 0, true);
+		return;
+	// Player has moved but is still in valid range but not close enough to catch the fish
+	} else if (fishingState < REELING || distance > 2.f) {
 		return;
 	}
 

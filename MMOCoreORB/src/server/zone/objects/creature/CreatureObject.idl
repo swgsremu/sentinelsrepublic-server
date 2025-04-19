@@ -144,7 +144,7 @@ class CreatureObject extends TangibleObject {
 	private transient Mutex missionRangeObjectsMutex;
 
 	@dereferenced
-	protected transient SortedVector<unsigned int> missionRangeObjects;
+	protected transient SortedVector<unsigned long> missionRangeObjects;
 
 	protected byte frozen;
 
@@ -2399,4 +2399,6 @@ class CreatureObject extends TangibleObject {
 
 	@dirty
 	public native abstract float getOutOfRangeDistance(unsigned long specialRangeObjectID = 0);
+
+	public native boolean isMissionRangeObject(@dereferenced final unsigned long objectID);
 }
