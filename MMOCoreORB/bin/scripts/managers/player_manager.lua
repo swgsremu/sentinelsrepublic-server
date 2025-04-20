@@ -60,10 +60,6 @@ groupExpMultiplier = 1.2
 globalExpMultiplier = 1.0
 --globalExpMultiplier = 10.0 -- DOUBLE XP if globalExpMultiplier = 5.0
 
---Sets a jedi experience multiplier  -- SR Modified --
-jediExpMultiplier = 1.0
---jediExpMultiplier = 1.25 -- 25% increase
-
 --Sets the base number of control devices of each type that a player can have in their datapad at once
 --For creature pets, A Creature Handler will have the base number + their stored pets skill mod as limit
 baseStoredCreaturePets = 5 -- SR Modified --

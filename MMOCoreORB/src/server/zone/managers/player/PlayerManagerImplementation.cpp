@@ -118,14 +118,23 @@
 
 #include "server/zone/managers/statistics/StatisticsManager.h"
 
+#include "server/zone/srcustom/managers/players/SRPlayerManager.h"
+
 // #define DEBUG_SPEED_HACK
 
 PlayerManagerImplementation::PlayerManagerImplementation(ZoneServer* zoneServer, ZoneProcessServer* impl, bool trackOnlineUsers) : Logger("PlayerManager") {
+	server = zoneServer;
+	processor = impl;
+	
+	// Initialize SRPlayerManager
+	srPlayerManager = Reference<SRPlayerManager*>(new SRPlayerManager());
+	srPlayerManager->init(_this.getReferenceUnsafeStaticCast());
+
 	playerLoggerFilename = "log/player.log";
-	playerLoggerLines = ConfigManager::instance()->getMaxLogLines();
+playerLoggerLines = ConfigManager::instance()->getMaxLogLines();
 	playerLogger.setLoggingName("PlayerLogger");
 	playerLogger.setFileLogger(playerLoggerFilename, true);
-
+	
 	server = zoneServer;
 	processor = impl;
 
@@ -235,6 +244,7 @@ void PlayerManagerImplementation::loadLuaConfig() {
 	lua->init();
 
 	lua->runFile("scripts/managers/player_manager.lua");
+	lua->runFile("scripts/custom_scripts/managers/player_manager.lua");
 
 	allowSameAccountPvpRatingCredit = lua->getGlobalInt("allowSameAccountPvpRatingCredit");
 	onlineCharactersPerAccount = lua->getGlobalInt("onlineCharactersPerAccount");
@@ -246,6 +256,8 @@ void PlayerManagerImplementation::loadLuaConfig() {
 	groupExpMultiplier = lua->getGlobalFloat("groupExpMultiplier");
 
 	globalExpMultiplier = lua->getGlobalFloat("globalExpMultiplier");
+
+	info(true) << "Global XP multiplier: " << globalExpMultiplier;
 
 	baseStoredCreaturePets = lua->getGlobalInt("baseStoredCreaturePets");
 	baseStoredFactionPets = lua->getGlobalInt("baseStoredFactionPets");
@@ -302,6 +314,8 @@ void PlayerManagerImplementation::loadLuaConfig() {
 	}
 
 	jboxSongs.pop();
+
+	srPlayerManager->loadSRLuaConfig();
 
 	delete lua;
 	lua = nullptr;
