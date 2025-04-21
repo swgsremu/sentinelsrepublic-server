@@ -199,11 +199,45 @@ CitySpecializations = {
 			{"private_spec_assembly", 10}
 		}
 	},
+	{--Research Center
+		name = "@city/city:city_spec_research",
+		cost = 125000,
+		skillMods = {
+			{"private_spec_experimentation", 15}
+		}
+	},
+	{--Industrial Complex
+		name = "@city/city:city_spec_master_manufacturing",
+		cost = 200000,
+		skillMods = {
+			{"private_spec_samplesize", 20},
+			{"private_spec_samplerate", 10},
+			{"private_spec_assembly", 10},
+			{"private_spec_experimentation", 15}
+		}
+	},
 	{--Medical Center
 		name = "@city/city:city_spec_doctor",
 		cost = 80000,
 		skillMods = {
 			{"private_medical_rating", 10}
+		}
+	},
+	{--Entertainment District
+		name = "@city/city:city_spec_entertainer",
+		cost = 80000,
+		skillMods = {
+			{"private_spec_entertainer", 10},
+			{"increase_entertainer_buff", 60}
+		}
+	},
+	{--Enhancement Center
+		name = "@city/city:city_spec_master_healing",
+		cost = 200000,
+		skillMods = {
+			{"private_medical_rating", 10},
+			{"private_spec_entertainer", 10},
+			{"increase_entertainer_buff", 60}
 		}
 	},
 	{--Clone Lab
@@ -213,13 +247,6 @@ CitySpecializations = {
 			{"private_spec_cloning", 20}
 		}
 	},
-	{--Research Center
-		name = "@city/city:city_spec_research",
-		cost = 125000,
-		skillMods = {
-			{"private_spec_experimentation", 15}
-		}
-	},
 	{--Improved Job Market
 		name = "@city/city:city_spec_missions",
 		cost = 80000,
@@ -227,18 +254,20 @@ CitySpecializations = {
 			{"private_spec_missions", 15}
 		}
 	},
-	{--Entertainment District
-		name = "@city/city:city_spec_entertainer",
-		cost = 80000,
-		skillMods = {
-			{"private_spec_entertainer", 10}
-		}
-	},
 	{--Stronghold
 		name = "@city/city:city_spec_stronghold",
 		cost = 150000,
 		skillMods = {
 			{"private_defense", 90}
+		}
+	},
+	{--Citadel
+		name = "@city/city:city_spec_master_stronghold",
+		cost = 200000,
+		skillMods = {
+			{"private_defense", 90},
+			{"private_spec_cloning", 20},
+			{"private_spec_missions", 15}
 		}
 	},
 }
