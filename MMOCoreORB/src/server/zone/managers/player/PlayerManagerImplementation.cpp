@@ -3997,38 +3997,14 @@ bool PlayerManagerImplementation::checkPlayerSpeedTest(CreatureObject* player, S
 	}
 
 	float maxAllowedSpeed = allowedSpeedMod * allowedSpeedBase;
+	float maxSpeedVariable = (maxAllowedSpeed * errorMultiplier);
 
 #ifdef DEBUG_SPEED_HACK
-	player->info(true) << "checkPlayerSpeedTest -- parsedSpeed: " << parsedSpeed << " Error Multiplier: " << errorMultiplier << " Teleport position: " << lastValidVec.toString();
-	player->info(true) << "Player Run Speed: " << allowedSpeedBase << " Player Run Modifier: " << allowedSpeedMod;
+	auto speedMsg = player->info(true);
+	speedMsg << "checkPlayerSpeedTest -- parsedSpeed: " << parsedSpeed << " Max Allowed Speed: " << maxSpeedVariable << " Error Multiplier: " << errorMultiplier << endl;
+	speedMsg << "checkPlayerSpeedTest -- Player Run Speed: " << allowedSpeedBase << " Player Run Modifier: " << allowedSpeedMod;
+	speedMsg.flush();
 #endif // DEBUG_SPEED_HACK
-
-	/*
-	// Z Coordinate Check
-	float oldValidZ = lastValidVec.getZ();
-	float newPosZ = newWorldPosition.getZ();
-
-	if (newPosZ > oldValidZ) {
-		float heightDist = fabs(newPosZ - oldValidZ);
-		float slopeMod = player->getSlopeModPercent();
-
-		if (slopeMod > 0.f) {
-			parsedSpeed += (parsedSpeed * (slopeMod / 100.f));
-		}
-
-		parsedSpeed += (heightDist * 0.75f); // Account for players moving quickly up and down steep slopes
-
-		if (heightDist > parsedSpeed) {
-			StringBuffer msg;
-			msg << "checkSpeedHackTests -- FAILED --  heightDist: " << heightDist << " speed: " << parsedSpeed << " Slope Mod Percentage: " << slopeMod;
-			player->info(msg.toString(), true);
-
-			return false;
-		}
-	}
-	*/
-
-	float maxSpeedVariable = (maxAllowedSpeed * errorMultiplier);
 
 	if (parsedSpeed > maxSpeedVariable) {
 		// Outdoors get proper Z to try to prevent getting players stuck in terrain
@@ -4165,7 +4141,6 @@ int PlayerManagerImplementation::checkSpeedHackTests(CreatureObject* player, Pla
 		player->info(true) << "checkSpeedHackTests -- Parent Transform with newWorldPosition: " << newWorldPosition.toString() << " Validated World Position: " << lastValidatedWorldPosition.toString() << " Distance Length = " << length;
 #endif // DEBUG_SPEED_HACK
 	} else {
-		// Hills cause issues
 		newWorldPosition.setZ(0);
 		lastValidatedWorldPosition.setZ(0.f);
 
