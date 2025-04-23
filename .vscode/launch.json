@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Build & Launch core3", // Updated name for clarity
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/MMOCoreORB/bin/core3", // Path to the executable
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/MMOCoreORB/bin",          // Working directory for the *debugged program*
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            // This line tells VS Code to run the specified task before launching the debugger
+            "preLaunchTask": "Build core3 (ninja-debug)"
+        }
+        // Other launch configurations...
+    ]
+}

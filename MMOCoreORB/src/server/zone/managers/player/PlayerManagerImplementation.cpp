@@ -128,10 +128,9 @@ PlayerManagerImplementation::PlayerManagerImplementation(ZoneServer* zoneServer,
 	
 	// Initialize SRPlayerManager
 	srPlayerManager = Reference<SRPlayerManager*>(new SRPlayerManager());
-	srPlayerManager->init(_this.getReferenceUnsafeStaticCast());
 
 	playerLoggerFilename = "log/player.log";
-playerLoggerLines = ConfigManager::instance()->getMaxLogLines();
+	playerLoggerLines = ConfigManager::instance()->getMaxLogLines();
 	playerLogger.setLoggingName("PlayerLogger");
 	playerLogger.setFileLogger(playerLoggerFilename, true);
 	
@@ -141,7 +140,8 @@ playerLoggerLines = ConfigManager::instance()->getMaxLogLines();
 	nameMap = new CharacterNameMap();
 
 	DirectorManager::instance()->getLuaInstance()->runFile("scripts/screenplays/checklnum.lua");
-
+	
+	
 	loadLuaConfig();
 	loadStartingLocations();
 	loadQuestInfo();
@@ -315,7 +315,6 @@ void PlayerManagerImplementation::loadLuaConfig() {
 
 	jboxSongs.pop();
 
-	srPlayerManager->loadSRLuaConfig();
 
 	delete lua;
 	lua = nullptr;
@@ -7250,4 +7249,12 @@ void PlayerManagerImplementation::iteratePlayerNames(const PlayerNameIterator& i
 		iter.getNextKeyAndValue(name, oid);
 		iterator(name, oid);
 	}
+}
+
+// SR CUSTOM
+void PlayerManagerImplementation::postDeployInitialization() {
+	if (srPlayerManager != nullptr) {
+        srPlayerManager->init(_this.get());
+	}
+	srPlayerManager->loadSRLuaConfig();
 }

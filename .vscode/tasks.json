@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build core3 (ninja-debug)",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "build-ninja-debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/MMOCoreORB"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Runs 'make build-ninja-debug' in the MMOCoreORB directory."
+        }
+    ]
+}

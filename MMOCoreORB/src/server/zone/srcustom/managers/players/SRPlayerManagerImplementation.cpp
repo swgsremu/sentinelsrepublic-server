@@ -12,7 +12,7 @@ void SRPlayerManagerImplementation::loadSRLuaConfig() {
         delete lua;
         return;
     }
-
+    
     // Make sure playerManager is set before using it
     if (playerManager == nullptr) {
         error("PlayerManager reference is null in SRPlayerManager");
@@ -20,21 +20,14 @@ void SRPlayerManagerImplementation::loadSRLuaConfig() {
         return;
     }
 
-    LuaObject luaObject = lua->getGlobalObject("srPlayerManager");
-    if (!luaObject.isValidTable()) {
-        error("Invalid srPlayerManager table in player_manager.lua");
-        delete lua;
-        return;
-    }
 
-    craftingExperienceModifier = luaObject.getFloatField("craftingExperienceModifier");
-    globalExperienceModifier = luaObject.getFloatField("globalExpMultiplier"); 
-    jediExperienceModifier = luaObject.getFloatField("jediExperienceModifier");
+    craftingExperienceModifier = lua->getGlobalFloat("craftingExpModifier");
+    globalExperienceModifier = lua->getGlobalFloat("globalExpMultiplier"); 
+    jediExperienceModifier = lua->getGlobalFloat("jediExpMultiplier");
 
     // Only call setExperienceMultiplier if we have a valid playerManager
     playerManager.get()->setExperienceMultiplier(globalExperienceModifier);
 
-    luaObject.pop();
     delete lua;
 }
 
