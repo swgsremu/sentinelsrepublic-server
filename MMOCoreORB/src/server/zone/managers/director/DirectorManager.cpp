@@ -2651,6 +2651,10 @@ int DirectorManager::spawnMobile(lua_State* L) {
 			AiAgent* ai = cast<AiAgent*>(creature);
 			ai->setRespawnTimer(respawnTimer);
 
+			if (respawnTimer > 0 && parentID > 0) {
+				zone->incrementSpawnedAgents();
+			}
+
 			if (randomRespawn)
 				ai->setRandomRespawn(true);
 
