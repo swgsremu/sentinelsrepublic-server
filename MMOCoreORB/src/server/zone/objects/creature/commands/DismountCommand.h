@@ -92,7 +92,6 @@ public:
 			changeBuffer->remove(0);
 		}
 
-		changeBuffer->add(SpeedModChange(mountedSpeed));
 		changeBuffer->add(SpeedModChange(creature->getRunSpeed()));
 
  		// Reset Force Sensitive control mods to default.
@@ -104,6 +103,8 @@ public:
 		// Update dismount timer
 		creature->updateCooldownTimer("mount_dismount", 2000);
 		creature->setNextAllowedMoveTime(500);
+
+		creature->updateRunSpeed();
 
 		// Client manipulates player height when dismounting, reset the player height sent to the client
 		auto height = creature->getHeight();

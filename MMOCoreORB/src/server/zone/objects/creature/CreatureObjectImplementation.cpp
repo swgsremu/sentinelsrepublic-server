@@ -2014,6 +2014,19 @@ void CreatureObjectImplementation::setRunSpeed(float newSpeed, bool notifyClient
 	sendMessage(dcreo4);
 }
 
+void CreatureObjectImplementation::updateRunSpeed() {
+	CreatureObjectDeltaMessage4* dcreo4 = new CreatureObjectDeltaMessage4(asCreatureObject());
+
+	if (dcreo4 == nullptr) {
+		return;
+	}
+
+	dcreo4->updateRunSpeed();
+	dcreo4->close();
+
+	sendMessage(dcreo4);
+}
+
 void CreatureObjectImplementation::setMoodString(
 		const String& moodAnimationString, bool notifyClient) {
 	moodString = moodAnimationString;
