@@ -170,7 +170,7 @@ public:
 
 #ifdef TRANSFORM_DEBUG
 		std::cout << "\n\n";
-		creO->info(true) << "DT ---- Transform Start - Transform Timestamp: " << timeStamp;
+		creO->info(true) << "DT ---- Transform Start - Transform Timestamp: " << timeStamp << " Speed: " << transform.getSpeed();
 #endif // TRANSFORM_DEBUG
 
 		auto ghost = creO->getPlayerObject();
