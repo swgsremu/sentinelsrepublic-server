@@ -90,6 +90,8 @@ public:
 			vehicle->setPosture(CreaturePosture::UPRIGHT);
 		}
 
+		float playerRunSpeed = creature->getRunSpeed();
+
 		vehicle->setState(CreatureState::MOUNTEDCREATURE);
 
 		if (!vehicle->transferObject(creature, PlayerArrangement::RIDER, true)) {
@@ -169,7 +171,7 @@ public:
 		}
 
 		// Add our change to the buffer history
-		changeBuffer->add(SpeedModChange(newSpeed / creature->getRunSpeed()));
+		changeBuffer->add(SpeedModChange(newSpeed / playerRunSpeed));
 
 		// Force Sensitive SkillMods
 		if (vehicle->isVehicleObject()) {
@@ -182,6 +184,7 @@ public:
 		creature->addMountedCombatSlow();
 
 		creature->updateSpeedAndAccelerationMods();
+		creature->updateRunSpeed();
 
 		creature->updateToDatabase();
 
