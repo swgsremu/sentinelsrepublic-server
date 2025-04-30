@@ -131,7 +131,7 @@ See [linux/README.md](linux/README.md) for instructions.
   * pthreads
   * Lua 5.3 libraries
   * Zlib libraries
-  * clang18
+  * clang19
   * java runtime
   * boost
   * ninja-build
@@ -158,7 +158,7 @@ This will install the latest and symlink all the files to /usr/bin so CMake find
 
   * Install dependencies (Debian 12)
 
-        sudo apt install build-essential libmariadb-dev libmariadb-dev-compat liblua5.3-dev libdb5.3-dev libssl-dev cmake git default-jre libboost-all-dev gdb ninja-build
+        sudo apt install build-essential libmariadb-dev libmariadb-dev-compat liblua5.3-dev libdb5.3-dev libssl-dev cmake git default-jre libboost-all-dev gdb ninja-build libjemalloc-dev
 
   * Clone core3 repository somewhere  (~/workspace)
 
@@ -166,7 +166,12 @@ This will install the latest and symlink all the files to /usr/bin so CMake find
         cd ~/workspace
         git clone https://review.swgemu.com/Core3
 
-  * Build Core3
+  * Build Core3 For Development
+
+        cd Core3/MMOCoreORB
+        make build-ninja-debug
+
+  * Build Core3 For Production
 
         cd Core3/MMOCoreORB
         make -j$(nproc)
@@ -178,8 +183,17 @@ This will install the latest and symlink all the files to /usr/bin so CMake find
 
 ### How to Run
 
-    cd ~/workspace/Core3/MMOCoreORB/bin
-    ./core3
+    * Navigate to the Directory
+
+        cd ~/workspace/Core3/MMOCoreORB/bin
+
+    * Load GDB
+
+        gdb ./core3
+
+    * Start Core3
+
+        r
 
 # License
 
