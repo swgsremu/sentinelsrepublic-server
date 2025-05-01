@@ -48,10 +48,8 @@ int PlaceCityHallComponent::placeStructure(StructureDeed* deed, CreatureObject* 
 	}
 
 	ManagedReference<SuiInputBox*> inputBox = new SuiInputBox(creature, SuiWindowType::CITY_CREATE, 0);
-	inputBox->setPromptTitle("@city/city:city_name_t"); //Enter City Name
-	//Custom text, we need to make it pull this text/citizen value from the lua based on required per stage or something....
-	inputBox->setPromptText("Enter the desired name for your new city. Note that you must have at least 5 citizens join your city within 24 hours of placement in order for your city to be approved."); 
-	// inputBox->setPromptText("@city/city:city_name_d"); //Enter the desired name for your new city. Note that you must have at least 10 citizens join your city within 24 hours of placement in order for your city to be approved.
+	inputBox->setPromptTitle("@city/city:city_name_t"); //Enter City Name	
+	inputBox->setPromptText("@city/city:city_name_d"); //Custom tre Edit - Enter the desired name for your new city. Note that you must have at least 5 citizens join your city within 24 hours of placement in order for your city to be approved.
 	inputBox->setForceCloseDisabled();
 	inputBox->setMaxInputSize(40);
 	inputBox->setCallback(new PlaceCityHallSuiCallback(creature->getZone(), deed, x, y, angle));
