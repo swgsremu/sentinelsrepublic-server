@@ -228,7 +228,7 @@ CitySpecializations = {
 		cost = 80000,
 		skillMods = {
 			{"private_spec_entertainer", 10},
-			{"increase_entertainer_buff", 60}
+			{"increase_entertainer_buff", 60} --Increased buff duration, not strength.
 		}
 	},
 	{--Enhancement Center
@@ -237,7 +237,7 @@ CitySpecializations = {
 		skillMods = {
 			{"private_medical_rating", 10},
 			{"private_spec_entertainer", 10},
-			{"increase_entertainer_buff", 60}
+			{"increase_entertainer_buff", 60} --Increased buff duration, not strength.
 		}
 	},
 	{--Clone Lab
