@@ -39,7 +39,8 @@ DraftSchematicObjectTemplate::DraftSchematicObjectTemplate() {
 	skillMods.setNoDuplicateInsertPlan();
 	skillMods.setNullValue(0);
 	labratory = 0;
-	factoryCrateSize = 25;
+	// factoryCrateSize = 25;
+	factoryCrateSize = 1000; // To allow testing factory crates / draft schems / etc at 1k
 }
 
 DraftSchematicObjectTemplate::~DraftSchematicObjectTemplate() {
@@ -75,8 +76,8 @@ void DraftSchematicObjectTemplate::parseVariableData(const String& varName, LuaO
 		labratory = Lua::getIntParameter(state);
 	} else if (varName == "factoryCrateType") {
 		factoryCrateType = Lua::getStringParameter(state);
-	} else if (varName == "factoryCrateSize") {
-		factoryCrateSize = Lua::getIntParameter(state);
+	// } else if (varName == "factoryCrateSize") { Disabled to allow testing of factory crates at 1k
+	// 	factoryCrateSize = Lua::getIntParameter(state);
 	} else if (varName == "isMagic") {
 		isMagic = Lua::getBooleanParameter(state);
 	} else if (varName == "assemblySkill") {
