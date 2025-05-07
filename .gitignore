@@ -11,3 +11,5 @@ srdocker/deploy_key
 srdocker/deploy_key.pub
 srdocker/deploy_key/
 build
+MMOCoreORB/bin/scripts/managers/resource_manager_spawns.lua
+MMOCoreORB/bin/*screenlog*.gz
