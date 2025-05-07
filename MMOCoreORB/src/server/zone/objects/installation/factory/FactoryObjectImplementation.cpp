@@ -567,7 +567,8 @@ bool FactoryObjectImplementation::startFactory() {
 	}
 
 #ifdef DEBUG_FACTORIES
-	timer = 30;
+	// timer = 30; 
+	timer = 1; // Crafting Testing
 	info(true) << "Factory Testing Timer Set To: " << timer;
 #else
 	// SR Modified
@@ -579,7 +580,8 @@ bool FactoryObjectImplementation::startFactory() {
 
 	// Add sampletask
 	Reference<CreateFactoryObjectTask*> createFactoryObjectTask = new CreateFactoryObjectTask(_this.getReferenceUnsafeStaticCast());
-	addPendingTask("createFactoryObject", createFactoryObjectTask, timer * 1000);
+	// addPendingTask("createFactoryObject", createFactoryObjectTask, timer * 1000);
+	addPendingTask("createFactoryObject", createFactoryObjectTask, timer * 1); // Factory Testing
 
 	setActive(true, true);
 
@@ -764,7 +766,8 @@ void FactoryObjectImplementation::createNewObject() {
 	Reference<Task*> pending = getPendingTask("createFactoryObject");
 
 	if (pending != nullptr)
-		pending->reschedule(timer * 1000);
+		// pending->reschedule(timer * 1000);
+		pending->reschedule(timer * 1); // Crafting Testing
 	else
 		stopFactory("manf_error", "", "", -1);
 }
