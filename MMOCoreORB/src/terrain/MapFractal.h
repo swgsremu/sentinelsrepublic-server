@@ -11,9 +11,10 @@
 #include "TemplateVariable.h"
 #include "Random.h"
 #include "PerlinNoise.h"
+#include "srcustom/SimplexNoise.h"
 
 class MapFractal : public TemplateVariable<'MFRC'> {
-	PerlinNoise* noise;
+	SimplexNoise* noise;
 	trn::ptat::Random* rand;
 
 	int bias;
