@@ -149,6 +149,9 @@ Core3 = {
 	------TRE config------
 	TrePath = "/home/swgemu/Desktop/SWGEmu",
 	TreFiles = {
+		"SR2CRC.tre",		
+		"SR2_Patch_01.tre",
+		"SR2Species.tre",
 		"default_patch.tre",
 		"patch_sku1_14_00.tre",
 		"patch_14_00.tre",
@@ -201,7 +204,6 @@ Core3 = {
 		"data_music_00.tre",
 		"bottom.tre"
 	},
-
 	------Status Server Config------
 	StatusPort = 44455,
 	StatusAllowedConnections = 500,
