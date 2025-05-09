@@ -6,7 +6,7 @@
  */
 
 #include "MapFractal.h"
-#include "srcustom/SimplexNoise.h"
+#include "terrain/PerlinNoise.h"
 
 double MapFractal::log05 = log(0.5);
 
@@ -196,7 +196,7 @@ double MapFractal::calculateCombination1(float v39, float v41) {
 		coord[0] = v36 * v48;
 		coord[1] = v42 * v48;
 
-		v33 = noise->noise2(coord[0], coord[1]) * v47 + v33;
+		v33 = noise->noise2(coord) * v47 + v33;
 		v48 = v48 * octavesParam; // + 24 octaves param
 		v47 = v47 * amplitude; // + 28 amplitude
 	}
@@ -246,7 +246,7 @@ double MapFractal::calculateCombination2(float v39, float v41) {
 		coord[0] = v42 * v48;
 		coord[1] = v43 * v48;
 
-		v34 = (1.0 - fabs(noise->noise2(coord[0], coord[1]))) * v47 + v34;
+		v34 = (1.0 - fabs(noise->noise2(coord))) * v47 + v34;
 		v48 = v48 * octavesParam;  // + 24 octaves param
 		v47 = v47 * amplitude; // + 28 amplitude
 	}
@@ -273,7 +273,7 @@ double MapFractal::calculateCombination3(float v39, float v41) {
 		coord[0] = v22 * v48;
 		coord[1] = v44 * v48;
 
-		v34 = fabs(noise->noise2(coord[0], coord[1])) * v47 + v34;
+		v34 = fabs(noise->noise2(coord)) * v47 + v34;
 		v48 = v48 * octavesParam; // + 24 octaves param
 		v47 = v47 * amplitude;  // + 28 amplitude
 	}
@@ -301,7 +301,7 @@ double MapFractal::calculateCombination4(float v39, float v41) {
 		coord[0] = v37 * v48;
 		coord[1] = v45 * v48;
 
-		v26 = noise->noise2(coord[0], coord[1]);
+		v26 = noise->noise2(coord);
 		if ( v26 >= 0.0 ) {
 			if ( v26 > 1.0 )
 				v26 = 1.0;
@@ -337,7 +337,7 @@ double MapFractal::calculateCombination5(float v39, float v41) {
 		coord[0] = v38 * v48;
 		coord[1] = v46 * v48;
 
-		v30 = noise->noise2(coord[0], coord[1]); //
+		v30 = noise->noise2(coord); //
 
 		if ( v30 >= 0.0 ) {
 			if (v30 > 1.0)
@@ -366,5 +366,6 @@ void MapFractal::setSeed(int seed) {
 	rand = new Random();
 	rand->setSeed(seed);
 
-	noise = new SimplexNoise(rand);
+	noise = new PerlinNoise(rand);
+	noise->init();
 }
