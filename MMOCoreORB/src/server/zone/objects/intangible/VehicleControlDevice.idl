@@ -104,4 +104,7 @@ class VehicleControlDevice extends ControlDevice {
 	public boolean isVehicleControlDevice() {
 		return true;
 	}
+
+	// SR Modification
+	protected transient static final int VEHICLE_CALL_DELAY = 5; // Time in seconds
 }
