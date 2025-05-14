@@ -692,12 +692,14 @@ void EntertainingSessionImplementation::doFlourish(int flourishNumber, bool gran
 }
 
 void EntertainingSessionImplementation::addEntertainerBuffDuration(CreatureObject* creature, int performanceType, float duration) {
+	ManagedReference<CreatureObject*> entertainer = this->entertainer.get();
 	int buffDuration = getEntertainerBuffDuration(creature, performanceType);
 
 	buffDuration += duration;
 
-	if (buffDuration > (120.0f + (10.0f / 60.0f)) ) // 2 hrs 10 seconds
-		buffDuration = (120.0f + (10.0f / 60.0f)); // 2hrs 10 seconds
+	//SR2 Edit - Added Skill mod for City Spec for additional ent buff duration
+	if (buffDuration > (120.0f + (10.0f / 60.0f) + (float) entertainer->getSkillMod("increase_entertainer_buff"))) // 2 hrs 10 seconds
+		buffDuration = (120.0f + (10.0f / 60.0f) + (float) entertainer->getSkillMod("increase_entertainer_buff")); // 2 hrs 10 seconds
 
 	setEntertainerBuffDuration(creature, performanceType, buffDuration);
 }
