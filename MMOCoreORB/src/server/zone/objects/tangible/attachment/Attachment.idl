@@ -86,3 +86,4 @@ class Attachment extends TangibleObject {
 		return skillModifiers;
 	}
 }
+

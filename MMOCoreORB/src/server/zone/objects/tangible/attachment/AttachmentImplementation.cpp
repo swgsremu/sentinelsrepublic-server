@@ -12,6 +12,8 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/managers/loot/LootManager.h"
 #include "server/zone/managers/loot/LootValues.h"
+#include "server/zone/managers/stringid/StringIdManager.h"
+
 
 void AttachmentImplementation::initializeMembers() {
 	if (gameObjectType == SceneObjectType::CLOTHINGATTACHMENT) {
@@ -45,49 +47,75 @@ void AttachmentImplementation::initializeTransientMembers() {
 }
 
 void AttachmentImplementation::updateCraftingValues(CraftingValues* values, bool firstUpdate) {
-	auto zoneServer = getZoneServer();
+    auto zoneServer = getZoneServer();
 
-	if (zoneServer == nullptr) {
-		return;
-	}
+    if (zoneServer == nullptr) {
+        return;
+    }
 
-	auto lootManager = zoneServer->getLootManager();
+    auto lootManager = zoneServer->getLootManager();
 
-	if (lootManager == nullptr) {
-		return;
-	}
+    if (lootManager == nullptr) {
+        return;
+    }
 
-	float level = values->hasExperimentalAttribute("creatureLevel") ? values->getCurrentValue("creatureLevel") : 1;
-	float bonus = values->hasExperimentalAttribute("modifier") ? values->getCurrentValue("modifier") : 1;
-	float rank = LootValues::getLevelRankValue(level, 0.2f, 0.9f);
+    float level = values->hasExperimentalAttribute("creatureLevel") ? values->getCurrentValue("creatureLevel") : 1;
+    float bonus = values->hasExperimentalAttribute("modifier") ? values->getCurrentValue("modifier") : 1;
+    float rank = LootValues::getLevelRankValue(level, 0.2f, 0.9f);
 
-	int chance = rank * bonus * 100.f;
-	int roll = System::random(1000);
-	int modCount = 1;
+    int chance = rank * bonus * 100.f;
+    int roll = System::random(1000);
+    int modCount = 1;
 
-	int pivot = chance - roll;
+    int pivot = chance - roll;
 
-	if (pivot < 40) {
-		modCount = 1;
-	} else if (pivot < 70) {
-		modCount = System::random(1) + 1;
-	} else if (pivot < 100) {
-		modCount = System::random(2) + 1;
-	} else {
-		modCount = System::random(1) + 2;
-	}
+    if (pivot < 40) {
+        modCount = 1;
+    } else if (pivot < 70) {
+        modCount = System::random(1) + 1;
+    } else if (pivot < 100) {
+        modCount = System::random(2) + 1;
+    } else {
+        modCount = System::random(1) + 2;
+    }
 
-	for (int i = 0; i < modCount; ++i) {
-		float step = 1.f - ((i / (float)modCount) * 0.5f);
-		int min = Math::clamp(-1, (int)round(0.075f * level) - 1, 25) * step;
-		int max = Math::clamp(-1, (int)round(0.125f * level) + 1, 25);
-		int mod = System::random(max - min) + min;
+    for (int i = 0; i < modCount; ++i) {
+        float step = 1.f - ((i / (float)modCount) * 0.5f);
+        int min = Math::clamp(-1, (int)round(0.075f * level) - 1, 25) * step;
+        int max = Math::clamp(-1, (int)round(0.125f * level) + 1, 25);
+        int mod = System::random(max - min) + min;
 
-		String modName = lootManager->getRandomLootableMod(gameObjectType);
+        String modName = lootManager->getRandomLootableMod(gameObjectType);
 
-		skillModifiers.put(modName, ((mod <= 0) ? 1 : mod));
-	}
+        skillModifiers.put(modName, ((mod <= 0) ? 1 : mod));
+    }
+
+   if (skillModifiers.size() > 0) {
+    auto entry = skillModifiers.elementAt(0);
+    String skillMod = entry.getKey();
+    int modValue = entry.getValue();
+
+    StringId stringId("stat_n", skillMod);
+    String localizedName = stringId.toString();
+
+    // Fallback if localization fails
+    if (localizedName.isEmpty() || localizedName.beginsWith("stat_n:")) {
+        localizedName = skillMod.replaceAll("_", " ");
+        localizedName[0] = Character::toUpperCase(localizedName[0]);
+    }
+
+    // Add the value into the item name
+    String finalName = localizedName + " +" + String::valueOf(modValue);
+
+    // Optionally label it clearly
+    finalName += " Attachment";
+
+    setCustomObjectName(finalName, true);
 }
+
+}
+
+
 
 void AttachmentImplementation::fillAttributeList(AttributeListMessage* msg, CreatureObject* object) {
 	TangibleObjectImplementation::fillAttributeList(msg, object);
@@ -105,3 +133,4 @@ void AttachmentImplementation::fillAttributeList(AttributeListMessage* msg, Crea
 		name.deleteAll();
 	}
 }
+
