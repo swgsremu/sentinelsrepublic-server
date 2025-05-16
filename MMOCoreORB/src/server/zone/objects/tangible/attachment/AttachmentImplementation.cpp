@@ -90,13 +90,14 @@ void AttachmentImplementation::updateCraftingValues(CraftingValues* values, bool
         skillModifiers.put(modName, ((mod <= 0) ? 1 : mod));
     }
 
-   if (skillModifiers.size() > 0) {
+if (skillModifiers.size() > 0) {
     auto entry = skillModifiers.elementAt(0);
     String skillMod = entry.getKey();
     int modValue = entry.getValue();
 
     StringId stringId("stat_n", skillMod);
-    String localizedName = stringId.toString();
+    UnicodeString uLocalizedName = StringIdManager::instance()->getStringId(stringId);
+    String localizedName = uLocalizedName.toString();
 
     // Fallback if localization fails
     if (localizedName.isEmpty() || localizedName.beginsWith("stat_n:")) {
@@ -104,16 +105,29 @@ void AttachmentImplementation::updateCraftingValues(CraftingValues* values, bool
         localizedName[0] = Character::toUpperCase(localizedName[0]);
     }
 
-    // Add the value into the item name
-    String finalName = localizedName + " +" + String::valueOf(modValue);
+    // Get the object's template name safely
+    String templateName = getObjectTemplate()->getFullTemplateString();
 
-    // Optionally label it clearly
+    // Determine prefix
+    String prefix = "";
+    if (templateName.contains("armor")) {
+        prefix = "[AA] ";
+    } else if (templateName.contains("clothing")) {
+        prefix = "[CA] ";
+    }
+
+    String finalName = prefix + localizedName + " +" + String::valueOf(modValue);
     finalName += " Attachment";
 
     setCustomObjectName(finalName, true);
 }
 
+
+
 }
+
+
+
 
 
 
