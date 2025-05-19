@@ -1387,15 +1387,16 @@ void CraftingSessionImplementation::createPrototype(int clientCounter, bool crea
 		String xpType = manufactureSchematic->getDraftSchematic()->getXpType();
 		int xp = manufactureSchematic->getDraftSchematic()->getXpAmount();
 
+		auto srConfig = SRConfigManager::instance();
+		int timer = srConfig->getCraftingTimerInterval();
+
 		if (createItem) {
-			startCreationTasks(manufactureSchematic->getComplexity() * 2, false);
-
+		    startCreationTasks(timer, false);
 		} else {
-			// This is for practicing
-			startCreationTasks(manufactureSchematic->getComplexity() * 2, true);
-			xp = round(xp * 1.05f);
+		    startCreationTasks(timer, true);
+		    xp = round(xp * 1.05f);
 		}
-
+		
 		Reference<PlayerManager*> playerManager = crafter->getZoneServer()->getPlayerManager();
 		playerManager->awardExperience(crafter, xpType, xp, true);
 

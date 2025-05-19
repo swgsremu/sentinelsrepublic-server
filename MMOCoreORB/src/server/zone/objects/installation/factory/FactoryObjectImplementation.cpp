@@ -575,13 +575,14 @@ bool FactoryObjectImplementation::startFactory() {
 	timer = ((int)schematic->getComplexity()) * FactoryTimerConfig::getTimerMultiplier();
 #endif
 
+timer = 2; // 2 seconds, fixed for all - Ignoring other config for now..
+
 	if (!populateSchematicBlueprint(schematic))
 		return false;
 
 	// Add sampletask
 	Reference<CreateFactoryObjectTask*> createFactoryObjectTask = new CreateFactoryObjectTask(_this.getReferenceUnsafeStaticCast());
-	// addPendingTask("createFactoryObject", createFactoryObjectTask, timer * 1000);
-	addPendingTask("createFactoryObject", createFactoryObjectTask, timer * 1); // Factory Testing
+	addPendingTask("createFactoryObject", createFactoryObjectTask, timer * 1000); // 2 seconds per item
 
 	setActive(true, true);
 
@@ -756,6 +757,7 @@ void FactoryObjectImplementation::createNewObject() {
 	schematic->manufactureItem(_this.getReferenceUnsafeStaticCast());
 	currentRunCount++;
 
+
 	if (schematic->getManufactureLimit() < 1) {
 		schematic->destroyObjectFromWorld(true);
 		schematic->destroyObjectFromDatabase(true);
@@ -765,9 +767,8 @@ void FactoryObjectImplementation::createNewObject() {
 
 	Reference<Task*> pending = getPendingTask("createFactoryObject");
 
-	if (pending != nullptr)
-		// pending->reschedule(timer * 1000);
-		pending->reschedule(timer * 1); // Crafting Testing
+	if (pending != nullptr)		
+		pending->reschedule(timer * 1000); // 2 seconds per item
 	else
 		stopFactory("manf_error", "", "", -1);
 }
