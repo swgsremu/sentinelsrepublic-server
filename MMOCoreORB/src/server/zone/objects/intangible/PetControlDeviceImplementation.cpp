@@ -303,10 +303,10 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 		Reference<CallPetTask*> callPet = new CallPetTask(_this.getReferenceUnsafeStaticCast(), player, "call_pet");
 
 		StringIdChatParameter message("pet/pet_menu", "call_pet_delay"); // Calling pet in %DI seconds. Combat will terminate pet call.
-		message.setDI(15);
+		message.setDI(PET_CALL_DELAY); // SR Modification
 		player->sendSystemMessage(message);
 
-		player->addPendingTask("call_pet", callPet, 15 * 1000);
+		player->addPendingTask("call_pet", callPet, PET_CALL_DELAY * 1000); // SR Modification
 
 		if (petControlObserver == nullptr) {
 			petControlObserver = new PetControlObserver(_this.getReferenceUnsafeStaticCast());
@@ -555,8 +555,8 @@ void PetControlDeviceImplementation::storeObject(CreatureObject* player, bool fo
 		return;
 
 	if (!force) {
-		// Fail if pet or player are in combat or if the pet is dead, unless forced
-		if (pet->isInCombat() || player->isInCombat() || player->isDead())
+		// Fail if player is dead, unless forced
+		if (player->isDead())
 			return;
 
 		// Check cooldown for call or store
