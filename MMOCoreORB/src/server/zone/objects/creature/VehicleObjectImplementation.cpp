@@ -178,6 +178,23 @@ void VehicleObjectImplementation::sendMessage(BasePacket* msg) {
 	}
 }
 
+void VehicleObjectImplementation::reduceMaxConditionOnRepair(CreatureObject* player) {
+    int repairChance = System::random(100); // 0-99
+    String message = "@error_message:";
+
+    if (repairChance < 15) { // 15% chance to lose 5% max condition
+        setMaxCondition(getMaxCondition() * 0.95f, true); // lose 5%
+        setConditionDamage(0, true);
+        message += "sys_repair_slight";
+    } else { // 85% chance, no max condition loss
+        setConditionDamage(0, true);
+        message += "sys_repair_perfect";
+    }
+
+    if (player != nullptr)
+        player->sendSystemMessage(message);
+}
+
 void VehicleObjectImplementation::repairVehicle(CreatureObject* player) {
 	if (player == nullptr)
 		return;
