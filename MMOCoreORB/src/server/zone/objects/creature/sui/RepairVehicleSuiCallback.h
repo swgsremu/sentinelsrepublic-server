@@ -67,6 +67,7 @@ public:
 		params.setDI(repairCost);
 		player->sendSystemMessage(params);
 
+		vehicle->reduceMaxConditionOnRepair(player);
 		vehicle->healDamage(player, 0, vehicle->getConditionDamage(), true);
 
 		String vehicleName = vehicle->getDisplayedName();

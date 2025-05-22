@@ -11,6 +11,12 @@
 
 #include "account/AccountManager.h"
 
+#include "server/ServerCore.h"
+#include "server/zone/ZoneServer.h"
+#include "server/zone/managers/player/PlayerManager.h"
+#include "server/zone/objects/creature/CreatureObject.h"
+#include "server/zone/objects/player/PlayerObject.h"
+
 LoginPacketHandler::LoginPacketHandler(const String& s, LoginProcessServerImplementation* serv)
 		: Logger(s) {
 
@@ -90,9 +96,49 @@ void LoginPacketHandler::handleDeleteCharacterMessage(LoginClient* client, Messa
 	deleteStatement << "DELETE FROM characters WHERE character_oid = " << charId;
 	deleteStatement << " AND account_id = " << accountId << " AND galaxy_id = " << ServerId << ";";
 
-	int dbDelete = 0;
+	// SR2 Edit query character firstname (for lots/structures)
+	StringBuffer getfirstnameStatement;
+	getfirstnameStatement << "SELECT firstname from characters WHERE character_oid = " << charId;
+	getfirstnameStatement << " AND account_id = " << accountId << " AND galaxy_id = " << ServerId << ";";
 
+	int dbDelete = 0;
+	
 	try {
+		UniqueReference<ResultSet*> getfirstnameResults(ServerDatabase::instance()->executeQuery(getfirstnameStatement.toString()));
+		String toonName = "";
+
+		if (getfirstnameResults == nullptr || getfirstnameResults.get()->getRowsAffected() == 0) {
+			StringBuffer errMsg;
+			errMsg << "ERROR: No characters found, " << endl;
+			errMsg << "QUERY: " << getfirstnameStatement.toString();
+			error(errMsg.toString());
+			auto* msg = new DeleteCharacterReplyMessage(1);
+			client->sendMessage(msg);
+			return;
+		} else if (getfirstnameResults->next()) {
+			toonName = getfirstnameResults->getString(0);
+
+			// SR2 Edit check (for lots/structures)
+			ZoneServer* zoneServer = ServerCore::getZoneServer();
+			if (zoneServer != nullptr) {
+				PlayerManager* playerManager = zoneServer->getPlayerManager();
+				if (playerManager != nullptr) {
+					CreatureObject* creo = playerManager->getPlayer(toonName);
+					if (creo != nullptr) {
+						Reference<PlayerObject*> ghost = creo->getPlayerObject();
+						if (ghost != nullptr && ghost->getLotsRemaining() < 10) {
+							String title = "Unable to Delete " + toonName;
+							String text = "This character owns structures on the server.\n\nYou must remove all owned structures before deleting this character.";
+							client->sendErrorMessage(title, text, false);													
+							auto* msg1 = new DeleteCharacterReplyMessage(1);
+							client->sendMessage(msg1);
+							return;
+						}
+					}
+				}
+			}
+		}
+
 		UniqueReference<ResultSet*> moveResults(ServerDatabase::instance()->executeQuery(moveStatement.toString()));
 
 		if (moveResults == nullptr || moveResults.get()->getRowsAffected() == 0) {

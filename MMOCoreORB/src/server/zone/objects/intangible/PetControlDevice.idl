@@ -293,6 +293,9 @@ class PetControlDevice extends ControlDevice {
 		return true;
 	}
 
+	// SR Modification
+	protected transient static final int PET_CALL_DELAY = 5; // Time in seconds
+
 	@read
 	public int getVitality() {
 		return vitality;

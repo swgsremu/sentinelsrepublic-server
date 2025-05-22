@@ -231,6 +231,9 @@ class VehicleObject extends CreatureObject {
 	@arg1preLocked
 	public native void repairVehicle(CreatureObject player);
 
+	@preLocked
+	public native void reduceMaxConditionOnRepair(CreatureObject player);
+
 	@dirty
 	public native int calculateRepairCost(CreatureObject player);
 
