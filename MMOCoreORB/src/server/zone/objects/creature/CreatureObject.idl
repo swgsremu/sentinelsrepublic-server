@@ -734,6 +734,20 @@ class CreatureObject extends TangibleObject {
 	@preLocked
 	public native void renewBuff(unsigned int buffCRC, int duration, boolean sendToClient = false);
 
+	/**
+	 * Custom buff control methods for Lua scripting
+	 */
+	@preLocked
+	public native void addCustomBuff(unsigned int buffCRC, int attribute, int amount, int duration, int buffType);
+
+	@preLocked
+	public native boolean removeCustomBuff(unsigned int buffCRC);
+
+	@read
+	public native boolean hasCustomBuff(unsigned int buffCRC);
+
+	@preLocked
+	public native void clearAllBuffs();
 
 	public native void updateVehiclePosition(boolean sendPackets);
 

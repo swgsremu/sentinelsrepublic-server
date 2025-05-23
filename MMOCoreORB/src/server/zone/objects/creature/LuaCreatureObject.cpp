@@ -177,6 +177,13 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "removeQuestMission", &LuaCreatureObject::removeQuestMission },
 		{ "addSpaceMissionObject", &LuaCreatureObject::addSpaceMissionObject },
 		{ "removeSpaceMissionObject", &LuaCreatureObject::removeSpaceMissionObject },
+
+		// Custom buff control functions
+		{ "addCustomBuff", &LuaCreatureObject::addCustomBuff },
+		{ "removeCustomBuff", &LuaCreatureObject::removeCustomBuff },
+		{ "hasCustomBuff", &LuaCreatureObject::hasCustomBuff },
+		{ "clearAllBuffs", &LuaCreatureObject::clearAllBuffs },
+		
 		{ 0, 0 }
 };
 
@@ -1599,6 +1606,65 @@ int LuaCreatureObject::removeSpaceMissionObject(lua_State* L) {
 	Locker lock(realObject);
 
 	realObject->removeSpaceMissionObject(realObject->getObjectID(), missionObjectID, notifyClient, true);
+
+	return 0;
+}
+
+int LuaCreatureObject::addCustomBuff(lua_State* L) {
+	int numberOfArguments = lua_gettop(L) - 1;
+
+	if (numberOfArguments != 5) {
+		realObject->error() << "Improper number of arguments in LuaCreatureObject::addCustomBuff. Expected: buffCRC, attribute, amount, duration, buffType";
+		return 0;
+	}
+
+	uint32 buffCRC = lua_tointeger(L, -5);
+	int attribute = lua_tointeger(L, -4);
+	int amount = lua_tointeger(L, -3);
+	int duration = lua_tointeger(L, -2);
+	int buffType = lua_tointeger(L, -1);
+
+	realObject->addCustomBuff(buffCRC, attribute, amount, duration, buffType);
+
+	return 0;
+}
+
+int LuaCreatureObject::removeCustomBuff(lua_State* L) {
+	int numberOfArguments = lua_gettop(L) - 1;
+
+	if (numberOfArguments != 1) {
+		realObject->error() << "Improper number of arguments in LuaCreatureObject::removeCustomBuff.";
+		return 0;
+	}
+
+	uint32 buffCRC = lua_tointeger(L, -1);
+
+	bool removed = realObject->removeCustomBuff(buffCRC);
+	
+	lua_pushboolean(L, removed);
+
+	return 1;
+}
+
+int LuaCreatureObject::hasCustomBuff(lua_State* L) {
+	int numberOfArguments = lua_gettop(L) - 1;
+
+	if (numberOfArguments != 1) {
+		realObject->error() << "Improper number of arguments in LuaCreatureObject::hasCustomBuff.";
+		return 0;
+	}
+
+	uint32 buffCRC = lua_tointeger(L, -1);
+
+	bool hasBuff = realObject->hasCustomBuff(buffCRC);
+
+	lua_pushboolean(L, hasBuff);
+
+	return 1;
+}
+
+int LuaCreatureObject::clearAllBuffs(lua_State* L) {
+	realObject->clearAllBuffs();
 
 	return 0;
 }

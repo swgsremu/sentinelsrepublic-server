@@ -144,6 +144,12 @@ namespace creature {
 		int removeQuestMission(lua_State* L);
 		int addSpaceMissionObject(lua_State* L);
 		int removeSpaceMissionObject(lua_State* L);
+
+		// Custom buff control functions
+		int addCustomBuff(lua_State* L);
+		int removeCustomBuff(lua_State* L);
+		int hasCustomBuff(lua_State* L);
+		int clearAllBuffs(lua_State* L);
 	private:
 		// The pointer to the 'real object' defined in object.cc
 		CreatureObject* realObject;

@@ -2174,4 +2174,12 @@ class PlayerObject extends IntangibleObject {
 
 	@read
 	public native string getPlayedTimeString(boolean verbose = false);
+
+	/**
+	 * Clear the player's stomach (empty food and drink bars)
+	 */
+	public void clearStomach() {
+		setFoodFilling(0);
+		setDrinkFilling(0);
+	}
 }
