@@ -60,6 +60,7 @@
 #include "server/zone/objects/creature/buffs/PrivateSkillMultiplierBuff.h"
 #include "server/zone/objects/creature/buffs/SingleUseBuff.h"
 #include "server/zone/objects/creature/buffs/PlayerVehicleBuff.h"
+#include "server/zone/objects/creature/buffs/Buff.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/managers/planet/PlanetManager.h"
 #include "terrain/manager/TerrainManager.h"
@@ -4688,4 +4689,37 @@ bool CreatureObjectImplementation::isMissionRangeObject(const uint64& objectID) 
 	int index = missionRangeObjects.find(objectID);
 
 	return index != -1;
+}
+
+// Custom buff control methods for Lua scripting
+void CreatureObjectImplementation::addCustomBuff(uint32 buffCRC, int attribute, int amount, int duration, int buffType) {
+	// Check if the player already has this buff and remove it
+	if (hasBuff(buffCRC)) {
+		removeBuff(buffCRC);
+	}
+	
+	Reference<CreatureObject*> player = asCreatureObject();
+	ManagedReference<Buff*> buff = new Buff(player, buffCRC, duration, buffType);
+	
+	if (buff != nullptr) {
+		Locker locker(buff);
+		
+		// Set the attribute modifier
+		buff->setAttributeModifier(attribute, amount);
+		
+		// Add the buff to the player
+		addBuff(buff);
+	}
+}
+
+bool CreatureObjectImplementation::removeCustomBuff(uint32 buffCRC) {
+	return removeBuff(buffCRC);
+}
+
+bool CreatureObjectImplementation::hasCustomBuff(uint32 buffCRC) const {
+	return hasBuff(buffCRC);
+}
+
+void CreatureObjectImplementation::clearAllBuffs() {
+	clearBuffs(true, true);
 }

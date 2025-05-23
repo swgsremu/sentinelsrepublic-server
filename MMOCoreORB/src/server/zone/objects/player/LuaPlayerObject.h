@@ -115,6 +115,7 @@ namespace player {
 		int getSquadronType(lua_State* L);
 		int addDroidCommand(lua_State* L);
 		int removeDroidCommands(lua_State* L);
+		int clearStomach(lua_State* L);
 
 	private:
 		// The pointer to the 'real object' defined in object.cc

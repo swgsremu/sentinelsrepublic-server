@@ -42,9 +42,11 @@ public:
 		int cellid = 0;
 		uint32 buildingTemplate = 0;
 		uint64 rootParentID = 0;
+		uint64 actualCellID = 0;
 
 		if (cell != nullptr) {
 			cellid = cell->getCellNumber();
+			actualCellID = cell->getObjectID();
 
 			ManagedReference<SceneObject*> building = cell->getParent().get();
 			buildingTemplate = building->getServerObjectCRC();
@@ -58,7 +60,12 @@ public:
 
 		msg << "x = " << posX << ", z = " << posZ << ", y = " << posY << ", ow = " << direction->getW()
 				<< ", ox = " << direction->getX() << ", oz = " << direction->getZ() << ", oy = " << direction->getY()
-				<< ", cellid = " << cellid << endl;
+				<< ", cellid = " << cellid;
+				
+		if (actualCellID > 0)
+			msg << ", actualCellID = " << actualCellID;
+				
+		msg << endl;
 
 		msg << "Root Parent:" << endl << "ID: " << rootParentID << endl;
 

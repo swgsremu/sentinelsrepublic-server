@@ -111,6 +111,7 @@ Luna<LuaPlayerObject>::RegType LuaPlayerObject::Register[] = {
 		{ "getSquadronType", &LuaPlayerObject::getSquadronType },
 		{ "addDroidCommand", &LuaPlayerObject::addDroidCommand },
 		{ "removeDroidCommands", &LuaPlayerObject::removeDroidCommands },
+		{ "clearStomach", &LuaPlayerObject::clearStomach },
 
 		{ 0, 0 }
 };
@@ -1048,4 +1049,10 @@ int LuaPlayerObject::removeDroidCommands(lua_State* L) {
 	skillManager->removeDroidCommands(realObject);
 
 	return 1;
+}
+
+int LuaPlayerObject::clearStomach(lua_State* L) {
+	realObject->clearStomach();
+
+	return 0;
 }
