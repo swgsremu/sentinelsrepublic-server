@@ -8,7 +8,8 @@
 #include "ClientCreateCharacterCallback.h"
 #include "server/zone/managers/player/PlayerManager.h"
 #include "server/zone/ZoneProcessServer.h"
-#include "server/zone/objects/player/Races.h"
+//SR2 Edit: SR-24-Add-New-Species-except-Hutt-Talz - Add species support
+#include "server/zone/objects/player/SRRaces.h"
 
 void ClientCreateCharacterCallback::parse(Message* message) {
 	message->parseAscii(customization);
