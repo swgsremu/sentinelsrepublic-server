@@ -26,7 +26,6 @@ const static char* Species[] = {
     "sullustan", // sullustan female
     "ithorian", // ithorian female
     "nautolan", // male Nautolan
-    "togruta", // female Togruta
     "chiss", // male chiss
     "chiss", // female chiss
     "devaronian", // male devaronian
@@ -66,7 +65,6 @@ const static int TemplateSpecies[] = {
     0x31, // sullustan female
     0x21, // ithorian female
     0x2c, // nautolan male
-    0x2d, // togruta female
     0x34, // chiss male
     0x34, // chiss female
     0x35, // devaronian male
@@ -103,10 +101,8 @@ const static char* Gender[] = {
     "female", // rodian female
     "female", // moncal female
     "female", // wookiee female
-    "female", // sullustan female
-    "female", // ithorian female
+    "female", // sullustan female    "female", // ithorian female
     "male",   // nautolan male
-    "female", // togruta female
     "male",   // chiss male
     "female", // chiss female
     "male",   // devaronian male
@@ -143,10 +139,8 @@ const static char* RaceStrs[] = {
     "object/creature/player/shared_rodian_female.iff",
     "object/creature/player/shared_moncal_female.iff",
     "object/creature/player/shared_wookiee_female.iff",
-    "object/creature/player/shared_sullustan_female.iff",
-    "object/creature/player/shared_ithorian_female.iff",
+    "object/creature/player/shared_sullustan_female.iff",    "object/creature/player/shared_ithorian_female.iff",
     "object/creature/player/shared_nautolan_male.iff",
-    "object/creature/player/shared_togruta_female.iff",
     "object/creature/player/shared_chiss_male.iff",
     "object/creature/player/shared_chiss_female.iff",
     "object/creature/player/shared_devaronian_male.iff",
@@ -183,10 +177,8 @@ const static char* CCRaceStrs[] = {
     "object/creature/player/rodian_female.iff",
     "object/creature/player/moncal_female.iff",
     "object/creature/player/wookiee_female.iff",
-    "object/creature/player/sullustan_female.iff",
-    "object/creature/player/ithorian_female.iff",
+    "object/creature/player/sullustan_female.iff",    "object/creature/player/ithorian_female.iff",
     "object/creature/player/nautolan_male.iff",
-    "object/creature/player/togruta_female.iff",
     "object/creature/player/chiss_male.iff",
     "object/creature/player/chiss_female.iff",
     "object/creature/player/devaronian_male.iff",
@@ -223,10 +215,8 @@ static uint32 SharedRace[] = {
     0xC264245B, // rodian female
     0x982FBFDE, // moncal female
     0x0DAB65E2, // wookiee female
-    0x1573341A, // sullustan female
-    0xB3E08013, // ithorian female
+    0x1573341A, // sullustan female    0xB3E08013, // ithorian female
     0xAB03ACB1, // nautolan male
-    0x3D953B50, // togruta female
     0x02F60EAC, // chiss male
     0x614A1B68, // chiss female
     0x68731058, // devaronian male
@@ -244,9 +234,9 @@ static uint32 SharedRace[] = {
     0x30CFFED2, // gotal male
 };
 
-// Attribute limits based on your CSV data (37 races total)
+// Attribute limits based on your CSV data (36 races total)
 // Format: [min_attr1, max_attr1, min_attr2, max_attr2, ... , total_ham]
-static unsigned int attributeLimits[37][19] = {
+static unsigned int attributeLimits[36][19] = {
     {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 5400}, // human male
     {550, 1250, 600, 800, 700, 800, 300, 1000, 300, 450, 300, 400, 300, 1000, 300, 500, 300, 600, 5550}, // trandoshan male
     {300, 1000, 300, 500, 550, 650, 550, 1250, 600, 750, 300, 400, 400, 1100, 300, 500, 300, 500, 5400}, // twilek male
@@ -268,7 +258,6 @@ static unsigned int attributeLimits[37][19] = {
     {300, 1200, 300, 500, 300, 400, 600, 1400, 300, 750, 300, 500, 400, 1200, 400, 600, 300, 600, 5400}, // sullustan female
     {300, 1400, 300, 600, 300, 500, 600, 1100, 300, 750, 300, 500, 400, 1300, 400, 600, 300, 500, 5400}, // ithorian female
     {500, 1200, 300, 500, 300, 400, 600, 1300, 300, 450, 300, 400, 300, 1000, 300, 500, 700, 900, 5400}, // nautolan male
-    {500, 1200, 300, 500, 300, 400, 600, 1300, 300, 450, 300, 400, 300, 1000, 300, 500, 700, 900, 5400}, // togruta female
     {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 6100}, // chiss male
     {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 6100}, // chiss female
     {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 5400}, // devaronian male
@@ -279,8 +268,8 @@ static unsigned int attributeLimits[37][19] = {
     {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 5400}, // quarren male
     {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 5800}, // smc female
     {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 6000}, // weequay male
-    {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 5800}, // aqualish male
-    {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 5800}, // aqualish female
+    {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 5400}, // aqualish male
+    {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 5400}, // aqualish female
     {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 5800}, // bith male
     {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 5800}, // bith female
     {400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 400, 1100, 5800}, // gotal male
