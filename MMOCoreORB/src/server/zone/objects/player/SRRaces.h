@@ -101,7 +101,8 @@ const static char* Gender[] = {
     "female", // rodian female
     "female", // moncal female
     "female", // wookiee female
-    "female", // sullustan female    "female", // ithorian female
+    "female", // sullustan female    
+    "female", // ithorian female
     "male",   // nautolan male
     "male",   // chiss male
     "female", // chiss female
@@ -139,7 +140,8 @@ const static char* RaceStrs[] = {
     "object/creature/player/shared_rodian_female.iff",
     "object/creature/player/shared_moncal_female.iff",
     "object/creature/player/shared_wookiee_female.iff",
-    "object/creature/player/shared_sullustan_female.iff",    "object/creature/player/shared_ithorian_female.iff",
+    "object/creature/player/shared_sullustan_female.iff",    
+    "object/creature/player/shared_ithorian_female.iff",
     "object/creature/player/shared_nautolan_male.iff",
     "object/creature/player/shared_chiss_male.iff",
     "object/creature/player/shared_chiss_female.iff",
@@ -177,7 +179,8 @@ const static char* CCRaceStrs[] = {
     "object/creature/player/rodian_female.iff",
     "object/creature/player/moncal_female.iff",
     "object/creature/player/wookiee_female.iff",
-    "object/creature/player/sullustan_female.iff",    "object/creature/player/ithorian_female.iff",
+    "object/creature/player/sullustan_female.iff",    
+    "object/creature/player/ithorian_female.iff",
     "object/creature/player/nautolan_male.iff",
     "object/creature/player/chiss_male.iff",
     "object/creature/player/chiss_female.iff",
@@ -215,7 +218,8 @@ static uint32 SharedRace[] = {
     0xC264245B, // rodian female
     0x982FBFDE, // moncal female
     0x0DAB65E2, // wookiee female
-    0x1573341A, // sullustan female    0xB3E08013, // ithorian female
+    0x1573341A, // sullustan female    
+    0xB3E08013, // ithorian female
     0xAB03ACB1, // nautolan male
     0x02F60EAC, // chiss male
     0x614A1B68, // chiss female
