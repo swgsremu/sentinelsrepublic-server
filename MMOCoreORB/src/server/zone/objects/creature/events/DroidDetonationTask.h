@@ -56,10 +56,20 @@ public:
 		if (zone == nullptr) {
 			ManagedReference<SceneObject*> parent = droid->getParent().get();
 
-			if (parent == nullptr || !parent->isCellObject()) { // Not indoors either
+			// Not indoors either
+			if (parent == nullptr || !parent->isCellObject()) {
 				droid->removePendingTask("droid_detonation");
 				return;
 			}
+
+			// Get the zone using recursion
+			zone = droid->getZone();
+		}
+
+		// If zone is still null, cancel the task and return
+		if (zone == nullptr) {
+			droid->removePendingTask("droid_detonation");
+			return;
 		}
 
 		if (droid->isDead() || droid->isIncapacitated()) {
