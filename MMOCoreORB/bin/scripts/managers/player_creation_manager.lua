@@ -1,10 +1,10 @@
 --Should all created players start with God Mode? 1 = yes, 0 = no
 freeGodMode = 0;
 --How many cash credits new characters start with after creating a character (changed during test phase, normal value is 100)
-startingCash = 2500 -- SR MODIFIED
+startingCash = 1000 -- SR MODIFIED
 --startingCash = 100000
 --How many bank credits new characters start with after creating a character (changed during test phase, normal value is 1000)
-startingBank = 25000 -- SR MODIFIED
+startingBank = 10000 -- SR MODIFIED
 --startingBank = 100000
 --How many skill points a new characters start with
 skillPoints = 250
