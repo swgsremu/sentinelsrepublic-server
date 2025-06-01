@@ -140,7 +140,7 @@ public:
 			}
 		}
 
-		auto allowedChars = ConfigManager::instance()->getInt("Core3.PlayerCreationManager.MaxCharactersPerGalaxy", 10);
+		auto allowedChars = ConfigManager::instance()->getInt("Core3.PlayerCreationManager.MaxCharactersPerGalaxy", 3);
 		bool canCreateCharacter = (client->getCharacterCount(galaxyID) < allowedChars);
 
 		// Check if player has permission to create more characters
