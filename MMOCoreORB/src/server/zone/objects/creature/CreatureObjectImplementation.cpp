@@ -103,6 +103,7 @@ void CreatureObjectImplementation::initializeTransientMembers() {
 	groupInviteCounter = 0;
 	currentWeather = 0;
 	currentWind = 0;
+	spawnerID = 0;
 
 	if (creditObject == nullptr) {
 		creditObject = getCreditObject();
