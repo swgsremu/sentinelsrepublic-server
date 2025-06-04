@@ -34,6 +34,24 @@ void ChatRoomImplementation::init(ZoneServer* serv, ChatRoom* parent, const Stri
 	invitedList.setNoDuplicateInsertPlan();
 	moderatorList.setNoDuplicateInsertPlan();
 	bannedList.setNoDuplicateInsertPlan();
+
+	// Need to trim spaces out of room names because lua properties can't have spaces
+	auto trimmedRoomName = roomName.replaceAll(" ", "");
+	StringBuffer discordChannelIdConfig;
+	discordChannelIdConfig << "Core3.Discord.Rooms." << trimmedRoomName << ".ChannelId";
+	discordChannelId = ConfigManager::instance()->getString(discordChannelIdConfig.toString(), "");
+	if (discordChannelId.isEmpty()) {
+		std::cout << "1. No discord channel id found for room: " << discordChannelIdConfig.toString().toCharArray() << std::endl;
+		return;
+	}
+
+	auto discordBot = server->getChatManager()->getDiscordBot();
+	if (discordBot == nullptr) {
+		std::cout << "2. No discord bot found for room: " << discordChannelIdConfig.toString().toCharArray() << std::endl;
+		return;
+	}
+
+	discordBot->AddMonitoredChatRoom(_this.get());
 }
 
 void ChatRoomImplementation::sendTo(CreatureObject* player) {

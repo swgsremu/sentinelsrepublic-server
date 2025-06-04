@@ -26,11 +26,15 @@ include server.chat.room.ChatRoomMap;
 include system.util.VectorMap;
 include system.lang.ref.Reference;
 
+include server.zone.srcustom.discord.DiscordBot;
+
 @dirty
 class ChatManager extends ManagedService implements Logger {
 	ZoneServer server;
 	PlayerManager playerManager;
 	transient PlayerMap playerMap;
+
+	DiscordBot discordBot;
 
 	@dereferenced
 	private VectorMap<string, ChatRoom> gameRooms;
@@ -481,5 +485,18 @@ class ChatManager extends ManagedService implements Logger {
 	// returns a list of pending persistent messages for the player
 	@reference
 	public native PendingMessageList getPendingMessages(unsigned long oid);
+
+
+	////////////////// Discord /////////////////
+
+    @local
+	public native void initializeDiscordBot();
+
+    @local
+    public DiscordBot getDiscordBot() {
+        return discordBot;
+    }
+
+	//////////////////////////////////////////////////////
 }
 

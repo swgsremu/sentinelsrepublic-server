@@ -56,6 +56,8 @@ ChatManagerImplementation::ChatManagerImplementation(ZoneServer* serv, int inits
 	playerManager = nullptr;
 	setLoggingName("ChatManager");
 
+	initializeDiscordBot();
+
 	loadMailDatabase();
 
 	playerMap = new PlayerMap(initsize);
@@ -65,6 +67,10 @@ ChatManagerImplementation::ChatManagerImplementation(ZoneServer* serv, int inits
 	loadSocialTypes();
 	loadSpatialChatTypes();
 	loadMoodTypes();
+
+	if (discordBot != nullptr) {
+		discordBot->Start();
+	}
 }
 
 void ChatManagerImplementation::stop() {
@@ -351,6 +357,8 @@ void ChatManagerImplementation::initiatePlanetRooms() {
 		planetaryChat->setOwnerID(zone->getObjectID());
 
 		zone->setPlanetChatRoom(planetaryChat);
+
+		
 	}
 
 }
@@ -754,6 +762,14 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 
 	BaseMessage* amsg = new ChatOnSendRoomMessage(counter);
 	channel->broadcastMessage(amsg);
+
+	#ifdef WITH_DPP
+	auto discordBotIsRunning = discordBot != nullptr;
+	auto chatroomHasDiscordChannel = !channel->getDiscordChannelId().isEmpty();
+	if (discordBotIsRunning && chatroomHasDiscordChannel) {
+		discordBot->SendChatMessage(channel, name, message);
+	}
+	#endif // WITH_DPP
 
 }
 
@@ -2893,4 +2909,17 @@ Reference<PendingMessageList*> ChatManagerImplementation::getPendingMessages(uin
 	}
 
 	return listObj.castMoveTo<PendingMessageList*>();
+}
+
+void ChatManagerImplementation::initializeDiscordBot() {
+
+	auto botName = ConfigManager::instance()->getString("Core3.Discord.BotName", "");
+	auto botToken = ConfigManager::instance()->getString("Core3.Discord.Token", "");
+	if (botName.isEmpty() || botToken.isEmpty()) {
+		// bot is not enabled
+		return;
+	}
+
+	discordBot = new DiscordBot();
+	discordBot->InitializeBot(botName, botToken);
 }

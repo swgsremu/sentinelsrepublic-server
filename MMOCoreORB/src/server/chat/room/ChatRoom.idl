@@ -20,6 +20,8 @@ class ChatRoom extends ManagedObject {
 	protected transient ZoneServer server;
 	protected transient ChatManager manager;
 
+
+	protected string discordChannelId;
 	protected string name;
 	protected string fullPath;
 
@@ -61,6 +63,8 @@ class ChatRoom extends ManagedObject {
 
 	@dereferenced
 	protected SortedVector<unsigned long> bannedList;
+
+	
 
 	//ChatRoom types:
 	public static final int DEFAULT = 0;
@@ -437,5 +441,9 @@ class ChatRoom extends ManagedObject {
 		return roomType == CUSTOM;
 	}
 
-}
 
+	@local
+	public string getDiscordChannelId() {
+	    return discordChannelId;
+	}
+}
