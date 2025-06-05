@@ -40,14 +40,13 @@ void ChatRoomImplementation::init(ZoneServer* serv, ChatRoom* parent, const Stri
 	StringBuffer discordChannelIdConfig;
 	discordChannelIdConfig << "Core3.Discord.Rooms." << trimmedRoomName << ".ChannelId";
 	discordChannelId = ConfigManager::instance()->getString(discordChannelIdConfig.toString(), "");
+
 	if (discordChannelId.isEmpty()) {
-		std::cout << "1. No discord channel id found for room: " << discordChannelIdConfig.toString().toCharArray() << std::endl;
 		return;
 	}
 
 	auto discordBot = server->getChatManager()->getDiscordBot();
 	if (discordBot == nullptr) {
-		std::cout << "2. No discord bot found for room: " << discordChannelIdConfig.toString().toCharArray() << std::endl;
 		return;
 	}
 

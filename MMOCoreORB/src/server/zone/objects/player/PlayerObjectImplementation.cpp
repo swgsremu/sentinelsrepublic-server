@@ -510,6 +510,13 @@ void PlayerObjectImplementation::notifySceneReady() {
 		}
 	}
 
+	ManagedReference<ChatRoom*> SRChat = chatManager->getsrRoom();
+	if(SRChat == nullptr)
+		return;
+	SRChat->sendTo(creature);
+	SRChat->addPlayer(creature);
+	chatManager->handleChatEnterRoomById(creature, SRChat->getRoomID(), -1, true);
+
 	//Leave all planet chat rooms (need evidence of planet rooms for space)
 	for (int i = 0; i < zoneServer->getZoneCount(); ++i) {
 		ManagedReference<Zone*> zone = zoneServer->getZone(i);

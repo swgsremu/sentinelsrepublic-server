@@ -327,6 +327,9 @@ void ChatManagerImplementation::initiateRooms() {
 	auctionRoom->setCanEnter(true);
 	auctionRoom->setChatRoomType(ChatRoom::AUCTION);
 
+	srRoom = createRoom("SR2 Galaxy", galaxyRoom);
+	srRoom->setCanEnter(true);
+
 	if (ConfigManager::instance()->isPvpBroadcastChannelEnabled()) {
 		pvpBroadcastRoom = createRoom("PvPBroadcasts", galaxyRoom);
 		pvpBroadcastRoom->setCanEnter(true);
