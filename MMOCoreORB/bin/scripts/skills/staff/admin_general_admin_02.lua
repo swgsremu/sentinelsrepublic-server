@@ -30,7 +30,8 @@ admin_general_admin_02 = {
 		"planetWarp",
 		"planetWarpTarget",
 		"freezePlayer",
-		"unfreezePlayer"
+		"unfreezePlayer",
+		"invulnerable", -- SR Modification
 	},
 	skillModifiers = {},
 	schematicsGranted = {},
