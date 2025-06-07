@@ -1,38 +1,40 @@
 /*
-				Copyright <SWGEmu>
-		See file COPYING for copying conditions.*/
+    Copyright <SWGEmu>
+    See file COPYING for copying conditions.
+*/
 
-#ifndef PVPCOMMANDCOMMAND_H_
-#define PVPCOMMANDCOMMAND_H_
+#ifndef PVPCOMMAND_H_
+#define PVPCOMMAND_H_
 
 #include "server/zone/managers/director/DirectorManager.h"
 
+// Command handler for opening the PVP command window via Lua screenplay.
 class pvpCommand : public QueueCommand {
 public:
 
-	pvpCommand(const String& name, ZoneProcessServer* server)
-		: QueueCommand(name, server) {
+    pvpCommand(const String& name, ZoneProcessServer* server)
+        : QueueCommand(name, server) {}
 
-	}
+    int doQueueCommand(CreatureObject* creature, const uint64& target, const UnicodeString& arguments) const override {
+        if (!creature || !checkStateMask(creature))
+            return INVALIDSTATE;
 
-	int doQueueCommand(CreatureObject* creature, const uint64& target, const UnicodeString& arguments) const {
+        if (!checkInvalidLocomotions(creature))
+            return INVALIDLOCOMOTION;
 
-		if (!checkStateMask(creature))
-			return INVALIDSTATE;
+        Lua* lua = DirectorManager::instance()->getLuaInstance();
+        if (!lua)
+            return GENERALERROR;
 
-		if (!checkInvalidLocomotions(creature))
-			return INVALIDLOCOMOTION;
+        Reference<LuaFunction*> pvpCommandScreenplay = lua->createFunction("pvpCommandScreenplay", "openInitialWindow", 0);
+        if (!pvpCommandScreenplay)
+            return GENERALERROR;
 
-		Lua* lua = DirectorManager::instance()->getLuaInstance();
+        *pvpCommandScreenplay << creature;
+        pvpCommandScreenplay->callFunction();
 
-		Reference<LuaFunction*> pvpCommandScreenplay = lua->createFunction("pvpCommandScreenplay", "openInitialWindow", 0);
-		*pvpCommandScreenplay << creature;
-
-		pvpCommandScreenplay->callFunction();
-
-		return SUCCESS;
-	}
-
+        return SUCCESS;
+    }
 };
 
-#endif //PVPCOMMANDCOMMAND_H_
+#endif // PVPCOMMAND_H_

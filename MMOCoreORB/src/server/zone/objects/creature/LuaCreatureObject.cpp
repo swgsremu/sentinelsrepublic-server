@@ -166,6 +166,8 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "attemptPeace", &LuaCreatureObject::attemptPeace },
 		{ "forcePeace", &LuaCreatureObject::forcePeace },
 		{ "isPilotingShip", &LuaCreatureObject::isPilotingShip },
+		{ "setSpawnerID", &LuaCreatureObject::setSpawnerID },
+		{ "getSpawnerID", &LuaCreatureObject::getSpawnerID },
 		{ "storePets", &LuaCreatureObject::storePets },
 
 		// JTL
@@ -1342,6 +1344,23 @@ int LuaCreatureObject::isPilotingShip(lua_State* L) {
 	bool isPiloting = realObject->isPilotingShip();
 
 	lua_pushboolean(L, isPiloting);
+
+	return 1;
+}
+
+int LuaCreatureObject::setSpawnerID(lua_State* L) {
+	uint64 spawnerID = lua_tointeger(L, -1);
+
+	Locker lock(realObject);
+	realObject->setSpawnerID(spawnerID);
+
+	return 0;
+}
+
+int LuaCreatureObject::getSpawnerID(lua_State* L) {
+	uint64 spawnerID = realObject->getSpawnerID();
+
+	lua_pushnumber(L, spawnerID);
 
 	return 1;
 }

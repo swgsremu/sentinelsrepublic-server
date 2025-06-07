@@ -21,7 +21,7 @@ endif()
 project(core3 CXX C)
 
 # Set cpp requirements
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -70,6 +70,7 @@ option(ENABLE_JEMALLOC_LINK "Enables jemalloc linking if found" ON)
 option(ENABLE_MULTITHREADED_LINKER "Enables ld.gold/lld with --threads check and use" OFF)
 option(ENABLE_LOCKFREE_BCLIENT_BUFFERS "Enables lock free base client buffers, requires boost thread" OFF) #needs to match engine3
 option(DUMP_ALL_CMAKE_VARIABLES "Prints all cmake variables" OFF)
+option(INCLUDE_DPP "Include Discord++ (DPP) library support" OFF) # SR: Updated
 
 # Set cmake paths
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
@@ -96,11 +97,32 @@ find_package(Java 1.5 COMPONENTS Runtime REQUIRED)
 find_package(Engine3 REQUIRED)
 include_directories(${ENGINE3_INCLUDE_DIR})
 
+# SR modified
+# Force engine3 to cpp17 standard
+# we do this here so we don't have to fork engine3 just for compiler change
+target_compile_features(engine3 PUBLIC cxx_std_17)
+
 find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 find_package(ZLIB REQUIRED)
 include_directories(${ZLIB_INCLUDE_DIRS})
+
+if(INCLUDE_DPP) # SR: Updated
+	find_package(DPP REQUIRED)
+	if(DPP_FOUND)
+		add_definitions(-DWITH_DPP)
+		message(STATUS "Found DPP library")
+		include_directories(${DPP_INCLUDE_DIRS})
+		# Disable dynamic-class-memaccess warning for C++17 compatibility with engine3
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-dynamic-class-memaccess")
+	else()
+		message(STATUS "DPP library not found")
+		message(FATAL_ERROR "DPP library is required but not found")
+	endif()
+else()
+	message(STATUS "DPP support disabled")
+endif()
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 	message(STATUS "Compiling with AI debug enabled")
