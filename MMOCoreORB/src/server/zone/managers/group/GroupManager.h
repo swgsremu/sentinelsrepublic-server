@@ -69,7 +69,12 @@ public:
 	};
 
 private:
+	const int playerGroupMax = 50;
+	const int staffGroupMax = 125;
+
 	bool playerIsInvitingOwnPet(CreatureObject* inviter, CreatureObject* target);
+	int srMaxGroupSize(CreatureObject* leader, CreatureObject* target);
+
 
 public:
 	GroupManager();
