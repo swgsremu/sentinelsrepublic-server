@@ -47,21 +47,14 @@ public:
 				if (session != nullptr) {
 					session->sessionTimeout();
 				}
-
-				float height = player->getHeight();
-
+				
 				if (!player->isInvisible()) {
-					if (playerTemplate->getMinScale() <= height) {
-						player->setHeight(height * 0.25f);
-					}
+					
 
 					player->sendSystemMessage("You are now invisible to other players and creatures.");
 
 				} else {
-					if (playerTemplate->getMinScale() > height) {
-						player->setHeight(height * 4.0f);
-					}
-
+					
 					player->sendSystemMessage("You are now visible to all players and creatures.");
 				}
 
