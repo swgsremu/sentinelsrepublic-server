@@ -74,67 +74,66 @@ public:
 		return nullptr;
 	}
 
-	bool canPerformSkill(CreatureObject* enhancer, CreatureObject* patient, EnhancePack* enhancePack, int mindCostNew) const {
-		if (patient->isDead())
-			return false;
+	bool canPerformSkill(CreatureObject* enhancer, CreatureObject* patient, EnhancePack* enhancePack, int mindCostNew) const {	    
 
-		if (!enhancer->canTreatWounds()) {
-			enhancer->sendSystemMessage("@healing_response:enhancement_must_wait"); // You must wait before you can heal wounds or apply enhancements again.
-			return false;
-		}
+	    if (patient->isDead())
+	        return false;
 
-		if (enhancePack == nullptr) {
-			enhancer->sendSystemMessage("@healing_response:healing_response_60"); // No valid medicine found.
-			return false;
-		}
+	    if (!enhancer->canTreatWounds()) {
+	        enhancer->sendSystemMessage("@healing_response:enhancement_must_wait");
+	        return false;
+	    }
 
-		int medicalRatingNotIncludingCityBonus = enhancer->getSkillMod("private_medical_rating") - enhancer->getSkillModOfType("private_medical_rating", SkillModManager::CITY);
+	    if (enhancePack == nullptr) {
+	        enhancer->sendSystemMessage("@healing_response:healing_response_60");
+	        return false;
+	    }
 
-		if (medicalRatingNotIncludingCityBonus <= 0) {
-			enhancer->sendSystemMessage("@healing_response:must_be_near_droid"); // You must be in a hospital, at a campsite, or near a surgical droid to do that.
-			return false;
-		} else {
-			// Building private medical rating always takes precedence, If it a client object structure, no medical rating will prevent buffs/wound healing.
-			ManagedReference<SceneObject*> root = enhancer->getRootParent();
+	    int droidMedicalRating = enhancer->getSkillModOfType("private_medical_rating", SkillModManager::DROID);
 
-			if (root != nullptr && root->isClientObject()) {
-				if (enhancer->getSkillModOfType("private_medical_rating", SkillModManager::STRUCTURE) == 0) {
-					enhancer->sendSystemMessage("@healing_response:must_be_in_hospital"); // You must be in a hospital or at a campsite to do that.
-					return false;
-				}
-			}
-		}
+	    if (droidMedicalRating > 0) {
+	        // Has a droid with a medical module out, can buff anywhere	        
+	    } else {
+	        // No droid: must be in a structure with private_medical_rating (STRUCTURE skill mod > 0)
+	        int structureMedicalRating = enhancer->getSkillModOfType("private_medical_rating", SkillModManager::STRUCTURE);
 
-		if (enhancer->isInCombat()) {
-			enhancer->sendSystemMessage("You cannot HealEnhance yourself while in Combat.");
-			return false;
-		}
+	        if (structureMedicalRating <= 0) {
+	            enhancer->sendSystemMessage("@healing_response:must_be_in_hospital");
+	            return false;
+	        }
+	        // Otherwise, allowed, continue	        
+	    }
+	    
+	    if (enhancer->isInCombat()) {
+	        enhancer->sendSystemMessage("You cannot HealEnhance yourself while in Combat.");
+	        return false;
+	    }
 
-		if (!patient->isPlayerCreature() && !(patient->isCreature() && patient->isPet())) {
-			enhancer->sendSystemMessage("@healing_response:healing_response_77"); // Target must be a player or a creature pet in order to apply enhancements.
-			return false;
-		}
+	    if (!patient->isPlayerCreature() && !(patient->isCreature() && patient->isPet())) {
+	        enhancer->sendSystemMessage("@healing_response:healing_response_77");
+	        return false;
+	    }
 
-		if (patient->isInCombat()) {
-			enhancer->sendSystemMessage("You cannot HealEnhance your target while they are still in Combat.");
-			return false;
-		}
+	    if (patient->isInCombat()) {
+	        enhancer->sendSystemMessage("You cannot HealEnhance your target while they are still in Combat.");
+	        return false;
+	    }
 
-		if (enhancer->getHAM(CreatureAttribute::MIND) < mindCostNew) {
-			enhancer->sendSystemMessage("@healing_response:not_enough_mind"); // You do not have enough mind to do that.
-			return false;
-		}
+	    if (enhancer->getHAM(CreatureAttribute::MIND) < mindCostNew) {
+	        enhancer->sendSystemMessage("@healing_response:not_enough_mind");
+	        return false;
+	    }
 
-		if (enhancer != patient && !CollisionManager::checkLineOfSight(enhancer, patient)) {
-			enhancer->sendSystemMessage("@healing:no_line_of_sight"); // You cannot see your target.
-			return false;
-		}
+	    if (enhancer != patient && !CollisionManager::checkLineOfSight(enhancer, patient)) {
+	        enhancer->sendSystemMessage("@healing:no_line_of_sight");
+	        return false;
+	    }
 
-		if (!playerEntryCheck(enhancer, patient)) {
-			return false;
-		}
+	    if (!playerEntryCheck(enhancer, patient)) {
+	        return false;
+	    }
 
-		return true;
+	    return true;
 	}
 
 	void parseModifier(const String& modifier, uint8& attribute, uint64& objectId) const {
