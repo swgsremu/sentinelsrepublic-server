@@ -22,7 +22,7 @@ surgical_droid_21b_crafted_advanced = Creature:new {
 	tamingChance = 0,
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE,
-	creatureBitmask = HERD,
+	creatureBitmask = HERD + NOINTIMIDATE,
 	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 

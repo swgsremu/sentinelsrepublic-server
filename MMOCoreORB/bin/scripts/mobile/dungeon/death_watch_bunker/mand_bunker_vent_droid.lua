@@ -22,7 +22,7 @@ mand_bunker_vent_droid = Creature:new {
 	tamingChance = 0,
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE ,
-	creatureBitmask = NONE,
+	creatureBitmask = NOINTIMIDATE,
 	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 

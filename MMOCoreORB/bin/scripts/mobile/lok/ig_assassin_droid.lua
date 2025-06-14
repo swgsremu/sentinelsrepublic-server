@@ -22,7 +22,7 @@ ig_assassin_droid = Creature:new {
 	tamingChance = 0,
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE,
-	creatureBitmask = KILLER + STALKER,
+	creatureBitmask = KILLER + STALKER + NOINTIMIDATE,
 	optionsBitmask = AIENABLED,
 	diet = NONE,
 
