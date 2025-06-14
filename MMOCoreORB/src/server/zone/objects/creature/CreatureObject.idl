@@ -1961,37 +1961,38 @@ class CreatureObject extends TangibleObject {
 			return "twilek";
 		else if(species == 7)
 			return "zabrak";
+		else if(species == 9)
+			return "aqualish";
+		else if(species == 12)
+			return "bith";
+		else if(species == 0x11)
+			return "devaronian";
+		else if(species == 0x1b)
+			return "gotal";
+		else if(species == 0x1c)
+			return "gran";
+		else if(species == 0x20)
+			return "ishi_tib";
 		else if(species == 0x21)
 			return "ithorian";
+		else if(species == 0x2a)
+			return "nikto";
+		else if(species == 0x2e)
+			return "quarren";
 		else if(species == 0x31)
 			return "sullustan";
-		// SR2 species support
-		else if(species == 0x2c)
-			return "nautolan";
-		else if(species == 0x34)
-			return "chiss";
-		else if(species == 0x35)
-			return "devaronian";
-		else if(species == 0x36)
-			return "gran";
 		else if(species == 0x37)
-			return "ishi_tib";
-		else if(species == 0x38)
-			return "nightsister";
-		else if(species == 0x39)
-			return "nikto";
-		else if(species == 0x3a)
-			return "quarren";
-		else if(species == 0x3b)
-			return "smc";
-		else if(species == 0x3c)
 			return "weequay";
-		else if(species == 0x3d)
-			return "aqualish";
-		else if(species == 0x3e)
-			return "bith";
-		else if(species == 0x3f)
-			return "gotal";
+		else if(species == 0xe4)
+			return "nautolan";
+		else if(species == 0xe5)
+			return "chiss";
+		else if(species == 0xe6)
+			return "togruta";
+		else if(species == 0xe7)
+			return "nightsister";
+		else if(species == 0xe8)
+			return "smc";
 		else
 			return "";
 	}
