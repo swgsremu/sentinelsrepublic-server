@@ -22,7 +22,7 @@ droideka = Creature:new {
 	tamingChance = 0,
 	ferocity = 0,
 	pvpBitmask = AGGRESSIVE + ATTACKABLE + ENEMY,
-	creatureBitmask = PACK + STALKER,
+	creatureBitmask = PACK + STALKER + NOINTIMIDATE,
 	optionsBitmask = AIENABLED,
 	diet = HERBIVORE,
 

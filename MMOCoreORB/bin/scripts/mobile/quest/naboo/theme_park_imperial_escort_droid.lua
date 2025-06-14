@@ -22,7 +22,7 @@ theme_park_imperial_escort_droid = Creature:new {
 	tamingChance = 0.000000,
 	ferocity = 0,
 	pvpBitmask = ATTACKABLE,
-	creatureBitmask = NONE,
+	creatureBitmask = NOINTIMIDATE,
 	optionsBitmask = AIENABLED + CONVERSABLE,
 	diet = HERBIVORE,
 
