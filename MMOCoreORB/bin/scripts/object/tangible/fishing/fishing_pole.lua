@@ -43,6 +43,10 @@
 
 object_tangible_fishing_fishing_pole = object_tangible_fishing_shared_fishing_pole:new {
 
+	playerRaces = {
+       
+    },
+
 
 	numberExperimentalProperties = {1, 1, 1, 1},
 	experimentalProperties = {"XX", "XX", "XX", "UT"},
