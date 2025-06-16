@@ -5,7 +5,10 @@
 #ifndef REQUESTSETSTATMIGRATIONDATACOMMAND_H_
 #define REQUESTSETSTATMIGRATIONDATACOMMAND_H_
 
+#include "server/zone/Zone.h"
 #include "server/zone/objects/creature/CreatureObject.h"
+#include "server/zone/objects/creature/commands/QueueCommand.h"
+#include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/sessions/MigrateStatsSession.h"
 #include "server/zone/managers/player/creation/PlayerCreationManager.h"
 
@@ -57,11 +60,11 @@ public:
 
 		uint32 targetPointsTotal = 0;
 		uint32 targetAttributes[9] = {0,0,0,0,0,0,0,0,0};
-
+		info () << "Player species name: " << creature->getSpeciesName() << " ID: " << creature->getObjectID() << " --- Attempting stat migration.";
 		for (int i = 0; tokenizer.hasMoreTokens() && i < 9; ++i) {
 			uint32 value = tokenizer.getIntToken();
-
 			if (value < getMinAttribute(creature, i) || value > getMaxAttribute(creature, i)) {
+				warning () << "Minimum attribute limit for " << i << " is: " << getMinAttribute(creature, i) << ", maximum is: " << getMaxAttribute(creature, i) << ".";
 				warning() << "Player: " << creature->getDisplayedName() << " ID: " << creature->getObjectID() <<  " --- Suspected stat migration hacking attempt.";
 				return GENERALERROR;
 			}
@@ -88,7 +91,6 @@ public:
 
 		if ((zone != nullptr && zone->getZoneName() == "tutorial") || privilegedPlayer) {
 			session->migrateStats();
-
 			if (privilegedPlayer) {
 				creature->sendSystemMessage("Stat Migration Permitted due to Staff Privileges.");
 			}

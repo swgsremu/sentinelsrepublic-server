@@ -576,40 +576,46 @@ bool PlayerCreationManager::createCharacter(ClientCreateCharacterCallback* callb
 
 int PlayerCreationManager::getMaximumAttributeLimit(const String& race,
 		int attributeNumber) const {
-	String maleRace = race + "_male";
-
 	if (attributeNumber < 0 || attributeNumber > 8) {
 		attributeNumber = 0;
 	}
 
-	Reference<RacialCreationData*> racialData = racialCreationData.get(
-			maleRace);
+	String maleRace = race + "_male";
+	String femaleRace = race + "_female";
 
-	if (racialData != nullptr) {
-		return racialData->getAttributeMax(attributeNumber);
-	} else {
-		return racialCreationData.get("human_male")->getAttributeMax(
-				attributeNumber);
+	Reference<RacialCreationData*> racialData = racialCreationData.get(maleRace);
+	
+	if (racialData == nullptr) {
+		racialData = racialCreationData.get(femaleRace);
 	}
+	
+	if (racialData == nullptr) {
+		racialData = racialCreationData.get("human_male");
+	}
+
+	return racialData->getAttributeMax(attributeNumber);
 }
 
 int PlayerCreationManager::getMinimumAttributeLimit(const String& race,
 		int attributeNumber) const {
-	String maleRace = race + "_male";
-
 	if (attributeNumber < 0 || attributeNumber > 8) {
 		attributeNumber = 0;
 	}
 
-	Reference<RacialCreationData*> racialData = racialCreationData.get(
-			maleRace);
+	String maleRace = race + "_male";
+	String femaleRace = race + "_female";
 
-	if (racialData != nullptr) {
-		return racialData->getAttributeMin(attributeNumber);
-	} else {
-		return racialCreationData.get("human_male")->getAttributeMin(
-				attributeNumber);
+	Reference<RacialCreationData*> racialData = racialCreationData.get(maleRace);
+	
+	if (racialData == nullptr) {
+		racialData = racialCreationData.get(femaleRace);
 	}
+	
+	if (racialData == nullptr) {
+		racialData = racialCreationData.get("human_male");
+	}
+
+	return racialData->getAttributeMin(attributeNumber);
 }
 
 int PlayerCreationManager::getTotalAttributeLimit(const String& race) const {
