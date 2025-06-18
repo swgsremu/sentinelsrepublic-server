@@ -355,7 +355,7 @@ void GroundZoneComponent::destroyObjectFromWorld(SceneObject* sceneObject, bool 
 					build->onExit(creature, parentID);
 			}
 		}
-
+		
 		sceneObject->notifyObservers(ObserverEventType::OBJECTREMOVEDFROMZONE, sceneObject, 0);
 	} else if (zone != nullptr) {
 		zone->removeObject(sceneObject, nullptr, false);

@@ -13,6 +13,7 @@
 #include "server/zone/objects/tangible/threat/ThreatMap.h"
 #include "server/zone/Zone.h"
 #include "server/zone/managers/creature/CreatureManager.h"
+#include "server/zone/managers/planet/PlanetManager.h"
 #include "LairAggroTask.h"
 #include "server/zone/objects/creature/ai/CreatureTemplate.h"
 #include "server/zone/managers/creature/CreatureTemplateManager.h"
@@ -20,14 +21,11 @@
 #include "server/zone/managers/creature/LairRepopulateTask.h"
 #include "server/zone/managers/creature/SpawnLairMobileTask.h"
 #include "server/chat/ChatManager.h"
-#include "server/zone/managers/combat/CombatManager.h"
 
 //#define DEBUG_WILD_LAIRS
 // #define DEBUG_LAIR_HEALING
 
 int LairObserverImplementation::notifyObserverEvent(unsigned int eventType, Observable* observable, ManagedObject* arg1, int64 arg2) {
-	// info(true) << "LairObserverImplementation::notifyObserverEvent -- " << " Observer Event Type: " << eventType;
-
 	if (observable == nullptr) {
 		return 1;
 	}
@@ -190,12 +188,10 @@ int LairObserverImplementation::notifyObserverEvent(unsigned int eventType, Obse
 
 			Reference<LairObject*> lairRef = lair.castTo<LairObject*>();
 			Reference<TangibleObject*> mobileRef = attacker;
-
 			Core::getTaskManager()->scheduleTask([lairObserver, lairRef, mobileRef]() {
 				if (lairObserver == nullptr || lairRef == nullptr || mobileRef == nullptr) {
 					return;
 				}
-
 				Locker locker(lairRef);
 
 				lairObserver->checkRespawn(lairRef, mobileRef);
@@ -224,12 +220,21 @@ void LairObserverImplementation::notifyDestruction(TangibleObject* lair, Tangibl
 		return;
 	}
 
+	// SR Modification Register destroyed lair location to prevent immediate respawn
+	auto zone = lair->getZone();
+	if (zone != nullptr) {
+		auto planetManager = zone->getPlanetManager();
+		if (planetManager != nullptr) {
+			info(true) << "LairObserver: Registering destroyed lair location (" << lair->getPositionX() << ", " << lair->getPositionY() << ") for no-spawn zone";
+			planetManager->registerDestroyedLairLocation(lair->getPositionX(), lair->getPositionY());
+		}
+	}
+
 	PlayClientEffectObjectMessage* explode = new PlayClientEffectObjectMessage(lair, "clienteffect/lair_damage_heavy.cef", "");
 	lair->broadcastMessage(explode, false);
 
 	PlayClientEffectLoc* explodeLoc = new PlayClientEffectLoc("clienteffect/lair_damage_heavy.cef", lair->getZone()->getZoneName(), lair->getPositionX(), lair->getPositionZ(), lair->getPositionY());
 	lair->broadcastMessage(explodeLoc, false);
-
 	lair->destroyObjectFromWorld(true);
 }
 
@@ -827,7 +832,7 @@ void LairObserverImplementation::repopulateLair(TangibleObject* lairTano) {
 	if (lairTano == nullptr) {
 		return;
 	}
-
+	
 	Locker lock(lairTano);
 
 	int lairCond = lairTano->getMaxCondition();
