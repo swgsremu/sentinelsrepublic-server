@@ -220,7 +220,7 @@ CitySpecializations = {
 		name = "@city/city:city_spec_doctor",
 		cost = 80000,
 		skillMods = {
-			{"private_medical_rating", 10}
+			{"private_medical_rating", 15}
 		}
 	},
 	{--Entertainment District
@@ -235,7 +235,7 @@ CitySpecializations = {
 		name = "@city/city:city_spec_master_healing",
 		cost = 200000,
 		skillMods = {
-			{"private_medical_rating", 10},
+			{"private_medical_rating", 15},
 			{"private_spec_entertainer", 10},
 			{"increase_entertainer_buff", 60} --Increased buff duration, not strength.
 		}
