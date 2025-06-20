@@ -27,7 +27,7 @@ public:
 		if (ghost == nullptr)
 			return GENERALERROR;
 
-		bool enhancedRotate = ConfigManager::instance()->getBool("Core3.StructureManager.EnhancedFurnitureRotate", false);
+		bool enhancedRotate = ConfigManager::instance()->getBool("Core3.StructureManager.EnhancedFurnitureRotate", true);
 
 		String dir;
 		int degrees = 0;
@@ -62,10 +62,13 @@ public:
 			}
 		} catch (Exception& e) {
 			if (enhancedRotate) {
-				creature->sendSystemMessage("Format: /rotateFurniture <yaw/pitch/roll> [degrees]. Degrees can be -180 to 180 when using this format.");
-				creature->sendSystemMessage("Reset position: /rotateFurniture reset 1");
+				creature->sendSystemMessage("Enhanced Rotation Format:");
+				creature->sendSystemMessage("/rotateFurniture <yaw/pitch/roll> [degrees]. Degrees: -180 to 180");
+				creature->sendSystemMessage("/rotateFurniture reset 1  (resets orientation)");
+				creature->sendSystemMessage("Examples: /rotateFurniture yaw 45, /rotateFurniture pitch -30");
 			} else {
-				creature->sendSystemMessage("@player_structure:formet_rotratefurniture_degrees"); //Format: /rotateFurniture <LEFT/RIGHT> <degrees>
+				creature->sendSystemMessage("Basic Rotation Format: /rotateFurniture <LEFT/RIGHT> <degrees>");
+				creature->sendSystemMessage("Enhanced rotation disabled. Enable in server config: Core3.StructureManager.EnhancedFurnitureRotate = true");
 			}
 
 			return INVALIDPARAMETERS;
