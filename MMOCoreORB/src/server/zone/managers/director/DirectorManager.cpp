@@ -5035,6 +5035,25 @@ int DirectorManager::grantStarterShip(lua_State* L) {
 		return 0;
 	}
 
+	const int STARTER_SHIP_COOLDOWN = 24 * 60 * 60 * 1000; // 24 hours	
+	const String starterShipScreenPlayCooldown = "starter_ship_cooldown";
+	const String lastShipGranted = "last_ship_grant_time";
+
+	Reference<PlayerObject*> ghost = player->getSlottedObject("ghost").castTo<PlayerObject*>();
+	if(ghost != nullptr) {
+		String lastGrantStr = ghost->getScreenPlayData(starterShipScreenPlayCooldown, lastShipGranted);
+		Time curTime;
+		uint64 now = curTime.getMiliTime();
+		if (!lastGrantStr.isEmpty()) {
+			uint64 lastGrantTime = UnsignedLong::valueOf(lastGrantStr);
+			if (now - lastGrantTime < STARTER_SHIP_COOLDOWN) {
+				player->sendSystemMessage("You must wait 24 hours before you can claim another starter ship.");
+				return 0;
+			}
+		}
+		ghost->setScreenPlayData(starterShipScreenPlayCooldown, lastShipGranted, String::valueOf(now));
+	}
+
 	String generatedObjectTemplate = "";
 
 	if (factionName == "neutral") {
