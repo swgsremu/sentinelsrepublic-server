@@ -154,7 +154,7 @@ function CityControlBanners:manageSceneObjects(location, num, planetName)
 
 	if (despawnBannerObject ~= nil) then
 		SceneObject(despawnBannerObject):destroyObjectFromWorld()
-		deleteData(planetName .. ":control:banner" .. num)
+		deleteData(planetName .. ":control:banner:" .. num)
 	end
 
 	local controllingFaction = getControllingFaction(planetName)
@@ -164,7 +164,7 @@ function CityControlBanners:manageSceneObjects(location, num, planetName)
 
 	if controllingFaction == FACTIONREBEL then
 		objectTemplate = "object/tangible/gcw/flip_banner_onpole_rebel.iff"
-	else
+	elseif controllingFaction == FACTIONIMPERIAL then
 		objectTemplate = "object/tangible/gcw/flip_banner_onpole_imperial.iff"
 	end
 
