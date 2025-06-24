@@ -1124,7 +1124,7 @@ void CraftingSessionImplementation::experiment(int rowsAttempted, const String& 
 		craftingManager->experimentRow(manufactureSchematic, craftingValues, rowEffected, pointsAttempted, failure, experimentationResult);
 
 #ifdef DEBUG_EXPERIMENTATION
-		info(true) << "Successful Experimentation for Row #" << i << " Using " << pointsAttempted << " points. NEW Remaining Experimentation Points: " << (experimentationPointsTotal - experimentationPointsUsed);
+		info(true) << "Successful Experimentation for Row #" << i << " Using " << pointsAttempted << " points. NEW Remaining Experimentation Points: " << (experimentationPointsTotal - experimentationPointsUsed) << " Experimentation Result: " << experimentationResult;
 #endif // DEBUG_EXPERIMENTATION
 	}
 
