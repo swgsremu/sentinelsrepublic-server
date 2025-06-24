@@ -109,6 +109,7 @@ int CraftingManagerImplementation::calculateExperimentationSuccess(CreatureObjec
 
 	///
 	int experimentRoll = (toolModifier * (luckRoll + (experimentingPoints * 4)));
+	experimentRoll = static_cast<int>(experimentRoll * 1.05f); // 5% bonus for experimentation
 
 	if (experimentRoll > 70)
 		return GREATSUCCESS;
