@@ -96,6 +96,7 @@
 // #define SHOW_PATH
 // #define SHOW_NEXT_POSITION
 // #define DEBUG_FINDNEXTPOSITION
+// #define DEBUG_RESIST_DECAY
 
 void AiAgentImplementation::initializeTransientMembers() {
 	CreatureObjectImplementation::initializeTransientMembers();
@@ -4657,25 +4658,39 @@ float AiAgentImplementation::getReducedResist(float value) {
 	float percentUnmitigated = unmitigatedDamage / (float)totalHAM;
 
 #ifdef DEBUG_RESIST_DECAY
-	info (true) << " Value of HAM mitigated = " << mitigatedAmount;
+	info (true) << " Value of HAM mitigated = " << unmitigatedDamage << " Total HAM = " << totalHAM << " Percent Unmitigated = " << percentUnmitigated;
 #endif
-
-	// Decay resists when mitigated damage is greater than 25% totalHAM
-	if (percentUnmitigated > 0.25f) {
-		// Reduce resists 2% for every 1% of damage mitigated by armor valued greater than 25% of totalHAM.
-		// Reduction Range is from 75% to 50% of totalHAM. totaling a max 50% reduction of resists
-		float reduction = (percentUnmitigated - 0.25f) * 2.f;
-
-		// Resists never drop below 50%
-		reduction = 1.f - (reduction > 0.50f ? 0.50f : reduction);
-
-		newValue = (value * reduction);
-
-#ifdef DEBUG_RESIST_DECAY
-		info(true) << "getReducedResist: totalHAM = " << totalHAM << " Resist Mitigation = " << unmitigatedDamage << " Start value: " << value << " New Value = " << newValue << " Reduction percent = " << reduction;
-#endif
+	float maxHam = ((float)getMaxHAM(CreatureAttribute::HEALTH) + getMaxHAM(CreatureAttribute::ACTION) + getMaxHAM(CreatureAttribute::MIND));
+	float percentHealthRemaining = (float)getHAM(CreatureAttribute::HEALTH) / (float)getMaxHAM(CreatureAttribute::HEALTH);
+	float decayThreshold = 0.75f; // Start decay below 75% total health remaining
+	float reduction = 0.f;
+	
+	if (float(maxHam) >= 45000) {	
+			// Decay resists when mitigated damage is greater than 25% total health
+		if (percentHealthRemaining < decayThreshold) {
+			// Reduce resists 1.7% for every tick of health below 75% total health. 
+			reduction = (decayThreshold - percentHealthRemaining) * 1.7f;
+			#ifdef DEBUG_RESIST_DECAY
+				reduction = 1.f - (reduction > 0.50f ? 0.50f : reduction);
+				newValue = (value * reduction);
+				info(true) << "Decay Threshold = " << decayThreshold << " Percent Health Remaining = " << percentHealthRemaining;
+				info(true) << "getReducedResistHealth: percentHealthRemaining = " << percentHealthRemaining << " Start value: " << value << " New Value = " << newValue << " Reduction percent = " << reduction;
+			#endif
+		}
+	} else {
+		if (float(percentUnmitigated) > 0.25f) {
+        	// 2% reduction for every 1% of unmitigated damage above 25% total health
+			reduction = (percentUnmitigated - 0.25f) * 2.f; 
+			#ifdef DEBUG_RESIST_DECAY
+				reduction = 1.f - (reduction > 0.50f ? 0.50f : reduction);
+				newValue = (value * reduction); 
+				info(true) << "getReducedResist: totalHAM = " << totalHAM << " Resist Mitigation = " << unmitigatedDamage << " Start value: " << value << " New Value = " << newValue << " Reduction percent = " << reduction;
+			#endif      
+    	}
 	}
-
+	// Resists never drop below 50%
+	reduction = 1.f - (reduction > 0.50f ? 0.50f : reduction);
+	newValue = (value * reduction);
 	return newValue;
 }
 
