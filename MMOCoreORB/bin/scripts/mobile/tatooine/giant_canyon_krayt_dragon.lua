@@ -33,13 +33,15 @@ giant_canyon_krayt_dragon = Creature:new {
 	lootGroups = {
 		{
 			groups = {
-				{group = "krayt_dragon_common", chance = 2500000},
-				{group = "krayt_tissue_uncommon", chance = 2000000},
-				{group = "krayt_pearls", chance = 1500000},
-				{group = "armor_all", chance = 2000000},
-				{group = "weapons_all", chance = 2000000},
+				{group = "krayt_tissue_common", chance = 2000000},
+				{group = "krayt_tissue_uncommon", chance = 1500000},
+				{group = "krayt_tissue_rare", chance = 800000},
+				{group = "krayt_dragon_common", chance = 200000},
+				{group = "krayt_pearls", chance = 3700000},
+				{group = "armor_attachments", chance = 900000},
+				{group = "clothing_attachments", chance = 900000},
 			},
-			lootChance = 7500000
+			lootChance = 10000000
 		}
 	},
 
