@@ -14,9 +14,7 @@ nightsister_tier_5 = {
 		{groupTemplate = "ranged_weapons", weight = 2600000},
 		{groupTemplate = "wearables_rare", weight = 300000},
 		{groupTemplate = "wearables_scarce", weight = 300000},
-		{groupTemplate = "resource_creature", weight = 150000},
-		{groupTemplate = "resource_water", weight = 50000},
-		{groupTemplate = "crafting_component_advanced", weight = 450000},
+		{itemTemplate = "nightsister_vibro_unit", weight = 500000},
 	}
 }
 
@@ -27,3 +25,6 @@ mobiles:
 	scripts/mobile/dathomir/axkva_min.lua	302
 	scripts/mobile/dathomir/nightsister_elder.lua	278
 ]]--
+--nightsister_tier_5: Removed resource_creature, resource_water, crafting_component_advanced
+--added {itemTemplate = "nightsister_vibro_unit", weight = 500000}, to this group
+	

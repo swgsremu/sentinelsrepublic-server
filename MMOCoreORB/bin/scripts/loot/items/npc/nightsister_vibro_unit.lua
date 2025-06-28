@@ -6,15 +6,15 @@ nightsister_vibro_unit = {
 	customObjectName = "",
 	directObjectTemplate = "object/tangible/component/weapon/vibro_unit_nightsister.iff",
 	craftingValues = {
-		{"mindamage",25,50,0},
-		{"maxdamage",30,60,0},
-		{"attackspeed",-0.4,-0.7,2},
-		{"woundchance",10,20,0},
-		{"hitpoints",50,100,0, true},
-		{"midrangemod",15,30,0},
-		{"attackhealthcost",10,0,0},
-		{"attackmindcost",10,0,0},
-		{"useCount",1,11,0},
+		{"mindamage",25,50,1}, -- Third parameter '1' enables rarity modifiers (base/yellow/exceptional/legendary)
+		{"maxdamage",30,60,1}, -- Third parameter '1' enables rarity modifiers (base/yellow/exceptional/legendary)
+		{"attackspeed",-0.4,-0.7,2}, -- Fixed value, not affected by rarity
+		{"woundchance",10,20,1}, -- Third parameter '1' enables rarity modifiers (base/yellow/exceptional/legendary)
+		{"hitpoints",50,100,0, true}, -- Fixed value, not affected by rarity
+		{"midrangemod",15,30,1}, -- Third parameter '1' enables rarity modifiers (base/yellow/exceptional/legendary)
+		{"attackhealthcost",10,0,0}, -- Fixed value, not affected by rarity
+		{"attackmindcost",10,0,0}, -- Fixed value, not affected by rarity
+		{"useCount",1,11,0}, -- Fixed value, not affected by rarity
 	},
 	customizationStringNames = {},
 	customizationValues = {}
