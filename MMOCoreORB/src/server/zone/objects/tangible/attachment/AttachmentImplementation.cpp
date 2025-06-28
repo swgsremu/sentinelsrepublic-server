@@ -80,10 +80,32 @@ void AttachmentImplementation::updateCraftingValues(CraftingValues* values, bool
     }
 
     for (int i = 0; i < modCount; ++i) {
+        
         float step = 1.f - ((i / (float)modCount) * 0.5f);
         int min = Math::clamp(-1, (int)round(0.075f * level) - 1, 25) * step;
         int max = Math::clamp(-1, (int)round(0.125f * level) + 1, 25);
-        int mod = System::random(max - min) + min;
+        
+        if (level >= 150) {
+            int tapeCapRoll = System::random(100);
+
+            if (tapeCapRoll < 50) { // 50% chance to cap max at 22
+                max = Math::min(max, 22);
+            } else if (tapeCapRoll < 80) { // 30% chance to cap at 23
+                max = Math::min(max, 23);
+            } else { // 20% chance to allow up to 25
+                max = Math::min(max, 25);
+            }
+            min = Math::min(min, 18);
+        }
+        if (min > max) {
+            int temp = min;
+            min = max;
+            max = temp;
+        }
+        
+        int mod = System::random(max - min + 1) + min;
+
+        mod = Math::clamp(1, mod, 25);
 
         String modName = lootManager->getRandomLootableMod(gameObjectType);
 

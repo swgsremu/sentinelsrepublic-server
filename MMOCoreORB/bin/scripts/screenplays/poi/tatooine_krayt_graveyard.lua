@@ -3,7 +3,7 @@ KraytGraveyardScreenPlay = ScreenPlay:new {
 
 }
 -- Disabled. Krayt spawning handled by regions
-registerScreenPlay("KraytGraveyardScreenPlay", false)
+registerScreenPlay("KraytGraveyardScreenPlay", true)
 
 function KraytGraveyardScreenPlay:start()
 	if (isZoneEnabled("tatooine")) then
