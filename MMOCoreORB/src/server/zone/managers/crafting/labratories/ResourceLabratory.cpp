@@ -251,6 +251,13 @@ bool ResourceLabratory::applyComponentStats(TangibleObject* prototype, Manufactu
 		} else {
 			for (int j = 0; j < component->getPropertyCount(); ++j) {
 				attribute = component->getProperty(j);
+
+				String fullTemplateString = prototype->getObjectTemplate()->getFullTemplateString();
+
+				if ((fullTemplateString == "object/tangible/wearables/armor/padded/armor_padded_s01_belt.iff" && (attribute == "armor_effectiveness" || attribute == "armor_health_encumbrance" || attribute == "armor_action_encumbrance" || attribute == "armor_mind_encumbrance"))) {
+					continue;
+				}
+
 				modified = true;
 
 #ifdef DEBUG_RESOURCE_LAB

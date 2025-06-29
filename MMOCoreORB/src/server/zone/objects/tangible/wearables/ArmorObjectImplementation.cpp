@@ -259,9 +259,12 @@ void ArmorObjectImplementation::fillAttributeList(AttributeListMessage* alm, Cre
 		alm->insertAttribute("cat_armor_vulnerability.armor_eff_restraint", "-");
 
 	//Encumbrances
-	alm->insertAttribute("cat_armor_encumbrance.health", getHealthEncumbrance());
-	alm->insertAttribute("cat_armor_encumbrance.action", getActionEncumbrance());
-	alm->insertAttribute("cat_armor_encumbrance.mind", getMindEncumbrance());
+	if (getHealthEncumbrance() > 0)
+		alm->insertAttribute("cat_armor_encumbrance.health", getHealthEncumbrance());
+	if (getActionEncumbrance() > 0)
+		alm->insertAttribute("cat_armor_encumbrance.action", getActionEncumbrance());
+	if (getMindEncumbrance() > 0)
+		alm->insertAttribute("cat_armor_encumbrance.mind", getMindEncumbrance());
 
 	alm->insertAttribute("crafter", craftersName);
 	alm->insertAttribute("serial_number", objectSerial);
