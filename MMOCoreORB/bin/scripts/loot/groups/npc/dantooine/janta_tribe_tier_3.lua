@@ -9,8 +9,6 @@ janta_tribe_tier_3 = {
 		{groupTemplate = "junk", weight = 5000000},
 		{groupTemplate = "loot_kit_parts", weight = 2700000},
 		{groupTemplate = "wearables_all", weight = 300000},
-		{groupTemplate = "resource_creature", weight = 450000},
-		{groupTemplate = "resource_water", weight = 150000},
 	}
 }
 
