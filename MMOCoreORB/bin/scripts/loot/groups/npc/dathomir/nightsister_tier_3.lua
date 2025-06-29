@@ -22,7 +22,7 @@ addLootGroupTemplate("nightsister_tier_3", nightsister_tier_3)
 --[[
 mobiles:
 	scripts/mobile/dathomir/nightsister_outcast.lua	81
-	scripts/mobile/dantooine/nightsister_rancor_tamer.lua	76
+	scripts/mobile/dathomir/nightsister_rancor_tamer.lua	76
 	scripts/mobile/dathomir/nightsister_ranger.lua	81
 	scripts/mobile/dathomir/nightsister_sentinel.lua	88
 	scripts/mobile/dathomir/nightsister_stalker.lua	96
