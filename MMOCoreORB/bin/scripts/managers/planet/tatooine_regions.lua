@@ -49,7 +49,7 @@ tatooine_regions = {
 	{"@tatooine_region_names:imperial_oasis", -5300, 2681, {CIRCLE, 90}, NOSPAWNAREA + NOBUILDZONEAREA},
 	{"@tatooine_region_names:imperial_oasis_1", -5311, 2684, {CIRCLE, 200}, NAMEDREGION},
 	{"@tatooine_region_names:oasis_south", 1828, -6053, {CIRCLE, 150}, NAMEDREGION},
-	{"@tatooine_region_names:krayt_graveyard", 7451, 4510, {CIRCLE, 1000}, NAMEDREGION + NOBUILDZONEAREA + NAVAREA},
+	{"@tatooine_region_names:krayt_graveyard", 7451, 4510, {CIRCLE, 750}, NAMEDREGION + NOBUILDZONEAREA + NAVAREA},
 	{"@tatooine_region_names:krayt_graveyard_1", 6560, 4096, {RECTANGLE, 7488, 4608}, NAMEDREGION + NOBUILDZONEAREA + NAVAREA},
 	{"@tatooine_region_names:w_dune_sea_1", -5952, -2176, {CIRCLE, 1344}, NAMEDREGION},
 	{"@tatooine_region_names:w_dune_sea_2", -6112, -6016, {RECTANGLE, -4384, -2112}, NAMEDREGION},
