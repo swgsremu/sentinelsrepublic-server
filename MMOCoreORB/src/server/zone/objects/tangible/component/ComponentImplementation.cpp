@@ -24,6 +24,9 @@ void ComponentImplementation::fillAttributeList(AttributeListMessage* alm, Creat
 	alm->insertAttribute("volume", 1);
 	alm->insertAttribute("crafter", craftersName);
 	alm->insertAttribute("serial_number", objectSerial);
+	
+	if (getUseCount() > 1)
+		alm->insertAttribute("quantity", getUseCount());
 
 	StringBuffer displayvalue;
 
