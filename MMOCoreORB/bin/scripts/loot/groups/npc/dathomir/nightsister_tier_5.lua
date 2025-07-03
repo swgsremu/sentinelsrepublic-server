@@ -5,16 +5,18 @@ nightsister_tier_5 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 434783},
-		{groupTemplate = "clothing_attachments", weight = 434783},
-		{groupTemplate = "junk", weight = 978261},
-		{groupTemplate = "melee_weapons", weight = 1847826},
-		{groupTemplate = "nightsister_common", weight = 2282609},
-		{groupTemplate = "power_crystals", weight = 706522},
-		{groupTemplate = "ranged_weapons", weight = 2826087},
-		{groupTemplate = "wearables_rare", weight = 326087},
-		{groupTemplate = "wearables_scarce", weight = 326087},
-		{itemTemplate = "nightsister_vibro_unit", weight = 543478},
+		{groupTemplate = "armor_attachments", weight = 400000},
+		{groupTemplate = "clothing_attachments", weight = 400000},
+		{groupTemplate = "junk", weight = 900000},
+		{groupTemplate = "melee_weapons", weight = 1700000},
+		{groupTemplate = "nightsister_common", weight = 2100000},
+		{groupTemplate = "power_crystals", weight = 650000},
+		{groupTemplate = "ranged_weapons", weight = 2600000},
+		{groupTemplate = "wearables_rare", weight = 300000},
+		{groupTemplate = "wearables_scarce", weight = 300000},
+		{groupTemplate = "resource_creature", weight = 150000},
+		{groupTemplate = "resource_water", weight = 50000},
+		{groupTemplate = "crafting_component_advanced", weight = 450000},
 	}
 }
 
@@ -25,6 +27,3 @@ mobiles:
 	scripts/mobile/dathomir/axkva_min.lua	302
 	scripts/mobile/dathomir/nightsister_elder.lua	278
 ]]--
---nightsister_tier_5: Removed resource_creature, resource_water, crafting_component_advanced
---added {itemTemplate = "nightsister_vibro_unit", weight = 500000}, to this group
-	
