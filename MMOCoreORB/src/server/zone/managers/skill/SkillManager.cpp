@@ -527,6 +527,15 @@ bool SkillManager::surrenderSkill(const String& skillName, CreatureObject* creat
 		return false;
 	}
 
+	// Prevent mayors from dropping politician skills if city structures are placed.
+	if (skillName.beginsWith("social_politician")) {
+	    ManagedReference<CityRegion*> city = creature->getCityRegion().get();
+	    if (city != nullptr && city->isMayor(creature->getObjectID()) && city->getStructuresCount() > 0) {
+			creature->sendSystemMessage("You cannot surrender politician skills while you are mayor of a city with structures placed.");
+			return false;
+	    }
+	}
+
 	if (skillName.beginsWith("force_") && !(JediManager::instance()->canSurrenderSkill(creature, skillName))) {
 		return false;
 	} else if (!allowPilot && skillName.beginsWith("pilot_")) {
