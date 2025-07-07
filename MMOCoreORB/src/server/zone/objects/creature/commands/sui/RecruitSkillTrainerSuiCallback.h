@@ -158,7 +158,7 @@ public:
 		case 32: trainerTemplatePath = "trainer_unarmed";
 				break;
 
-		case 33: trainerTemplatePath = "trainer_weaponsmith";		
+		case 33: trainerTemplatePath = "trainer_weaponsmith";
 
 		}
 
