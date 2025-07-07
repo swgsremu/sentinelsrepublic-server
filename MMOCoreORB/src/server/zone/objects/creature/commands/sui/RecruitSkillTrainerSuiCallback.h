@@ -140,22 +140,25 @@ public:
 		case 26: trainerTemplatePath = "trainer_scout";
 				break;
 
-		case 27: trainerTemplatePath = "trainer_smuggler";
+		case 27: trainerTemplatePath = "trainer_shipwright";
 				break;
 
-		case 28: trainerTemplatePath = "trainer_squadleader";
+		case 28: trainerTemplatePath = "trainer_smuggler";
 				break;
 
-		case 29: trainerTemplatePath = "trainer_2hsword";
+		case 29: trainerTemplatePath = "trainer_squadleader";
 				break;
 
-		case 30: trainerTemplatePath = "trainer_tailor";
+		case 30: trainerTemplatePath = "trainer_2hsword";
 				break;
 
-		case 31: trainerTemplatePath = "trainer_unarmed";
+		case 31: trainerTemplatePath = "trainer_tailor";
 				break;
 
-		case 32: trainerTemplatePath = "trainer_weaponsmith";
+		case 32: trainerTemplatePath = "trainer_unarmed";
+				break;
+
+		case 33: trainerTemplatePath = "trainer_weaponsmith";		
 
 		}
 
