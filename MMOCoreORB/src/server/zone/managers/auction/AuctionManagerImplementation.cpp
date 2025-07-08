@@ -793,12 +793,14 @@ void AuctionManagerImplementation::addSaleItem(CreatureObject* player, uint64 ob
 				float waypointY = vendor->getWorldPositionY();
 
 				ManagedReference<WaypointObject*> waypointObject = ( zoneServer->createObject(STRING_HASHCODE("object/waypoint/world_waypoint_blue.iff"), 1)).castTo<WaypointObject*>();
+				if (waypointObject != nullptr) {
 				Locker lockerWaypointObject(waypointObject);
 				waypointObject->setCustomObjectName(vendor->getDisplayedName(), false);
 				waypointObject->setActive(false);
 				waypointObject->setPosition(waypointX, 0, waypointY);
 				waypointObject->setPlanetCRC(vendor->getPlanetCRC());
 				lockerWaypointObject.release();
+				}
 
 				ManagedReference<ChatManager*> cman = zoneServer->getChatManager();
 				if (cman != nullptr)
