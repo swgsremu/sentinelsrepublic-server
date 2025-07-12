@@ -44,7 +44,7 @@ buildInitialResourcesFromScript = 1 -- Use a script to build resource database w
   -- So that during wipes crafters can mantain spreadsheets with calculations
 
 --  These indicate zone names where resources spawn
-activeZones = "corellia,tatooine,lok,naboo,rori,endor,talus,yavin4,dathomir,dantooine"
+activeZones = "corellia,tatooine,lok,naboo,rori,endor,talus,yavin4,dathomir,dantooine,hoth"
 
 averageShiftTime = 7200000 -- In milliseconds
   --  This is the time between each time the Resource Manager schedules
@@ -119,5 +119,5 @@ fixedpoolexcludes = ""
 
   -- The native pool will have one of each of the items listed in the includes spawned on each planet at all times, but planet restricted.
 nativepoolincludes = "milk_domesticated,milk_wild,meat_domesticated,meat_wild,meat_herbivore,meat_carnivore,meat_reptilian,meat_avian,meat_egg,meat_insect,seafood_fish,seafood_crustacean,seafood_mollusk,bone_mammal,bone_avian,bone_horn,hide_wooly,hide_bristley,hide_leathery,hide_scaley,corn_domesticated,corn_wild,rice_domesticated,rice_wild,oats_domesticated,oats_wild,wheat_domesticated,wheat_wild,vegetable_greens,vegetable_beans,vegetable_tubers,vegetable_fungi,fruit_fruits,fruit_berries,fruit_flowers,wood_deciduous,softwood_conifer,softwood_evergreen,energy_renewable_unlimited_solar,energy_renewable_unlimited_wind,fiberplast,water_vapor"
-nativepoolexcludes = ""
+nativepoolexcludes = "hoth" -- Hoth is not a native pool planet unless we want to add it.
 
