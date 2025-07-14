@@ -5,16 +5,19 @@ nightsister_tier_4 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 340909},
-		{groupTemplate = "clothing_attachments", weight = 340909},
-		{groupTemplate = "color_crystals", weight = 568182},
-		{groupTemplate = "melee_weapons", weight = 2159091},
-		{groupTemplate = "nightsister_common", weight = 2500000},
-		{groupTemplate = "power_crystals", weight = 454545},
-		{groupTemplate = "ranged_weapons", weight = 3181818},
-		{groupTemplate = "tailor_components", weight = 454545},
-		{groupTemplate = "wearables_common", weight = 454545},
-		{itemTemplate = "nightsister_vibro_unit", weight = 454545},
+		{groupTemplate = "armor_attachments", weight = 300000},
+		{groupTemplate = "clothing_attachments", weight = 300000},
+		{groupTemplate = "color_crystals", weight = 500000},
+		{groupTemplate = "melee_weapons", weight = 1900000},
+		{groupTemplate = "nightsister_common", weight = 2200000},
+		{groupTemplate = "power_crystals", weight = 400000},
+		{groupTemplate = "ranged_weapons", weight = 2800000},
+		{groupTemplate = "tailor_components", weight = 400000},
+		{groupTemplate = "wearables_common", weight = 400000},
+		{groupTemplate = "resource_creature", weight = 300000},
+		{groupTemplate = "resource_water", weight = 100000},
+		{groupTemplate = "crafting_component", weight = 100000},
+		{groupTemplate = "crafting_component_advanced", weight = 300000},
 	}
 }
 
@@ -25,5 +28,3 @@ mobiles:
 	scripts/mobile/dathomir/nightsister_protector.lua	131
 	scripts/mobile/dathomir/nightsister_spell_weaver.lua	107
 ]]--
---nightsister_tier_4: Removed resource_creature, resource_water, crafting_component, crafting_component_advanced
-	
