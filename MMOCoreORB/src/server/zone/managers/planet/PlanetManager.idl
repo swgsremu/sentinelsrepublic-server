@@ -99,10 +99,6 @@ class PlanetManager extends ManagedService implements Logger {
 	@dereferenced
 	protected transient SynchronizedSortedVector<unsigned long> spawnedEventStructures;
 
-	// SR MODIFICATION
-	@dereferenced
-	protected transient VectorMap<string, long> destroyedLairLocations;
-
 	public PlanetManager(Zone planet, ZoneProcessServer srv) {
 		zone = planet;
 		server = srv;
@@ -140,7 +136,6 @@ class PlanetManager extends ManagedService implements Logger {
 
 		spawnedEventObjects.setNoDuplicateInsertPlan();
 		spawnedEventStructures.setNoDuplicateInsertPlan();
-		destroyedLairLocations.setNoDuplicateInsertPlan();
 	}
 
 	@local
@@ -240,10 +235,6 @@ class PlanetManager extends ManagedService implements Logger {
 	public native Vector3 getInSightSpawnPoint(CreatureObject creature, float minDistance, float maxDistance, float angle);
 
 	private native boolean noInterferingObjects(CreatureObject creature, @dereferenced final Vector3 position);
-
-	public native void registerDestroyedLairLocation(float x, float y);
-
-	private native boolean isInDestroyedLairNoSpawnZone(float x, float y, float radius = 128.0);
 
 	public native boolean isSpawningPermittedAt(float x, float y, float margin, boolean isWorldSpawnArea = false);
 
