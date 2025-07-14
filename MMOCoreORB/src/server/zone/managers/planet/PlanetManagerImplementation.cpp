@@ -1293,6 +1293,11 @@ bool PlanetManagerImplementation::isSpawningPermittedAt(float x, float y, float 
 	if (!zone->isWithinBoundaries(targetPos))
 		return false;
 
+	// Check if in destroyed lair no-spawn zone
+	if (isInDestroyedLairNoSpawnZone(x, y)) {
+		return false;
+	}
+
 	zone->getInRangeActiveAreas(x, 0, y, &activeAreas, true);
 
 	for (int i = 0; i < activeAreas.size(); ++i) {
@@ -1648,4 +1653,63 @@ int PlanetManagerImplementation::destroyAllEventObjects() {
 
 Vector3 PlanetManagerImplementation::getJtlLaunchLocations() {
 	return jtlLaunchLocation;
+}
+
+// SR MODIFICATION
+void PlanetManagerImplementation::registerDestroyedLairLocation(float x, float y) {
+	// Round to nearest 10 units to create location key for nearby tracking
+	int roundedX = static_cast<int>(round(x / 10.0f) * 10);
+	int roundedY = static_cast<int>(round(y / 10.0f) * 10);
+	
+	String locationKey = String::valueOf(roundedX) + "," + String::valueOf(roundedY);
+	
+	Locker locker(_this.getReferenceUnsafeStaticCast());
+	
+	info(true) << "PlanetManager: Registering destroyed lair location at (" << x << ", " << y << ") -> key: " << locationKey;
+	
+	destroyedLairLocations.put(locationKey, Time::currentNanoTime() / 1000000);
+}
+
+bool PlanetManagerImplementation::isInDestroyedLairNoSpawnZone(float x, float y, float radius) {
+	Locker locker(_this.getReferenceUnsafeStaticCast());
+	
+	uint64 currentTime = Time::currentNanoTime() / 1000000;
+	uint64 noSpawnDuration = 60000; // 1 minute in milliseconds
+	
+	Vector<String> expiredKeys;
+	
+	// Clean up expired entries and check for valid no-spawn zones
+	for (int i = 0; i < destroyedLairLocations.size(); ++i) {
+		const String& key = destroyedLairLocations.elementAt(i).getKey();
+		uint64 timestamp = destroyedLairLocations.elementAt(i).getValue();
+		
+		if (currentTime - timestamp > noSpawnDuration) {
+			expiredKeys.add(key);
+			continue;
+		}
+		
+		// Parse location from key
+		StringTokenizer tokenizer(key);
+		tokenizer.setDelimeter(",");
+		
+		if (tokenizer.hasMoreTokens()) {
+			float lairX = Float::valueOf(tokenizer.getStringToken());
+			if (tokenizer.hasMoreTokens()) {
+				float lairY = Float::valueOf(tokenizer.getStringToken());
+				
+				float distanceSquared = (x - lairX) * (x - lairX) + (y - lairY) * (y - lairY);
+				if (distanceSquared <= radius * radius) {
+					info(true) << "PlanetManager: Blocking spawn at (" << x << ", " << y << ") due to destroyed lair at (" << lairX << ", " << lairY << ")";
+					return true;
+				}
+			}
+		}
+	}
+	
+	// Remove expired entries
+	for (int i = 0; i < expiredKeys.size(); ++i) {
+		destroyedLairLocations.drop(expiredKeys.get(i));
+	}
+	
+	return false;
 }

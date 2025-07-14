@@ -47,9 +47,7 @@ public:
 				if (session != nullptr) {
 					session->sessionTimeout();
 				}
-
-				float height = player->getHeight();
-
+				
 				if (!player->isInvisible()) {
 					// Removed height change when becoming invisible
 					player->sendSystemMessage("You are now invisible to other players and creatures.");

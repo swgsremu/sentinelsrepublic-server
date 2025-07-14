@@ -41,7 +41,6 @@ giant_canyon_krayt_dragon = Creature:new {
 				{group = "armor_attachments", chance = 650000},
 				{group = "clothing_attachments", chance = 650000},
 				{group = "skill_buffs", chance = 500000},
-
 			},
 			lootChance = 10000000
 		}

@@ -5,19 +5,15 @@ nightsister_tier_3 = {
 	minimumLevel = 0,
 	maximumLevel = -1,
 	lootItems = {
-		{groupTemplate = "armor_attachments", weight = 200000},
-		{groupTemplate = "clothing_attachments", weight = 200000},
-		{groupTemplate = "color_crystals", weight = 500000},
-		{groupTemplate = "melee_weapons", weight = 2300000},
-		{groupTemplate = "nightsister_common", weight = 1850000},
-		{groupTemplate = "power_crystals", weight = 400000},
-		{groupTemplate = "ranged_weapons", weight = 2800000},
-		{groupTemplate = "tailor_components", weight = 400000},
-		{groupTemplate = "wearables_common", weight = 400000},
-		{groupTemplate = "resource_creature", weight = 450000},
-		{groupTemplate = "resource_water", weight = 150000},
-		{groupTemplate = "crafting_component", weight = 175000},
-		{groupTemplate = "crafting_component_advanced", weight = 175000},
+		{groupTemplate = "armor_attachments", weight = 285714},
+		{groupTemplate = "clothing_attachments", weight = 285714},
+		{groupTemplate = "color_crystals", weight = 714286},
+		{groupTemplate = "melee_weapons", weight = 3285714},
+		{groupTemplate = "nightsister_common", weight = 2642857},
+		{groupTemplate = "power_crystals", weight = 571429},
+		{groupTemplate = "ranged_weapons", weight = 4000000},
+		{groupTemplate = "tailor_components", weight = 571429},
+		{groupTemplate = "wearables_common", weight = 571429},
 	}
 }
 
@@ -31,3 +27,5 @@ mobiles:
 	scripts/mobile/dathomir/nightsister_sentinel.lua	88
 	scripts/mobile/dathomir/nightsister_stalker.lua	96
 ]]--
+--nightsister_tier_3: Removed resource_creature, resource_water, crafting_component, crafting_component_advanced
+	
