@@ -164,7 +164,7 @@ function CityControlBanners:manageSceneObjects(location, num, planetName)
 
 	if controllingFaction == FACTIONREBEL then
 		objectTemplate = "object/tangible/gcw/flip_banner_onpole_rebel.iff"
-	elseif controllingFaction == FACTIONIMPERIAL then
+	else
 		objectTemplate = "object/tangible/gcw/flip_banner_onpole_imperial.iff"
 	end
 
