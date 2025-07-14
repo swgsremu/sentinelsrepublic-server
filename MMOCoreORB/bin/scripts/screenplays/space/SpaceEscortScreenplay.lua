@@ -436,12 +436,15 @@ function SpaceEscortScreenplay:assignEscortPoints(pShipAgent)
 	deleteStringData(agentID .. ":" .. self.className .. ":startingPoint:")
 
 	-- Add escort points randomly
-	local escortPoints = self.escortPoints
 	local totalPoints = 0
+	local escortWaypoints = {}
+	for i = 1, #self.escortPoints do
+		table.insert(escortWaypoints, self.escortPoints[i])
+	end
 
-	while (#escortPoints > 0) do
-		local randomPoint = getRandomNumber(1, #escortPoints)
-		local pointName = escortPoints[randomPoint].name
+	while (#escortWaypoints > 0) do
+		local randomPoint = getRandomNumber(1, #escortWaypoints)
+		local pointName = escortWaypoints[randomPoint].name
 
 		if (pointName ~= startingPointName) then
 			-- Add the name escort points to the agent
@@ -451,7 +454,7 @@ function SpaceEscortScreenplay:assignEscortPoints(pShipAgent)
 		end
 
 		-- Drop the point from the table
-		table.remove(escortPoints, randomPoint)
+		table.remove(escortWaypoints, randomPoint)
 	end
 
 	writeData(agentID .. ":" .. self.className .. ":escortShipProgress:", totalPoints)

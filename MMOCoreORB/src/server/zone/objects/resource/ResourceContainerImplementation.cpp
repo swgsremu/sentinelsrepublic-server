@@ -4,6 +4,10 @@
 
 
 #include "server/zone/objects/resource/ResourceContainer.h"
+#include "server/zone/objects/tangible/TangibleObject.h"
+#include "system/io/StringTokenizer.h"
+#include "system/lang/Character.h"
+#include "system/util/Vector.h"
 #include "server/zone/packets/resource/ResourceContainerObjectDeltaMessage3.h"
 #include "server/zone/packets/resource/ResourceContainerObjectMessage3.h"
 #include "server/zone/packets/resource/ResourceContainerObjectMessage6.h"
@@ -26,6 +30,50 @@ void ResourceContainerImplementation::fillAttributeList(AttributeListMessage* al
 
 void ResourceContainerImplementation::sendBaselinesTo(SceneObject* player) {
 	debug("sending rnco baselines");
+
+	String name = getSpawnName();
+	String oName = getCustomObjectName().toString();
+
+	String resourceClass = "";
+	if (spawnObject != nullptr) {
+		resourceClass = spawnObject->getFinalClass();
+	}
+
+	String formattedResourceClass;
+	StringTokenizer classTokenizer(resourceClass);
+	classTokenizer.setDelimeter("_");
+	Vector<String> classWords;
+
+	while (classTokenizer.hasMoreTokens()) {
+		String token;
+		classTokenizer.getStringToken(token);
+		classWords.add(token);
+	}
+
+	if (classWords.isEmpty()) {
+		formattedResourceClass = resourceClass;
+	} else {
+		for (int i = classWords.size() - 1; i >= 0; --i) {
+			const String& currentWord = classWords.get(i);
+			if (!currentWord.isEmpty())
+				formattedResourceClass += Character::toUpperCase(currentWord.charAt(0)) + currentWord.subString(1) + " ";
+		}
+		formattedResourceClass = formattedResourceClass.trim();
+	}
+
+	// Extract resource type from spawnName (e.g., "fiberplast" from "fiberplast_corellia")
+	String resourceTypeForParentheses = "";
+	int underscorePos = name.indexOf('_');
+	if (underscorePos != -1) {
+		resourceTypeForParentheses = name.subString(0, underscorePos);
+	} else {
+		resourceTypeForParentheses = name;
+	}
+
+	String finalDisplayName = formattedResourceClass + " (" + resourceTypeForParentheses + ")";
+
+	if (finalDisplayName != oName)
+		setCustomObjectName(finalDisplayName, false);
 
 	BaseMessage* rnco3 = new ResourceContainerObjectMessage3(_this.getReferenceUnsafeStaticCast());
 	player->sendMessage(rnco3);

@@ -33,12 +33,12 @@ krayt_dragon_adolescent = Creature:new {
 	lootGroups = {
 		{
 			groups = {
-				{group = "krayt_tissue_rare", chance = 1650000},  -- OLD: 20%
+				{group = "krayt_tissue_rare", chance = 1600000},  -- OLD: 20%
 				{group = "krayt_tissue_common", chance = 2500000},
-				{group = "krayt_tissue_uncommon", chance = 1850000}, 
+				{group = "krayt_tissue_uncommon", chance = 2200000}, 
 				{group = "krayt_pearls", chance = 2500000},
-				{group = "armor_attachments", chance = 750000},
-				{group = "clothing_attachments", chance = 750000},
+				{group = "armor_attachments", chance = 600000},
+				{group = "clothing_attachments", chance = 600000},
 			},
 			lootChance = 10000000
 		}

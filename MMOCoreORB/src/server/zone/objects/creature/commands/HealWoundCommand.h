@@ -111,21 +111,20 @@ public:
 			return false;
 		}
 
-		int medicalRatingNotIncludingCityBonus = creature->getSkillMod("private_medical_rating") - creature->getSkillModOfType("private_medical_rating", SkillModManager::CITY);
-		if (medicalRatingNotIncludingCityBonus <= 0) {
-			creature->sendSystemMessage("@healing_response:must_be_near_droid"); //You must be in a hospital, at a campsite, or near a surgical droid to do that.
-			return false;
-		} else {
-			// Building private medical rating always takes precedence, If it a client object structure, no medical rating will prevent buffs/wound healing.
-			ManagedReference<SceneObject*> root = creature->getRootParent();
+	    int droidMedicalRating = creature->getSkillModOfType("private_medical_rating", SkillModManager::DROID);
 
-			if (root != nullptr && root->isClientObject()) {
-				if (creature->getSkillModOfType("private_medical_rating", SkillModManager::STRUCTURE) == 0) {
-					creature->sendSystemMessage("@healing_response:must_be_in_hospital"); // You must be in a hospital or at a campsite to do that.
-					return false;
-				}
-			}
-		}
+	    if (droidMedicalRating > 0) {
+	        // Has a droid with a medical module out, can buff anywhere
+	    } else {
+	        // No droid: must be in a structure with private_medical_rating (STRUCTURE skill mod > 0)
+	        int structureMedicalRating = creature->getSkillModOfType("private_medical_rating", SkillModManager::STRUCTURE);
+
+	        if (structureMedicalRating <= 0) {
+	            creature->sendSystemMessage("@healing_response:must_be_in_hospital");
+	            return false;
+	        }
+	        // Otherwise, allowed, continue
+	    }
 
 		if (creature->isInCombat()) {
 			creature->sendSystemMessage("You cannot heal your own wounds while still in Combat.");

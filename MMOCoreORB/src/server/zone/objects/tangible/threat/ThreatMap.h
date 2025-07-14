@@ -228,6 +228,7 @@ public:
 	ShipObject* getHighestDamageGroupShip();
 
 	TangibleObject* getHighestThreatAttacker();
+	TangibleObject* getHighestThreatAttackerNoRangeCheck();
 	uint32 getTotalDamage();
 
 	void addAggro(TangibleObject* target, int value, uint64 duration = 0);

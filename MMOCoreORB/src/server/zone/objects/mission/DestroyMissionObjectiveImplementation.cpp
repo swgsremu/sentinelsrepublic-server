@@ -20,6 +20,7 @@
 #include "templates/mobile/LairTemplate.h"
 #include "server/zone/managers/creature/CreatureTemplateManager.h"
 #include "server/zone/managers/mission/DestroyMissionLairObserver.h"
+#include "server/zone/managers/creature/LairSpawnAreaUtils.h"
 
 void DestroyMissionObjectiveImplementation::setLairTemplateToSpawn(const String& sp) {
 	lairTemplate = sp;
@@ -293,6 +294,12 @@ void DestroyMissionObjectiveImplementation::addMissionStats(TransactionLog& trx)
 }
 
 void DestroyMissionObjectiveImplementation::complete() {
+	// SR Modification: Create temporary no-spawn area after mission lair destruction
+	ManagedReference<LairObject*> lair = lairObject;
+	
+	if (lair != nullptr) {
+		LairSpawnAreaUtils::createNoSpawnArea(lair);
+	}
 
 	MissionObjectiveImplementation::complete();
 }
