@@ -60,14 +60,6 @@ void ShipSubComponentImplementation::fillAttributeList(AttributeListMessage* alm
 				attribute = "ship_component_mass";
 				break;
 			}
-			case String::hashCode("damage_min"): {
-				attribute = "ship_component_weapon_damage_minimum";
-				break;
-			}
-			case String::hashCode("damage_max"): {
-				attribute = "ship_component_weapon_damage_maximum";
-				break;
-			}
 			case String::hashCode("effective_shields"):
 			case String::hashCode("ship_component_weapon_effectiveness_shields"):{
 				attribute = "ship_component_weapon_effectiveness_shields";
