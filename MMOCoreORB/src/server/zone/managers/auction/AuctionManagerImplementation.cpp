@@ -35,6 +35,7 @@
 #include "AuctionSearchTask.h"
 #include "server/zone/objects/factorycrate/FactoryCrate.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
+#include "system/lang/UnicodeString.h"
 
 void AuctionManagerImplementation::initialize() {
 	Locker locker(_this.getReferenceUnsafeStaticCast());
@@ -766,20 +767,44 @@ void AuctionManagerImplementation::addSaleItem(CreatureObject* player, uint64 ob
 	if (item->getStatus() == AuctionItem::OFFERED) {
 		VendorDataComponent* vendorData = nullptr;
 		DataObjectComponentReference* data = vendor->getDataObjectComponent();
-
-		if (data != nullptr && data->get() != nullptr && data->get()->isVendorData()) {
+		if(data != nullptr && data->get() != nullptr && data->get()->isVendorData())
 			vendorData = cast<VendorDataComponent*>(data->get());
-		}
 
-		if (vendorData != nullptr) {
+		if(vendorData != nullptr) {
 			ManagedReference<SceneObject*> strongRef = zoneServer->getObject(vendorData->getOwnerId());
 
 			if (strongRef != nullptr && strongRef->isPlayerCreature()) {
 				ManagedReference<CreatureObject*> strongOwnerRef = cast<CreatureObject*>(strongRef.get());
 
-				if (strongOwnerRef->isOnline()) {
+				if(strongOwnerRef->isOnline()) {
 					strongOwnerRef->sendSystemMessage(player->getFirstName() + " has offered an item to " + vendor->getDisplayedName());
 				}
+
+				// Tarkin's Revenge: Email player about offer to vendor
+				UnicodeString subject("@auction:vendor_offer_subject"); // An item has been offered to your vendor
+
+				StringIdChatParameter offerBody("@auction:vendor_offer_body"); // %TT has offered %TO to %TU  for %DI credits.
+				offerBody.setTU(vendor->getDisplayedName());
+				offerBody.setTO(item->getItemName());
+				offerBody.setTT(player->getDisplayedName());
+				offerBody.setDI(item->getPrice());
+
+				float waypointX = vendor->getWorldPositionX();
+				float waypointY = vendor->getWorldPositionY();
+
+				ManagedReference<WaypointObject*> waypointObject = ( zoneServer->createObject(STRING_HASHCODE("object/waypoint/world_waypoint_blue.iff"), 1)).castTo<WaypointObject*>();
+				if (waypointObject != nullptr) {
+				Locker lockerWaypointObject(waypointObject);
+				waypointObject->setCustomObjectName(vendor->getDisplayedName(), false);
+				waypointObject->setActive(false);
+				waypointObject->setPosition(waypointX, 0, waypointY);
+				waypointObject->setPlanetCRC(vendor->getPlanetCRC());
+				lockerWaypointObject.release();
+				}
+
+				ManagedReference<ChatManager*> cman = zoneServer->getChatManager();
+				if (cman != nullptr)
+					cman->sendMail(vendor->getDisplayedName(), subject, offerBody, strongOwnerRef->getFirstName(), waypointObject);
 			}
 		}
 	}
