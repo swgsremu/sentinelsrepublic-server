@@ -74,12 +74,13 @@ public:
 		suiTrainerType->addMenuItem("@city/city:st_ranger", 24);
 		suiTrainerType->addMenuItem("@city/city:st_rifleman", 25);
 		suiTrainerType->addMenuItem("@city/city:st_scout", 26);
-		suiTrainerType->addMenuItem("@city/city:st_smuggler", 27);
-		suiTrainerType->addMenuItem("@city/city:st_squadleader", 28);
-		suiTrainerType->addMenuItem("@city/city:st_2hsword", 29);
-		suiTrainerType->addMenuItem("@city/city:st_tailor", 30);
-		suiTrainerType->addMenuItem("@city/city:st_unarmed", 31);
-		suiTrainerType->addMenuItem("@city/city:st_weaponsmith", 32);
+		suiTrainerType->addMenuItem("@city/city:st_shipwright", 27);
+		suiTrainerType->addMenuItem("@city/city:st_smuggler", 28);
+		suiTrainerType->addMenuItem("@city/city:st_squadleader", 29);
+		suiTrainerType->addMenuItem("@city/city:st_2hsword", 30);
+		suiTrainerType->addMenuItem("@city/city:st_tailor", 31);
+		suiTrainerType->addMenuItem("@city/city:st_unarmed", 32);
+		suiTrainerType->addMenuItem("@city/city:st_weaponsmith", 33);
 
 		ghost->addSuiBox(suiTrainerType);
 		creature->sendMessage(suiTrainerType->generateMessage());
