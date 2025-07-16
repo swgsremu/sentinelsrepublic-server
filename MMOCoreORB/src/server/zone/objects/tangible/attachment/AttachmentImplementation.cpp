@@ -60,24 +60,7 @@ void AttachmentImplementation::updateCraftingValues(CraftingValues* values, bool
     }
 
     float level = values->hasExperimentalAttribute("creatureLevel") ? values->getCurrentValue("creatureLevel") : 1;
-    float bonus = values->hasExperimentalAttribute("modifier") ? values->getCurrentValue("modifier") : 1;
-    float rank = LootValues::getLevelRankValue(level, 0.2f, 0.9f);
-
-    int chance = rank * bonus * 100.f;
-    int roll = System::random(1000);
     int modCount = 1;
-
-    int pivot = chance - roll;
-
-    if (pivot < 40) {
-        modCount = 1;
-    } else if (pivot < 70) {
-        modCount = System::random(1) + 1;
-    } else if (pivot < 100) {
-        modCount = System::random(2) + 1;
-    } else {
-        modCount = System::random(1) + 2;
-    }
 
     for (int i = 0; i < modCount; ++i) {
         

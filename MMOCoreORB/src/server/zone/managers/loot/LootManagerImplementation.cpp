@@ -569,7 +569,7 @@ void LootManagerImplementation::addConditionDamage(TangibleObject* prototype) {
 }
 
 void LootManagerImplementation::setSkillMods(TangibleObject* prototype, const LootItemTemplate* templateObject, int level, float excMod) {
-	if (prototype == nullptr || templateObject == nullptr) {
+	if (prototype == nullptr || templateObject == nullptr || prototype->isWeaponObject()) {
 		return;
 	}
 
