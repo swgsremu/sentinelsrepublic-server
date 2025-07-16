@@ -809,6 +809,29 @@ void ObjectManager::deSerializeObject(ManagedObject* object, ObjectInputStream* 
 
 		object->notifyLoadFromDatabase();
 
+	} catch (ArrayIndexOutOfBoundsException& e) {
+		SceneObject* sceno = cast<SceneObject*>(object);
+
+		if (sceno) {
+			String dbName;
+			uint16 tableID = (uint16)(sceno->getObjectID() >> 48);
+			ObjectDatabaseManager::instance()->getDatabaseName(tableID, dbName);
+
+			error() << "ArrayIndexOutOfBoundsException during deserialization - likely corrupted data"
+			        << " - Object ID: 0x" << hex << sceno->getObjectID() << dec
+			        << " - Type: " << sceno->getGameObjectType() 
+			        << " - DB: " << dbName
+			        << " - Error: " << e.getMessage();
+			
+			try {
+				uint64 parentID = sceno->getParentID();
+				if (parentID != 0) {
+					error() << "  Parent ID: 0x" << hex << parentID << dec;
+				}
+			} catch (...) {}
+		}
+
+		throw;
 	} catch (Exception& e) {
 		error(e.getMessage());
 		e.printStackTrace();
