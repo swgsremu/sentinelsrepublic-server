@@ -23,7 +23,6 @@
 #include "server/chat/ChatManager.h"
 #include "server/zone/managers/creature/LairSpawnAreaUtils.h" // SR Modification
 
-
 //#define DEBUG_WILD_LAIRS
 // #define DEBUG_LAIR_HEALING
 
@@ -82,11 +81,6 @@ int LairObserverImplementation::notifyObserverEvent(unsigned int eventType, Obse
 
 			Reference<TangibleObject*> lairRef = lair;
 			Reference<TangibleObject*> attackerRef = attacker;
-
-			// Add damage to the lair's threat map
-			if (lair->getThreatMap() != nullptr) {
-				lair->getThreatMap()->addDamage(attacker, (uint32)arg2);
-			}
 
 			// Check for new spawns when the lair is not past the max spawn waves
 			if (spawnNumber < 3) {
@@ -216,13 +210,6 @@ int LairObserverImplementation::notifyObserverEvent(unsigned int eventType, Obse
 void LairObserverImplementation::notifyDestruction(TangibleObject* lair, TangibleObject* attacker, int condition) {
 	ThreatMap* threatMap = lair->getThreatMap();
 
-	ManagedReference<CreatureObject*> highestThreatAttacker = cast<CreatureObject*>(threatMap->getHighestThreatAttackerNoRangeCheck());
-
-	// Aggro remaining creatures before experience dissemination and cleanup
-	if (highestThreatAttacker != nullptr) {
-		doAggro(lair, highestThreatAttacker, true);
-	}
-
 	Reference<DisseminateExperienceTask*> deTask = new DisseminateExperienceTask(lair, threatMap, &spawnedCreatures, lair->getZone());
 	deTask->execute();
 
@@ -281,13 +268,19 @@ void LairObserverImplementation::doAggro(TangibleObject* lair, TangibleObject* a
 		return;
 	}
 
-	int aggroCount = 0;
 	for (int i = 0; i < spawnedCreatures.size(); ++i) {
+		// If allAttack is false, roll now before running checks
+		if (!allAttack && (System::random(100) < 50)) {
+			continue;
+		}
+
 		auto creO = spawnedCreatures.get(i);
 
 		if (creO == nullptr || creO->isDead() || creO->getZone() == nullptr || creO->isPet() || !creO->isAiAgent()) {
 			continue;
 		}
+
+		Locker clocker(creO, lair);
 
 		auto agent = creO->asAiAgent();
 
@@ -295,28 +288,9 @@ void LairObserverImplementation::doAggro(TangibleObject* lair, TangibleObject* a
 			continue;
 		}
 
-		// Check if already defending against this attacker
-		if (agent->getDefenderList()->contains(attacker)) {
-			continue;
-		}
+		Locker tarLock(attacker, creO);
 
-		// Stagger aggro to prevent CPU spike when many creatures aggro at once
-		int delay = aggroCount * 50; // 50ms between each creature
-		aggroCount++;
-		
-		Core::getTaskManager()->scheduleTask([agent, attacker, lair]() {
-			if (agent == nullptr || attacker == nullptr)
-				return;
-				
-			Locker clocker(agent, lair);
-			if (agent->getZone() == nullptr || agent->isDead())
-				return;
-				
-			Locker tarLock(attacker, agent);
-			agent->addDefender(attacker);
-			agent->setTargetObject(attacker);
-			agent->setCombatState();
-		}, "StaggeredLairAggro", delay);
+		agent->addDefender(attacker);
 	}
 }
 
@@ -444,26 +418,10 @@ bool LairObserverImplementation::checkForNewSpawns(TangibleObject* lair, Tangibl
 		lastAggroTime.updateToCurrentTime();
 		lastAggroTime.addMiliTime(LairObserver::AGGRO_CHECK_INTERVAL * 1000);
 
-		ManagedReference<CreatureObject*> aggroTarget = nullptr;
-		bool allAttack = false;
+		auto aggroTask = new LairAggroTask(lairObject, attacker, _this.getReferenceUnsafeStaticCast(), false);
 
-		if (spawnNumber == 1) { // Initial attack
-			aggroTarget = cast<CreatureObject*>(attacker);
-			allAttack = true;
-		} else { // Subsequent attacks
-			ThreatMap* threatMap = lairObject->getThreatMap();
-			if (threatMap != nullptr) {
-				aggroTarget = cast<CreatureObject*>(threatMap->getHighestThreatAttackerNoRangeCheck());
-				allAttack = true;
-			}
-		}
-
-		if (aggroTarget != nullptr) {
-			auto aggroTask = new LairAggroTask(lairObject, aggroTarget, _this.getReferenceUnsafeStaticCast(), allAttack);
-
-			if (aggroTask != nullptr) {
-				aggroTask->schedule(LairObserver::AGGRO_TASK_DELAY * 1000);
-			}
+		if (aggroTask != nullptr) {
+			aggroTask->schedule(LairObserver::AGGRO_TASK_DELAY * 1000);
 		}
 	}
 
@@ -781,30 +739,6 @@ void LairObserverImplementation::spawnLairMobile(LairObject* lair, int spawnNumb
 	// Add agent to the lairs creature list
 	spawnedCreatures.add(agent);
 
-	// If there's an active threat on the lair, the newly spawned creature will immediately aggro the player who has the highest damage
-	ThreatMap* threatMap = lair->getThreatMap();
-	if (threatMap != nullptr && threatMap->size() > 0) {
-		ManagedReference<CreatureObject*> highestThreatAttacker = cast<CreatureObject*>(threatMap->getHighestThreatAttackerNoRangeCheck());
-		if (highestThreatAttacker != nullptr) {
-			// Stagger the aggro slightly to reduce CPU spike
-			int aggroDelay = 100 + (System::random(400)); // 100-500ms random delay
-			
-			Core::getTaskManager()->scheduleTask([agent, highestThreatAttacker]() {
-				if (agent == nullptr || highestThreatAttacker == nullptr)
-					return;
-					
-				Locker agentLock(agent);
-				if (agent->getZone() == nullptr || agent->isDead())
-					return;
-					
-				Locker tarLock(highestThreatAttacker, agent);
-				agent->addDefender(highestThreatAttacker);
-				agent->setTargetObject(highestThreatAttacker);
-				agent->setCombatState();
-			}, "DelayedSpawnAggro", aggroDelay);
-		}
-	}
-
 	// Must be at least the baby and one other creature on the spawn to set a adult creature to social follow
 	if (spawnedCreatures.size() > 1 && agent->isCreature()) {
 		Creature* creature = cast<Creature*>(agent);
@@ -858,6 +792,7 @@ void LairObserverImplementation::spawnLairMobile(LairObject* lair, int spawnNumb
 	}
 
 	int totalThreats = 1;
+	auto threatMap = lair->getThreatMap();
 
 	if (threatMap != nullptr) {
 		totalThreats = threatMap->size();
