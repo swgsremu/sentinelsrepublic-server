@@ -20,7 +20,6 @@ public:
 		bool cancelPressed = (eventIndex == 1);
 		int newBounty = 0;
 		int refund = 0;
-		int currentBounty = 0;
 		int minBounty = 25000;
 		int maxBounty = 2500000;
 		int maxTotalBounty = 2500000;
@@ -76,7 +75,6 @@ public:
 
 			uint64 oid = killerCreature->getObjectID();
 			int currentBounty = missionManager->getPlayerBounty(oid);
-			info("Current bounty for " + killerCreature->getFirstName() + ": " + String::valueOf(currentBounty));
 			newBounty = currentBounty + (value * (1.0f - guildFee));
 						
 			if (creature->getBankCredits() + creature->getCashCredits() >= value) {
@@ -94,9 +92,8 @@ public:
 				}
 			
 				killerCreature->playEffect("clienteffect/ui_missile_aquiring.cef", "");
-				creature->playEffect("clienteffect/holoemote_haunted.cef", "head");
 				String playerName = killerCreature->getFirstName();
-				creature->sendSystemMessage("Your bounty has been placed successfully!  The bounty for " + playerName + " is now " + String::valueOf(newBounty) + " credits.");	
+				creature->sendSystemMessage(" \\#f0f497[Bounty Set]\\#ffffff You have successfully placed a bounty on \\#ffd27f" + playerName + ".\\#ffffff The bounty is now \\#ffd27f" + String::valueOf(newBounty) + "\\#ffffff credits.");	
 
 				if (!missionManager->hasPlayerBountyTargetInList(oid))
 					missionManager->addPlayerToBountyList(oid, newBounty);
@@ -122,7 +119,7 @@ public:
 				creature->sendSystemMessage("You have insufficient funds. You need at least 25,000 credits in cash or bank.");
 		} 
 		
-		catch(Exception& e) { }
+		catch(Exception& e) { error("Exception in BountyHuntSuiCallback: " + e.getMessage()); }
 	}
 };
 
