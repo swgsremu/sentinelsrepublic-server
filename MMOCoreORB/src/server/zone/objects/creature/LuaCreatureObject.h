@@ -152,6 +152,11 @@ namespace creature {
 		int removeCustomBuff(lua_State* L);
 		int hasCustomBuff(lua_State* L);
 		int clearAllBuffs(lua_State* L);
+
+		// BH SR2
+
+		int getPlayerBountyTarget(lua_State* L);
+		
 	private:
 		// The pointer to the 'real object' defined in object.cc
 		CreatureObject* realObject;

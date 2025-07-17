@@ -117,6 +117,10 @@ namespace player {
 		int removeDroidCommands(lua_State* L);
 		int clearStomach(lua_State* L);
 
+		// BH SR2
+		int getPlayerBounty(lua_State* L);
+		int updatePlayerBountyReward(lua_State* L);
+
 	private:
 		// The pointer to the 'real object' defined in object.cc
 		PlayerObject* realObject;
