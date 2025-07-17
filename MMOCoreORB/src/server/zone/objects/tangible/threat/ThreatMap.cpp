@@ -540,6 +540,8 @@ TangibleObject* ThreatMap::getHighestThreatAttacker() {
 		}
 	}
 
+	threatMatrix.clear();
+
 	ManagedReference<TangibleObject*> selfStrong = cast<TangibleObject*>(self.get().get());
 
 	for (int i = 0; i < size(); ++i) {
@@ -607,6 +609,8 @@ TangibleObject* ThreatMap::getHighestThreatAttackerNoRangeCheck() {
 			return currentThreat;
 		}
 	}
+
+	threatMatrix.clear();
 
 	ManagedReference<TangibleObject*> selfStrong = cast<TangibleObject*>(self.get().get());
 
