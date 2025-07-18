@@ -806,7 +806,11 @@ const String& TemplateManager::getTemplateFile(uint32 key) const {
 
 	if (templateData == nullptr) {
 		const String& ascii = clientTemplateCRCMap->get(key);
-
+		if (ascii.isEmpty()) {
+			// try to get the template from the lua templates
+			System::out << "TEMPLATE MISSING: Unknown CRC 0x" << String::valueOf(key, 16) << ". Check if file exists in loaded TREs.\n";
+			
+		}
 		if (ascii.isEmpty())
 			throw Exception("TemplateManager::getTemplateFile exception unknown template key 0x" + String::hexvalueOf((int)key));
 		else

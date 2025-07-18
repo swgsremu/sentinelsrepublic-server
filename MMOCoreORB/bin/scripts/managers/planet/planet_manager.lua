@@ -624,3 +624,18 @@ creature_test = {
 	planetObjects = {
 	}
 }
+
+hoth = {
+    weatherEnabled = 1,
+    gcwEnabled = 1,   
+    planetTravelPoints = {
+      {name = "Scavenger Outpost", x = 17, z = -1982, y = -2000, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3},
+    },
+    badgeAreas = {
+      {"exp_hot_echo_base",-5100,5100,0,30,170},
+      {"exp_hot_wampa_cave",-351,2428,0,30,171},
+    },
+    planetObjects = {
+     {templateFile = "object/tangible/terminal/terminal_character_builder.iff", ow = 0, ox = 0, oy = 0, oz = 0, x = -13.5, z = 0, y = -2017, parentid = 0},
+    }
+}
