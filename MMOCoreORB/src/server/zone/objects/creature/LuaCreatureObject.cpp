@@ -185,6 +185,10 @@ Luna<LuaCreatureObject>::RegType LuaCreatureObject::Register[] = {
 		{ "removeCustomBuff", &LuaCreatureObject::removeCustomBuff },
 		{ "hasCustomBuff", &LuaCreatureObject::hasCustomBuff },
 		{ "clearAllBuffs", &LuaCreatureObject::clearAllBuffs },
+
+		// BH SR2
+
+		{ "getPlayerBountyTarget", &LuaCreatureObject::getPlayerBountyTarget },
 		
 		{ 0, 0 }
 };
@@ -1686,4 +1690,34 @@ int LuaCreatureObject::clearAllBuffs(lua_State* L) {
 	realObject->clearAllBuffs();
 
 	return 0;
+}
+
+// SR2 
+
+int LuaCreatureObject::getPlayerBountyTarget(lua_State* L) {
+
+	uint64 targetID = 0;
+
+	if (realObject != nullptr && realObject->isPlayerCreature()) {
+
+		SceneObject* datapad = realObject->getSlottedObject("datapad");
+
+		for (int i = 0; i < datapad->getContainerObjectsSize(); ++i) {
+
+			SceneObject* obj = datapad->getContainerObject(i);
+			if (obj->isMissionObject()) {
+				MissionObject* datapadMission = cast<MissionObject*>(obj);
+				if (datapadMission->getTypeCRC() == MissionTypes::BOUNTY) {
+					targetID = datapadMission->getTargetObjectId();
+				}
+			}
+		}
+	}
+	else {
+		Logger::console.error("LuaCreatureObject::getPlayerBountyTarget - realObject is nullptr or not playerObject");
+	}
+
+	lua_pushinteger(L, targetID);
+
+	return 1;
 }
