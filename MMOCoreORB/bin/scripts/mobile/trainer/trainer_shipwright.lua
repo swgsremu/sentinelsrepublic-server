@@ -3,8 +3,6 @@ trainer_shipwright = Creature:new {
 	randomNameType = NAME_GENERIC,
 	randomNameTag = true,
 	mobType = MOB_NPC,
-	planetMapCategory = "trainer",
-	planetMapSubCategory = "trainer_shipwright",
 	faction = "",
 	level = 100,
 	chanceHit = 0.390000,
@@ -26,7 +24,7 @@ trainer_shipwright = Creature:new {
 	ferocity = 0,
 	pvpBitmask = NONE,
 	creatureBitmask = NONE,
-	optionsBitmask = INVULNERABLE + CONVERSABLE + JTLINTERESTING,
+	optionsBitmask = INVULNERABLE + CONVERSABLE,
 	diet = HERBIVORE,
 
 	templates = {
