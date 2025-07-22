@@ -420,6 +420,7 @@ void PlayerObjectImplementation::unload() {
 
 int PlayerObjectImplementation::calculateBhReward() {
 	int minReward = 25000; // Minimum reward for a player bounty
+	int maxReward = 2500000;
 
 	if (getJediState() >= 4) // Minimum if player is knight
 		minReward = 50000;
@@ -432,8 +433,32 @@ int PlayerObjectImplementation::calculateBhReward() {
 	if (frsRank > 0)
 		reward += frsRank * 100000; // +100k per frs rank
 
+	auto zoneServer = getZoneServer();
+	if (zoneServer == nullptr) {
+		return reward;
+	}
+
+	auto missionManager = zoneServer->getMissionManager();
+	if (missionManager == nullptr) {
+		return reward;
+	}
+
+	ManagedReference<CreatureObject*> player = getParentRecursively(SceneObjectType::PLAYERCREATURE).castTo<CreatureObject*>();
+	if (player == nullptr) {
+		return reward;
+	}
+
+	int currentBountyAmount = missionManager->getPlayerBounty(player->getObjectID());
+
+
 	if (reward < minReward)
 		reward = minReward;
+
+	if (currentBountyAmount > 0 && reward < currentBountyAmount)
+		reward = currentBountyAmount; // If player has a bounty, use that as the minimum
+	
+	if (reward > maxReward)
+		reward = maxReward; // Cap the reward
 
 	return reward;
 }
@@ -1770,7 +1795,7 @@ void PlayerObjectImplementation::notifyOnline() {
 
 	MissionManager* missionManager = zoneServer->getMissionManager();
 
-	if (missionManager != nullptr && playerCreature->hasSkill("force_title_jedi_rank_02")) {
+	if (missionManager != nullptr && (playerCreature->hasSkill("force_title_jedi_rank_02") || getVisibility() > 0)) {
 		uint64 id = playerCreature->getObjectID();
 
 		if (!missionManager->hasPlayerBountyTargetInList(id))
@@ -1778,7 +1803,7 @@ void PlayerObjectImplementation::notifyOnline() {
 		else {
 			missionManager->updatePlayerBountyReward(id, calculateBhReward());
 			missionManager->updatePlayerBountyOnlineStatus(id, true);
-		}
+		}		
 	}
 
 	playerCreature->schedulePersonalEnemyFlagTasks();

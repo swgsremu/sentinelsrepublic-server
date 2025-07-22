@@ -20,6 +20,10 @@
 #include "server/zone/objects/player/sui/callbacks/EnclaveCouncilRankSuiCallback.h"
 #include "server/zone/managers/stringid/StringIdManager.h"
 
+// BH SR2 
+
+#include "server/zone/managers/mission/MissionManager.h"
+
 const char LuaPlayerObject::className[] = "LuaPlayerObject";
 
 Luna<LuaPlayerObject>::RegType LuaPlayerObject::Register[] = {
@@ -113,6 +117,10 @@ Luna<LuaPlayerObject>::RegType LuaPlayerObject::Register[] = {
 		{ "removeDroidCommands", &LuaPlayerObject::removeDroidCommands },
 		{ "clearStomach", &LuaPlayerObject::clearStomach },
 
+		// SR BH
+
+		{ "getPlayerBounty", &LuaPlayerObject::getPlayerBounty },
+		{ "updatePlayerBountyReward", &LuaPlayerObject::updatePlayerBountyReward },
 		{ 0, 0 }
 };
 
@@ -1053,6 +1061,59 @@ int LuaPlayerObject::removeDroidCommands(lua_State* L) {
 
 int LuaPlayerObject::clearStomach(lua_State* L) {
 	realObject->clearStomach();
+
+	return 0;
+}
+
+int LuaPlayerObject::getPlayerBounty(lua_State* L) {
+
+	int currentBounty = 0;
+
+	if (realObject != nullptr) {
+
+		MissionManager* missionManager = realObject->getZoneServer()->getMissionManager();
+
+		if (missionManager != nullptr) {
+			ManagedReference<CreatureObject*> creo = dynamic_cast<CreatureObject*>(realObject->getParent().get().get());
+			if (creo != nullptr) {
+				uint64 oid = creo->getObjectID();
+				currentBounty = missionManager->getPlayerBounty(oid);
+			}
+		}
+	}
+
+	lua_pushinteger(L, currentBounty);
+
+	return 1;
+}
+
+int LuaPlayerObject::updatePlayerBountyReward(lua_State* L) {
+
+	int newBounty = lua_tointeger(L, -1);
+
+	if (realObject != nullptr && newBounty > 0) {
+
+		auto zoneServer = realObject->getZoneServer();
+		if (zoneServer != nullptr) {
+
+			MissionManager* missionManager = zoneServer->getMissionManager();
+
+			if (missionManager != nullptr) {
+				ManagedReference<CreatureObject*> creo = dynamic_cast<CreatureObject*>(realObject->getParent().get().get());
+				if (creo != nullptr) {
+					uint64 oid = creo->getObjectID();
+
+					if (!missionManager->hasPlayerBountyTargetInList(oid))
+						missionManager->addPlayerToBountyList(oid, newBounty);
+					else {
+						missionManager->updatePlayerBountyReward(oid, newBounty);
+					}
+					missionManager->updatePlayerBountyOnlineStatus(oid, true);
+				}
+			}
+
+		}
+	}
 
 	return 0;
 }
