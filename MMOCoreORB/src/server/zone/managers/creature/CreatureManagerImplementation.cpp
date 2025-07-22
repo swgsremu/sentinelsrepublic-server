@@ -769,7 +769,7 @@ int CreatureManagerImplementation::notifyDestruction(TangibleObject* destructor,
 				if (defenderTano == nullptr)
 					continue;
 				
-				Locker defenderLock(defenderTano, destructedObject);
+				Locker defenderLock(defenderTano);
 				
 				if (defenderTano->hasDefender(destructedObject)) {
 					defenderTano->removeDefender(destructedObject);
@@ -800,8 +800,9 @@ int CreatureManagerImplementation::notifyDestruction(TangibleObject* destructor,
 				if (tangibleObject == nullptr)
 					continue;
 				
+				Locker tangibleLock(tangibleObject);
+				
 				if (tangibleObject->hasDefender(destructedObject)) {
-					Locker tangibleLock(tangibleObject, destructedObject);
 					
 					tangibleObject->removeDefender(destructedObject);
 					
