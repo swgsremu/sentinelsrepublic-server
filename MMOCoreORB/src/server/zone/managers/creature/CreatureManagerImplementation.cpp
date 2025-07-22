@@ -754,6 +754,65 @@ int CreatureManagerImplementation::notifyDestruction(TangibleObject* destructor,
 		}
 	}
 
+	const DeltaVector<ManagedReference<SceneObject*>>* defenderList = destructedObject->getDefenderList();
+	
+	if (defenderList != nullptr && defenderList->size() > 0) {
+		for (int i = 0; i < defenderList->size(); i++) {
+			ManagedReference<SceneObject*> defender = defenderList->get(i);
+			
+			if (defender == nullptr)
+				continue;
+				
+			if (defender->isPlayerCreature() || defender->isPet()) {
+				TangibleObject* defenderTano = defender->asTangibleObject();
+				
+				if (defenderTano == nullptr)
+					continue;
+				
+				Locker defenderLock(defenderTano, destructedObject);
+				
+				if (defenderTano->hasDefender(destructedObject)) {
+					defenderTano->removeDefender(destructedObject);
+					
+					if (!defenderTano->hasDefenders()) {
+						defenderTano->clearCombatState(false);
+					}
+				}
+			}
+		}
+	}
+	
+	Zone* zone = destructedObject->getZone();
+	if (zone != nullptr) {
+		SortedVector<TreeEntry*> closeObjects;
+		zone->getInRangeObjects(destructedObject->getPositionX(), destructedObject->getPositionZ(), 
+			destructedObject->getPositionY(), 128, &closeObjects, true);
+		
+		for (int i = 0; i < closeObjects.size(); i++) {
+			SceneObject* sceneObject = static_cast<SceneObject*>(closeObjects.get(i));
+			
+			if (sceneObject == nullptr || sceneObject == destructedObject)
+				continue;
+				
+			if (sceneObject->isPlayerCreature() || sceneObject->isPet()) {
+				TangibleObject* tangibleObject = sceneObject->asTangibleObject();
+				
+				if (tangibleObject == nullptr)
+					continue;
+				
+				if (tangibleObject->hasDefender(destructedObject)) {
+					Locker tangibleLock(tangibleObject, destructedObject);
+					
+					tangibleObject->removeDefender(destructedObject);
+					
+					// If they have no more defenders, clear their combat state
+					if (!tangibleObject->hasDefenders()) {
+						tangibleObject->clearCombatState(false);
+					}
+				}
+			}
+		}
+	}
 	destructedObject->removeDefenders();
 	destructedObject->clearCombatState(false);
 
