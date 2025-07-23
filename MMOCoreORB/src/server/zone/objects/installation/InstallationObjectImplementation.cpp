@@ -112,6 +112,10 @@ void InstallationObjectImplementation::setActive(bool value, bool notifyClient) 
 
 	Time timeToWorkTill;
 
+	if (value && !active && resourceHopperTimestamp.getTime() == 0) {
+		resourceHopperTimestamp.updateToCurrentTime();
+	}
+
 	active = value;
 	extractionRemainder = 0;
 
@@ -140,9 +144,6 @@ void InstallationObjectImplementation::setActive(bool value, bool notifyClient) 
 
 	broadcastMessages(&messages, true);
 
-	if (value) {
-		resourceHopperTimestamp.updateToCurrentTime();
-	}
 
 	InstallationObjectDeltaMessage7* inso7 = new InstallationObjectDeltaMessage7(_this.getReferenceUnsafeStaticCast());
 	inso7->updateExtractionRate(getActualRate());
@@ -341,8 +342,10 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 	Time timeToWorkTill;
 
 	if (!isActive()) {
-		if(lastStopTime.compareTo(resourceHopperTimestamp) != -1)
-			return;
+		if (resourceHopperTimestamp.getTime() == 0 || resourceHopperTimestamp.getTime() < lastStopTime.getTime()) {
+			resourceHopperTimestamp.updateToCurrentTime();
+		}
+		return;
 	}
 
 	if (resourceHopper.size() == 0) { // no active spawn
