@@ -417,6 +417,12 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 	
 	uint32 lastHopperUpdate = resourceHopperTimestamp.getTime();
 
+	// If resourceHopperTimestamp is uninitialized (0), set it to current time to prevent instant 100% hopper
+	if (lastHopperUpdate == 0) {
+		resourceHopperTimestamp.updateToCurrentTime();
+		lastHopperUpdate = resourceHopperTimestamp.getTime();
+	}
+
 	int elapsedTime = (harvestUntil - lastHopperUpdate);
 
 	float harvestAmount = (elapsedTime / 60.0) * (spawnDensity * getExtractionRate());
