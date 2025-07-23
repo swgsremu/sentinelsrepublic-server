@@ -397,6 +397,10 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 			setActive(false);
 			return;
 		}
+		if (currentSpawn == nullptr) {
+			setActive(false);
+			return;
+		}
 	}
 
 	Time currentTime = workingTime;
