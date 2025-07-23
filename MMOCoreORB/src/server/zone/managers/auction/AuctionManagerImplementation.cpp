@@ -2439,3 +2439,154 @@ String AuctionManagerImplementation::removeColorCodes(const String& name) {
 Logger* AuctionManagerImplementation::getLogger() {
 	return dynamic_cast<Logger*>(this);
 }
+// SR2 Relist Stockroom Functions
+void AuctionManagerImplementation::relistStockroomData(CreatureObject* player, SceneObject* usedVendor) {
+	ManagedReference<TangibleObject*> vendorInUse = (zoneServer->getObject(usedVendor->getObjectID())).castTo<TangibleObject*>();
+	if (vendorInUse == nullptr || (!vendorInUse->isVendor() && !vendorInUse->isBazaarTerminal())) {
+			error("------------------------------- null vendor in relistStockroomData()");
+			return;
+	}
+	ManagedReference<SceneObject*> parent = vendorInUse->getRootParent();
+
+	if (parent != nullptr && parent != player->getRootParent())
+			return;
+
+	if(player->getZone() == nullptr) {
+			error("---------------- player not in a zone : relistStockroomData");
+			return;
+	}
+
+	ManagedReference<BuildingObject*> rootParent = cast<BuildingObject*>(parent.get());
+	if(rootParent != nullptr && !rootParent->isAllowedEntry(player))
+			return;
+
+	String planet = "";
+	String region = "";
+	ManagedReference<SceneObject*> vendor = nullptr;
+	ManagedReference<CityRegion*> city = nullptr;
+
+	city = player->getCityRegion().get();
+	if (city != nullptr)
+			region = city->getCityRegionName();
+	else {
+			region = "@planet_n:" + player->getZone()->getZoneName();
+	}
+	planet = player->getZone()->getZoneName();
+	vendor = vendorInUse;
+
+	TerminalListVector items = auctionMap->getVendorTerminalData(planet, region, usedVendor);
+	int numItems = getVendorItemCount(&items);
+	int vendorItems = 0;
+
+	int allClear = numItems;
+	int relisted = 0;
+    while (allClear > 0) {
+			TerminalListVector items = auctionMap->getVendorTerminalData(planet, region, usedVendor);
+
+			if (items.isEmpty()) {
+					player->sendSystemMessage("No items on vendor");
+					return;
+			}
+			
+            int ret = doRelistStockroom(&items, player, usedVendor, (allClear - 1));
+            if (ret > 0) {
+                    allClear--;
+                    relisted+= (ret-1);
+                    if (allClear == 0) {
+                            StringBuffer smsg;
+                            smsg << relisted << " stockroom items relisted";
+                            player->sendSystemMessage(smsg.toString().toCharArray());
+                    }
+                    if (vendorItems > numItems) { // something not relisting
+                            player->sendSystemMessage("Something went wrong during the relist.  Please report this issue.");
+                            StringBuffer smsg;
+                            smsg << "....................................VENDOR RELIST: Count " << vendorItems << " exceeded items " << numItems << " for " << player->getFirstName();
+                            error(smsg.toString().toCharArray());
+                            break; // exit the loop if we have a problem
+                    }
+            } else {
+                    if (ret == -2) {
+                            break;
+                    } else {
+                            StringBuffer smsg;
+                            smsg << vendorItems << " relisted";
+                            player->sendSystemMessage(smsg.toString().toCharArray());
+							break;
+                    }
+            }
+    }
+}
+
+int AuctionManagerImplementation::getVendorItemCount(TerminalListVector* items) {
+    if(items == nullptr || items->isEmpty()) {
+		return 0;
+	}
+	Reference<TerminalItemList*>& list = items->get(0);
+	if (list == nullptr) {
+		return 0;
+	}
+    return(list->size());
+}
+
+int AuctionManagerImplementation::doRelistStockroom(TerminalListVector* items, CreatureObject* player, SceneObject* vendor, int itemno) {
+	Time expireTime;
+	uint64 currentTime = expireTime.getMiliTime() / 1000;
+	int i = 0;
+	// Adding a redundant check here to ensure items is not null and has at least one item
+	if (items == nullptr || items->isEmpty()) {
+		player->sendSystemMessage("No items on vendor");
+		return 0;
+	}
+	// If somehow the items vector is empty, we return 0
+	Reference<TerminalItemList*>& list = items->get(0);
+	int numItems = list->size();
+	if (list == nullptr || numItems == 0) {
+			player->sendSystemMessage("No items on vendor");
+			return 0;
+	}
+
+	int j = itemno;
+
+	ManagedReference<AuctionItem*> item = list->get(j);
+	ManagedReference<SceneObject*> sceno = zoneServer->getObject(item->getAuctionedItemObjectID());
+
+	if (item == nullptr) {
+			player->sendSystemMessage("Invalid item on vendor");
+			return 0;
+	}
+
+	currentTime = expireTime.getMiliTime() / 1000;
+	bool bRelist = false;
+
+	uint64 oid = item->getAuctionedItemObjectID();
+	if ((item->getStatus() == AuctionItem::SOLD && item->getBuyerID() == player->getObjectID()) ||
+			(item->getStatus() == AuctionItem::EXPIRED && item->getOwnerID() == player->getObjectID())) {
+			bRelist = true;
+	}
+
+    if (bRelist) {
+
+            Locker locker(item);
+            int price = item->getPrice();
+            if (price > MAXVENDORPRICE)
+                    price = MAXVENDORPRICE;
+            if (sceno->isNoTrade()) {
+                    StringBuffer smsg;
+                    smsg << "A NO-TRADE item was found in your stockroom.\n";
+                    smsg << "ITEM : " << item->getItemName() << "\n";
+                    smsg << "Please remove it from  your stockroom before trying again.\n";
+                    player->sendSystemMessage(smsg.toString().toCharArray());
+                 	error(smsg.toString().toCharArray());
+                    locker.release();
+                    return (-2);
+            } else {
+                    StringBuffer smsg;
+     				player->info(smsg.toString().toCharArray());
+                    addSaleItem(player, oid, vendor, item->getItemDescription(), price, (90 * 24 * 60), false, false);
+                    locker.release();
+                    return 2;
+            }
+
+    }
+    return 1;
+}

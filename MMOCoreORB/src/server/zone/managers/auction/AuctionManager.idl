@@ -93,6 +93,7 @@ class AuctionManager extends ManagedService implements Logger {
 
 	@local
 	public native void getAuctionData(CreatureObject player, SceneObject usedVendor, final string planet, final string region, SceneObject vendor, int screen, unsigned int category, final unicode filterText, int minPrice, int maxPrice, boolean includeEntranceFee, int count, int offset);
+	public native void relistStockroomData(CreatureObject player, SceneObject usedVendor);
 
 	private native void refundAuction(AuctionItem item);
 
@@ -122,6 +123,10 @@ class AuctionManager extends ManagedService implements Logger {
 
 	@local
 	private native void doAuctionMaint(TerminalListVector items, final string logTag, boolean startupTask);
+
+	private native int doRelistStockroom(TerminalListVector items, CreatureObject player, SceneObject vendor, int itemno);
+	private native int getVendorItemCount(TerminalListVector items);
+
 
 	public native string getVendorUID(SceneObject vendor);
 
