@@ -83,6 +83,10 @@ void InstallationObjectImplementation::setActive(bool value, bool notifyClient) 
 		if (currentSpawn == nullptr)
 			return;
 
+		if (!active && resourceHopperTimestamp.getTime() == 0) {
+			resourceHopperTimestamp.updateToCurrentTime();
+		}
+
 		spawnDensity = currentSpawn->getDensityAt(getZone()->getZoneName(), getPositionX(), getPositionY());
 
 		if (spawnDensity < .10) {
