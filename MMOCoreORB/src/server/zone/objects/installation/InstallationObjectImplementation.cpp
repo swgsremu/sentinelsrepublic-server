@@ -374,7 +374,6 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 		StringIdChatParameter stringId("shared", errorString);
 		broadcastToOperators(new ChatSystemMessage(stringId));
 
-		currentSpawn = nullptr;
 		auto msg = info();
 
 		msg << errorString;
@@ -445,8 +444,12 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 	if((int)getHopperSize() >= (int)getHopperSizeMax())
 		shutdownAfterUpdate = true;
 
-	if (shutdownAfterUpdate)
+	if (shutdownAfterUpdate) {
 		setActive(false);
+		if (!errorString.isEmpty()) {
+			currentSpawn = nullptr;
+		}
+	}
 
 	/*InstallationObjectDeltaMessage7* inso7 = new InstallationObjectDeltaMessage7( _this.getReferenceUnsafeStaticCast());
 	inso7->startUpdate(0x0D);
