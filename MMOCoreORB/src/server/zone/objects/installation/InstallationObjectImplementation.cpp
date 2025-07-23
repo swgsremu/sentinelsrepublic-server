@@ -365,7 +365,7 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 		if (!currentSpawn->inShift() || container->getSpawnID() != currentSpawn->getObjectID()) {
 			errorString = "harvester_resource_depleted"; // Resource has been depleted.  Shutting down.
 			shutdownAfterUpdate = true;
-			resourceHopperTimestamp.updateToCurrentTime();
+			// Don't update timestamp here - let the main harvest logic handle final collection
 		}
 	} else {
 		errorString = "harvester_no_resource"; // No resource selected.  Shutting down.
@@ -406,47 +406,50 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 
 	Time spawnExpireTimestamp((uint32)currentSpawn->getDespawned());
 	
+	// Determine harvest end time - either current time or despawn time, whichever is earlier
+	uint32 harvestUntil;
 	if(spawnExpireTimestamp.compareTo(currentTime) <= 0) {
+		// Resource has despawned, harvest up to despawn time
+		harvestUntil = spawnExpireTimestamp.getTime();
 		shutdownAfterUpdate = true;
-		resourceHopperTimestamp.updateToCurrentTime();
 	} else {
-		// Resource is still active, calculate harvest amount
-		// if (t1 < t2) return 1 - if spawnTime is sooner currentTime, use spawnTime, else use spawn time
-		uint32 harvestUntil = (spawnExpireTimestamp.compareTo(currentTime) > 0) ? spawnExpireTimestamp.getTime() : currentTime.getTime();
-		uint32 lastHopperUpdate = resourceHopperTimestamp.getTime();
-
-		int elapsedTime = (harvestUntil - lastHopperUpdate);
-
-		float harvestAmount = (elapsedTime / 60.0) * (spawnDensity * getExtractionRate());
-
-		int availableCapacity = (int)(getHopperSizeMax() - getHopperSize());
-		harvestAmount = harvestAmount > availableCapacity ? availableCapacity : harvestAmount;
-
-		if(harvestAmount < 0)
-			harvestAmount = 0;
-
-		harvestAmount += extractionRemainder;
-		extractionRemainder = harvestAmount - (int) harvestAmount;
-		harvestAmount = (int) harvestAmount;
-
-		float currentQuantity = container->getQuantity();
-
-		if(harvestAmount > 0 || !isActive()) {
-			Locker spawnLocker(currentSpawn);
-
-			currentSpawn->extractResource(getZone()->getZoneName(), harvestAmount);
-
-			spawnLocker.release();
-
-			updateResourceContainerQuantity(container, (currentQuantity + harvestAmount), true);
-		}
-
-		// Update Timestamp
-		resourceHopperTimestamp.updateToCurrentTime();
-
-		if((int)getHopperSize() >= (int)getHopperSizeMax())
-			shutdownAfterUpdate = true;
+		// Resource is still active, harvest up to current time
+		harvestUntil = currentTime.getTime();
 	}
+	
+	uint32 lastHopperUpdate = resourceHopperTimestamp.getTime();
+
+	int elapsedTime = (harvestUntil - lastHopperUpdate);
+
+	float harvestAmount = (elapsedTime / 60.0) * (spawnDensity * getExtractionRate());
+
+	int availableCapacity = (int)(getHopperSizeMax() - getHopperSize());
+	harvestAmount = harvestAmount > availableCapacity ? availableCapacity : harvestAmount;
+
+	if(harvestAmount < 0)
+		harvestAmount = 0;
+
+	harvestAmount += extractionRemainder;
+	extractionRemainder = harvestAmount - (int) harvestAmount;
+	harvestAmount = (int) harvestAmount;
+
+	float currentQuantity = container->getQuantity();
+
+	if(harvestAmount > 0 || !isActive()) {
+		Locker spawnLocker(currentSpawn);
+
+		currentSpawn->extractResource(getZone()->getZoneName(), harvestAmount);
+
+		spawnLocker.release();
+
+		updateResourceContainerQuantity(container, (currentQuantity + harvestAmount), true);
+	}
+
+	// Update Timestamp
+	resourceHopperTimestamp.updateToCurrentTime();
+
+	if((int)getHopperSize() >= (int)getHopperSizeMax())
+		shutdownAfterUpdate = true;
 
 	if (shutdownAfterUpdate)
 		setActive(false);
