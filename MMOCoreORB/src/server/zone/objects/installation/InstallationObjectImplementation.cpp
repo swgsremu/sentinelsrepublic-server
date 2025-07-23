@@ -112,8 +112,13 @@ void InstallationObjectImplementation::setActive(bool value, bool notifyClient) 
 
 	Time timeToWorkTill;
 
-	if (value && !active && resourceHopperTimestamp.getTime() == 0) {
-		resourceHopperTimestamp.updateToCurrentTime();
+	if (value && !active) {
+		if (resourceHopperTimestamp.getTime() == 0) {
+			resourceHopperTimestamp.updateToCurrentTime();
+		}
+		if (lastMaintenanceTime.getTime() == 0) {
+			lastMaintenanceTime.updateToCurrentTime();
+		}
 	}
 
 	active = value;
@@ -410,12 +415,13 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 		}
 	}
 
-	Time currentTime = workingTime;
+	Time currentTime;
+	currentTime.updateToCurrentTime();
 
 	Time spawnExpireTimestamp((uint32)currentSpawn->getDespawned());
 	
 	uint32 harvestUntil;
-	if(spawnExpireTimestamp.compareTo(currentTime) <= 0) {
+	if(spawnExpireTimestamp.getTime() <= currentTime.getTime()) {
 		harvestUntil = spawnExpireTimestamp.getTime();
 		shutdownAfterUpdate = true;
 	} else {
@@ -431,6 +437,10 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 	}
 
 	int elapsedTime = (harvestUntil - lastHopperUpdate);
+	
+	if (elapsedTime < 0) {
+		elapsedTime = 0;
+	}
 
 	float harvestAmount = (elapsedTime / 60.0) * (spawnDensity * getExtractionRate());
 
@@ -458,8 +468,9 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 
 	resourceHopperTimestamp.updateToCurrentTime();
 
-	if((int)getHopperSize() >= (int)getHopperSizeMax())
+	if((int)getHopperSize() >= (int)getHopperSizeMax()) {
 		shutdownAfterUpdate = true;
+	}
 
 	if (shutdownAfterUpdate) {
 		setActive(false);
