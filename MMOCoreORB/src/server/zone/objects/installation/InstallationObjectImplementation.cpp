@@ -363,21 +363,18 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 		}
 
 		if (!currentSpawn->inShift() || container->getSpawnID() != currentSpawn->getObjectID()) {
-			errorString = "harvester_resource_depleted"; // Resource has been depleted.  Shutting down.
+			errorString = "harvester_resource_depleted";
 			shutdownAfterUpdate = true;
-			// Don't update timestamp here - let the main harvest logic handle final collection
 		}
 	} else {
-		errorString = "harvester_no_resource"; // No resource selected.  Shutting down.
+		errorString = "harvester_no_resource";
 	}
 
 	if (!errorString.isEmpty() && isActive()) {
 		StringIdChatParameter stringId("shared", errorString);
 		broadcastToOperators(new ChatSystemMessage(stringId));
 
-		resourceHopperTimestamp.updateToCurrentTime();
 		currentSpawn = nullptr;
-		setActive(false);
 		auto msg = info();
 
 		msg << errorString;
@@ -396,24 +393,22 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 		msg.flush();
 	}
 
-	// Invalid state just stop and return
 	if (currentSpawn == nullptr || container == nullptr || container->getSpawnID() != currentSpawn->getObjectID()) {
-		setActive(false);
-		return;
+		if (!shutdownAfterUpdate) {
+			setActive(false);
+			return;
+		}
 	}
 
 	Time currentTime = workingTime;
 
 	Time spawnExpireTimestamp((uint32)currentSpawn->getDespawned());
 	
-	// Determine harvest end time - either current time or despawn time, whichever is earlier
 	uint32 harvestUntil;
 	if(spawnExpireTimestamp.compareTo(currentTime) <= 0) {
-		// Resource has despawned, harvest up to despawn time
 		harvestUntil = spawnExpireTimestamp.getTime();
 		shutdownAfterUpdate = true;
 	} else {
-		// Resource is still active, harvest up to current time
 		harvestUntil = currentTime.getTime();
 	}
 	
@@ -445,7 +440,6 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 		updateResourceContainerQuantity(container, (currentQuantity + harvestAmount), true);
 	}
 
-	// Update Timestamp
 	resourceHopperTimestamp.updateToCurrentTime();
 
 	if((int)getHopperSize() >= (int)getHopperSizeMax())
