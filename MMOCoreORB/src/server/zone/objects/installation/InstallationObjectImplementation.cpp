@@ -74,7 +74,9 @@ void InstallationObjectImplementation::fillAttributeList(AttributeListMessage* a
 }
 
 void InstallationObjectImplementation::setActive(bool value, bool notifyClient) {
-	updateInstallationWork();
+	if (value && !active) {
+		updateInstallationWork();
+	}
 
 	if (active == value)
 		return;
