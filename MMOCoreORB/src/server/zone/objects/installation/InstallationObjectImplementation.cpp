@@ -74,7 +74,9 @@ void InstallationObjectImplementation::fillAttributeList(AttributeListMessage* a
 }
 
 void InstallationObjectImplementation::setActive(bool value, bool notifyClient) {
-	// updateInstallationWork();
+	if (value && !active) {
+		updateInstallationWork();
+	}
 
 	if (active == value)
 		return;
@@ -82,6 +84,10 @@ void InstallationObjectImplementation::setActive(bool value, bool notifyClient) 
 	if (value && !isFactory()) {
 		if (currentSpawn == nullptr)
 			return;
+
+		if (!active && resourceHopperTimestamp.getTime() == 0) {
+			resourceHopperTimestamp.updateToCurrentTime();
+		}
 
 		spawnDensity = currentSpawn->getDensityAt(getZone()->getZoneName(), getPositionX(), getPositionY());
 
@@ -107,6 +113,15 @@ void InstallationObjectImplementation::setActive(bool value, bool notifyClient) 
 	}
 
 	Time timeToWorkTill;
+
+	if (value && !active) {
+		if (resourceHopperTimestamp.getTime() == 0) {
+			resourceHopperTimestamp.updateToCurrentTime();
+		}
+		if (lastMaintenanceTime.getTime() == 0) {
+			lastMaintenanceTime.updateToCurrentTime();
+		}
+	}
 
 	active = value;
 	extractionRemainder = 0;
@@ -136,9 +151,6 @@ void InstallationObjectImplementation::setActive(bool value, bool notifyClient) 
 
 	broadcastMessages(&messages, true);
 
-	if (value) {
-		resourceHopperTimestamp.updateToCurrentTime();
-	}
 
 	InstallationObjectDeltaMessage7* inso7 = new InstallationObjectDeltaMessage7(_this.getReferenceUnsafeStaticCast());
 	inso7->updateExtractionRate(getActualRate());
@@ -337,8 +349,10 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 	Time timeToWorkTill;
 
 	if (!isActive()) {
-		if(lastStopTime.compareTo(resourceHopperTimestamp) != -1)
-			return;
+		if (resourceHopperTimestamp.getTime() == 0 || resourceHopperTimestamp.getTime() < lastStopTime.getTime()) {
+			resourceHopperTimestamp.updateToCurrentTime();
+		}
+		return;
 	}
 
 	if (resourceHopper.size() == 0) { // no active spawn
@@ -363,20 +377,17 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 		}
 
 		if (!currentSpawn->inShift() || container->getSpawnID() != currentSpawn->getObjectID()) {
-			errorString = "harvester_resource_depleted"; // Resource has been depleted.  Shutting down.
+			errorString = "harvester_resource_depleted";
 			shutdownAfterUpdate = true;
 		}
 	} else {
-		errorString = "harvester_no_resource"; // No resource selected.  Shutting down.
+		errorString = "harvester_no_resource";
 	}
 
 	if (!errorString.isEmpty() && isActive()) {
 		StringIdChatParameter stringId("shared", errorString);
 		broadcastToOperators(new ChatSystemMessage(stringId));
 
-		resourceHopperTimestamp.updateToCurrentTime();
-		currentSpawn = nullptr;
-		setActive(false);
 		auto msg = info();
 
 		msg << errorString;
@@ -395,20 +406,43 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 		msg.flush();
 	}
 
-	// Invalid state just stop and return
 	if (currentSpawn == nullptr || container == nullptr || container->getSpawnID() != currentSpawn->getObjectID()) {
-		setActive(false);
-		return;
+		if (!shutdownAfterUpdate) {
+			setActive(false);
+			return;
+		}
+		if (currentSpawn == nullptr) {
+			setActive(false);
+			return;
+		}
 	}
 
-	Time currentTime = workingTime;
+	Time currentTime;
+	currentTime.updateToCurrentTime();
 
 	Time spawnExpireTimestamp((uint32)currentSpawn->getDespawned());
-	// if (t1 < t2) return 1 - if spawnTime is sooner currentTime, use spawnTime, else use spawn time
-	uint32 harvestUntil = (spawnExpireTimestamp.compareTo(currentTime) > 0) ? spawnExpireTimestamp.getTime() : currentTime.getTime();
+	
+	uint32 harvestUntil;
+	if(spawnExpireTimestamp.getTime() <= currentTime.getTime()) {
+		harvestUntil = spawnExpireTimestamp.getTime();
+		shutdownAfterUpdate = true;
+	} else {
+		harvestUntil = currentTime.getTime();
+	}
+	
 	uint32 lastHopperUpdate = resourceHopperTimestamp.getTime();
 
+	// If resourceHopperTimestamp is uninitialized (0), set it to current time to prevent instant 100% hopper
+	if (lastHopperUpdate == 0) {
+		resourceHopperTimestamp.updateToCurrentTime();
+		lastHopperUpdate = resourceHopperTimestamp.getTime();
+	}
+
 	int elapsedTime = (harvestUntil - lastHopperUpdate);
+	
+	if (elapsedTime < 0) {
+		elapsedTime = 0;
+	}
 
 	float harvestAmount = (elapsedTime / 60.0) * (spawnDensity * getExtractionRate());
 
@@ -424,7 +458,6 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 
 	float currentQuantity = container->getQuantity();
 
-
 	if(harvestAmount > 0 || !isActive()) {
 		Locker spawnLocker(currentSpawn);
 
@@ -435,18 +468,18 @@ void InstallationObjectImplementation::updateHopper(Time& workingTime, bool shut
 		updateResourceContainerQuantity(container, (currentQuantity + harvestAmount), true);
 	}
 
-	// Update Timestamp
 	resourceHopperTimestamp.updateToCurrentTime();
 
-	if((int)getHopperSize() >= (int)getHopperSizeMax())
-		shutdownAfterUpdate = true;
-
-	if(spawnExpireTimestamp.compareTo(currentTime) > 0) {
+	if((int)getHopperSize() >= (int)getHopperSizeMax()) {
 		shutdownAfterUpdate = true;
 	}
 
-	if (shutdownAfterUpdate)
+	if (shutdownAfterUpdate) {
 		setActive(false);
+		if (!errorString.isEmpty()) {
+			currentSpawn = nullptr;
+		}
+	}
 
 	/*InstallationObjectDeltaMessage7* inso7 = new InstallationObjectDeltaMessage7( _this.getReferenceUnsafeStaticCast());
 	inso7->startUpdate(0x0D);
