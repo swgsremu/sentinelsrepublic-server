@@ -626,9 +626,10 @@ void GCWManagerImplementation::registerGCWBase(BuildingObject* building, bool in
 
 			Locker bLock(building, ownerCreature);
 
-			initializeBaseTimers(building);
+			if (baseData != nullptr)
+				initializeBaseTimers(building);
 
-			if (delay == 0)
+			if (delay == 0 && baseData != nullptr)
 				initializeNewVulnerability(baseData);
 
 			bLock.release();
@@ -645,7 +646,9 @@ void GCWManagerImplementation::registerGCWBase(BuildingObject* building, bool in
 			}
 		} else {
 			addBase(building);
-			checkVulnerabilityData(building);
+			DestructibleBuildingDataComponent* baseData = getDestructibleBuildingData(building);
+			if (baseData != nullptr)
+				checkVulnerabilityData(building);
 		}
 	} else {
 		error("Building already in gcwBaseList");

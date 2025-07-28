@@ -125,6 +125,7 @@ HQValues = {
 	{"object/building/military/military_base_police_station_imperial_style_01.iff", 2},
 	{"object/building/military/military_base_shed_imperial_style_officer_s01.iff", 2},
 	{"object/building/military/military_outpost_guard_house_rebel.iff", 2},
+	{"object/tangible/building/hoth/echo_base.iff", 10},
 
 }
 
