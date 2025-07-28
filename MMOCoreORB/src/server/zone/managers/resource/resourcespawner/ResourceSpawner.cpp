@@ -309,15 +309,7 @@ void ResourceSpawner::checkForDuplicateResources() {
 		
 		despawn(spawn);
 		
-		// Find and remove the specific spawn from resourceMap
-		String lowerName = spawn->getName().toLowerCase();
-		for (int j = 0; j < resourceMap->size(); ++j) {
-			if (resourceMap->elementAt(j).getKey() == lowerName && 
-			    resourceMap->elementAt(j).getValue() == spawn) {
-				resourceMap->remove(j);
-				break;
-			}
-		}
+		resourceMap->remove(spawn);
 		
 		Locker locker(spawn);
 		spawn->destroyObjectFromDatabase(true);
