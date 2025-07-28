@@ -211,6 +211,113 @@ void ResourceSpawner::loadResourceSpawns() {
 			resourceMap->size()) + " resources";
 	info(built, true);
 
+	checkForDuplicateResources();
+}
+
+void ResourceSpawner::checkForDuplicateResources() {
+	Time startTime;
+	startTime.updateToCurrentTime();
+	
+	info("Checking for duplicate resources in database...", true);
+	
+	HashTable<String, Vector<ManagedReference<ResourceSpawn*>>*> resourcesByName;
+	
+	for (int i = 0; i < resourceMap->size(); ++i) {
+		ManagedReference<ResourceSpawn*> spawn = resourceMap->get(i);
+		if (spawn == nullptr)
+			continue;
+			
+		String lowerName = spawn->getName().toLowerCase();
+		
+		Vector<ManagedReference<ResourceSpawn*>>* spawns = resourcesByName.get(lowerName);
+		if (spawns == nullptr) {
+			spawns = new Vector<ManagedReference<ResourceSpawn*>>();
+			resourcesByName.put(lowerName, spawns);
+		}
+		spawns->add(spawn);
+	}
+	
+	int duplicatesFound = 0;
+	int duplicatesRemoved = 0;
+	Vector<ManagedReference<ResourceSpawn*>> toRemove;
+	
+	HashTableIterator<String, Vector<ManagedReference<ResourceSpawn*>>*> iter = resourcesByName.iterator();
+	while (iter.hasNext()) {
+		Vector<ManagedReference<ResourceSpawn*>>* spawns = iter.getNextValue();
+		
+		if (spawns->size() > 1) {
+			duplicatesFound++;
+			
+			String resourceName = iter.getNextKey();
+			StringBuffer msg;
+			msg << "Found " << spawns->size() << " resources with name '" << resourceName << "':";
+			
+			ManagedReference<ResourceSpawn*> keepResource = nullptr;
+			int keepIndex = -1;
+			
+			for (int i = 0; i < spawns->size(); ++i) {
+				ManagedReference<ResourceSpawn*> spawn = spawns->get(i);
+				if (spawn->inShift()) {
+					keepResource = spawn;
+					keepIndex = i;
+					break;
+				}
+			}
+			
+			if (keepResource == nullptr) {
+				uint64 earliestTime = UINT64_MAX;
+				for (int i = 0; i < spawns->size(); ++i) {
+					ManagedReference<ResourceSpawn*> spawn = spawns->get(i);
+					if (spawn->getDespawned() < earliestTime) {
+						earliestTime = spawn->getDespawned();
+						keepResource = spawn;
+						keepIndex = i;
+					}
+				}
+			}
+			
+			for (int i = 0; i < spawns->size(); ++i) {
+				ManagedReference<ResourceSpawn*> spawn = spawns->get(i);
+				msg << endl << "  - Type: " << spawn->getType() 
+				    << ", ObjectID: " << spawn->getObjectID()
+				    << ", InShift: " << (spawn->inShift() ? "YES" : "NO")
+				    << ", Despawn Time: " << spawn->getDespawned()
+				    << (i == keepIndex ? " [KEEPING THIS ONE]" : " [REMOVING]");
+			}
+			
+			warning(msg.toString());
+			
+			for (int i = 0; i < spawns->size(); ++i) {
+				if (i != keepIndex) {
+					toRemove.add(spawns->get(i));
+					duplicatesRemoved++;
+				}
+			}
+		}
+		
+		delete spawns;
+	}
+	
+	for (int i = 0; i < toRemove.size(); ++i) {
+		ManagedReference<ResourceSpawn*> spawn = toRemove.get(i);
+		
+		info("Removing duplicate resource: " + spawn->getName() + " (ObjectID: " + String::valueOf(spawn->getObjectID()) + ")", true);
+		
+		despawn(spawn);
+		
+		resourceMap->drop(spawn->getName().toLowerCase());
+		
+		Locker locker(spawn);
+		spawn->destroyObjectFromDatabase(true);
+	}
+	
+	uint64 elapsedMs = startTime.miliDifference();
+	
+	if (duplicatesFound > 0) {
+		error("Found " + String::valueOf(duplicatesFound) + " duplicate resource names. Removed " + String::valueOf(duplicatesRemoved) + " duplicate spawns. Time taken: " + String::valueOf(elapsedMs) + "ms");
+	} else {
+		info("No duplicate resources found. Check completed in " + String::valueOf(elapsedMs) + "ms", true);
+	}
 }
 
 void ResourceSpawner::spawnScriptResources() {
@@ -284,7 +391,12 @@ void ResourceSpawner::spawnScriptResources() {
 		if (newSpawn->isType("energy") || newSpawn->isType("radioactive"))
 			newSpawn->setIsEnergy(true);
 
-		resourceMap->add(newSpawn->getName(), newSpawn);
+		if (resourceMap->contains(newSpawn->getName().toLowerCase())) {
+			warning("Script resource duplicate detected: " + newSpawn->getName() + " - skipping");
+			newSpawn->destroyObjectFromDatabase(true);
+		} else {
+			resourceMap->add(newSpawn->getName(), newSpawn);
+		}
 
 		luaObject.pop();
 	}
@@ -524,6 +636,12 @@ ResourceSpawn* ResourceSpawner::createRecycledResourceSpawn(const ResourceTreeEn
 	if (newSpawn->isType("energy") || newSpawn->isType("radioactive"))
 		newSpawn->setIsEnergy(true);
 
+	if (resourceMap->contains(newSpawn->getName().toLowerCase())) {
+		warning("Recycled resource duplicate detected: " + newSpawn->getName() + " - preventing duplicate spawn");
+		newSpawn->destroyObjectFromDatabase(true);
+		return nullptr;
+	}
+
 	resourceMap->add(newSpawn->getName(), newSpawn);
 
 	return newSpawn;
@@ -660,6 +778,12 @@ ResourceSpawn* ResourceSpawner::createResourceSpawn(const String& type,
 	if (newSpawn->isType("energy") || newSpawn->isType("radioactive"))
 		newSpawn->setIsEnergy(true);
 
+	if (resourceMap->contains(name.toLowerCase())) {
+		warning("Attempted to create duplicate resource: " + name + " - preventing duplicate spawn");
+		newSpawn->destroyObjectFromDatabase(true);
+		return nullptr;
+	}
+
 	resourceMap->add(name, newSpawn);
 
 	//resourceEntry->toString();
@@ -696,12 +820,20 @@ void ResourceSpawner::despawn(ResourceSpawn* spawn) {
 
 String ResourceSpawner::makeResourceName(const String& randomNameClass) {
 	String randname;
+	int attempts = 0;
+	const int maxAttempts = 1000;
 
-	while (true) {
+	while (attempts < maxAttempts) {
 		randname = nameManager->generateResourceName(randomNameClass);
 
 		if (!resourceMap->contains(randname.toLowerCase()) && resourceTree->getEntry(randname) == nullptr)
 			break;
+			
+		attempts++;
+	}
+
+	if (attempts >= maxAttempts) {
+		error("Failed to generate unique resource name after " + String::valueOf(maxAttempts) + " attempts for class: " + randomNameClass);
 	}
 
 	return randname;

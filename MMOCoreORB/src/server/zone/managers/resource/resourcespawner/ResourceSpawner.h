@@ -156,6 +156,7 @@ public:
 private:
 
 	void loadResourceSpawns();
+	void checkForDuplicateResources();
 	String makeResourceName(const String& randomNameClass);
 	int randomizeValue(int min, int max);
 	long getRandomExpirationTime(const ResourceTreeEntry* resourceEntry);

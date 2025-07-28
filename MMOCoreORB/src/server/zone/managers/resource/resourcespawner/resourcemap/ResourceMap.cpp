@@ -43,7 +43,14 @@ float ResourceMap::getDensityAt(const String& resourcename, String zoneName, flo
 }
 
 void ResourceMap::add(const String& resname, ManagedReference<ResourceSpawn* > resourceSpawn) {
-	put(resname.toLowerCase(), resourceSpawn);
+	String lowerName = resname.toLowerCase();
+	
+	if (contains(lowerName)) {
+		Logger::console.error() << "ResourceMap::add - Duplicate resource prevented: " << resname;
+		return;
+	}
+	
+	put(lowerName, resourceSpawn);
 
 	/// Index the resources by type, for resource deeds
 	TypeResourceMap* typemap = typeResourceMap.get(resourceSpawn->getFinalClass());
