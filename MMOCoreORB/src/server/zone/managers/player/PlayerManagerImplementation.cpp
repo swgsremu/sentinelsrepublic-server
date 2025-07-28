@@ -120,6 +120,9 @@
 
 #include "server/zone/srcustom/managers/players/SRPlayerManager.h"
 
+#include "server/zone/objects/player/sui/inputbox/SuiInputBox.h"
+#include "server/zone/objects/player/sui/callbacks/BountyHuntSuiCallback.h"
+
 // #define DEBUG_SPEED_HACK
 
 PlayerManagerImplementation::PlayerManagerImplementation(ZoneServer* zoneServer, ZoneProcessServer* impl, bool trackOnlineUsers) : Logger("PlayerManager") {
@@ -1363,6 +1366,31 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 		if (ghost->hasTef()) {
 			ghost->schedulePvpTefRemovalTask(true, true, true);
 		}
+	}
+	CreatureObject* attackerCreature = attacker->asCreatureObject();
+	
+	bool placeBountyPrompt = false;
+	if (typeofdeath == 1 && attackerCreature != nullptr && attackerCreature != player) {
+		String killerName = attackerCreature->getFirstName();
+
+		if (ghost != nullptr) {
+			placeBountyPrompt = true;
+			Time currentTime;
+			uint64 currentTimeMili = currentTime.getMiliTime();
+			ghost->setScreenPlayData("pvp", "last_death_timestamp", String::valueOf(currentTimeMili));
+			ghost->setScreenPlayData("pvp", "last_killer", killerName);
+		}
+
+		ManagedReference<SuiInputBox*> box = new SuiInputBox(player, SuiWindowType::OBJECT_NAME);
+		box->setPromptTitle("You have been slain in combat.");
+		box->setPromptText("Place a bounty on your killer, " + killerName + ". Enter an amount between 25,000 and 2,500,000 credits. The Bounty Hunter Guild will take 20% for its fee and your target will be added to our boards immediately.");
+		box->setMaxInputSize(128);
+		box->setCancelButton(true, "@no");
+		box->setOkButton(true, "@yes");
+		box->setUsingObject(player);
+		box->setCallback(new BountyHuntSuiCallback(player->getZoneServer()));
+		ghost->addSuiBox(box);
+		player->sendMessage(box->generateMessage());
 	}
 
 	ThreatMap* threatMap = player->getThreatMap();

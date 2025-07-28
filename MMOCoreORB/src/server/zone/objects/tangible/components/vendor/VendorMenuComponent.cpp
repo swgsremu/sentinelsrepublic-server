@@ -99,6 +99,7 @@ void VendorMenuComponent::fillObjectMenuResponse(SceneObject* sceneObject, Objec
 				menuResponse->addRadialMenuItemToRadialID(70, 77, 3, "@player_structure:vendor_areabarks_off");
 			}
 		}
+		menuResponse->addRadialMenuItemToRadialID(70, 80, 3, "Relist all items in Stockroom");
 	}
 
 	menuResponse->addRadialMenuItemToRadialID(70, 78, 3, "@player_structure:remove_vendor");
@@ -219,6 +220,25 @@ int VendorMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject,
 		vendorData->setEmpty();
 		vendorData->scheduleVendorCheckTask(VendorDataComponent::VENDORCHECKINTERVAL);
 		return 0;
+	}
+	// SR2 adding relist auction stockroom items
+	case 80: {
+		if (player->getRootParent() != vendor->getRootParent()) {
+			player->sendSystemMessage("@player_structure:vendor_not_in_same_building");
+			return 0;
+		}
+		ManagedReference<AuctionManager*> auctionManage;
+		ManagedReference<SceneObject*> strongParent = player->getRootParent();
+		if (strongParent != nullptr && strongParent->getZoneServer() != nullptr) {
+			auctionManage = strongParent->getZoneServer()->getAuctionManager();
+
+			if (auctionManage != nullptr) {
+				player->sendSystemMessage("Relisting stockroom items...");
+				auctionManage->relistStockroomData(player, vendor);
+				return 0;
+			}
+		}
+		break;
 	}
 
 	default:

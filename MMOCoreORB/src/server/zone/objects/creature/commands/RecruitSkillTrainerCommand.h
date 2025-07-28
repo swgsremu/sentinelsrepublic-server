@@ -74,6 +74,7 @@ public:
 		suiTrainerType->addMenuItem("@city/city:st_ranger", 24);
 		suiTrainerType->addMenuItem("@city/city:st_rifleman", 25);
 		suiTrainerType->addMenuItem("@city/city:st_scout", 26);
+		// suiTrainerType->addMenuItem("@city/city:st_shipwright", 27);
 		suiTrainerType->addMenuItem("@city/city:st_smuggler", 27);
 		suiTrainerType->addMenuItem("@city/city:st_squadleader", 28);
 		suiTrainerType->addMenuItem("@city/city:st_2hsword", 29);

@@ -140,6 +140,9 @@ public:
 		case 26: trainerTemplatePath = "trainer_scout";
 				break;
 
+		// case 27: trainerTemplatePath = "trainer_shipwright";
+		// 		break;
+
 		case 27: trainerTemplatePath = "trainer_smuggler";
 				break;
 

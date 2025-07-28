@@ -102,11 +102,20 @@ void WearableObjectImplementation::generateSockets(CraftingValues* craftingValue
 
 	float generatedCount = roll * MAXSOCKETS;
 
-	if (generatedCount > MAXSOCKETS)
-		generatedCount = MAXSOCKETS;
-	else if (generatedCount > 3 && generatedCount <= 3.75f)
+	float bonusChance = 0.0f;
+	if (skill > 0) {
+		// Scale bonusChance up to 40% as skill increases
+		bonusChance = ((float)skill / ((float)skill + 65.0f)) * 40.0f;
+		if (bonusChance > 40.0f) bonusChance = 40.0f;
+	}
+	if (generatedCount > 3 && generatedCount <= 3.75f) {
 		generatedCount = floor(generatedCount);
-
+		if (System::random(100) < (int)bonusChance) {
+			generatedCount = MAXSOCKETS;
+		}
+	} else if (generatedCount > MAXSOCKETS) {
+		generatedCount = MAXSOCKETS;
+	}
 	usedSocketCount = 0;
 	socketCount = (int)generatedCount;
 

@@ -69,6 +69,10 @@ void ThreatMap::removeObservers() {
 void ThreatMap::addDamage(TangibleObject* target, uint32 damage, String xp) {
 	Locker locker(&lockMutex);
 
+	ManagedReference<TangibleObject*> strongSelf = self.get();
+	if (strongSelf == nullptr || strongSelf.get() == target)
+		return;
+
 	int idx = find(target);
 	String xpToAward = "";
 
@@ -134,7 +138,7 @@ void ThreatMap::removeAll(bool forceRemoveAll) {
 	}
 
 	currentThreat = nullptr;
-	
+	threatMatrix.clear();
 }
 
 void ThreatMap::dropDamage(TangibleObject* target) {
@@ -574,85 +578,6 @@ TangibleObject* ThreatMap::getHighestThreatAttacker() {
 				continue;
 
 			threatMatrix.add(tano, entry);
-		} else {
-			if (tano->isCreatureObject()) {
-				CreatureObject* creature = tano->asCreatureObject();
-				if (creature != nullptr && !creature->isDead() && !creature->isIncapacitated()) {
-					threatMatrix.add(creature, entry);
-				}
-			} else {
-				threatMatrix.add(tano, entry);
-			}
-		}
-	}
-
-	this->currentThreat = threatMatrix.getLargestThreat();
-
-	cooldownTimerMap.updateToCurrentAndAddMili("doEvaluation", ThreatMap::EVALUATIONCOOLDOWN);
-
-	return this->currentThreat.get().get();
-}
-
-TangibleObject* ThreatMap::getHighestThreatAttackerNoRangeCheck() {
-	Locker locker(&lockMutex);
-
-	ManagedReference<TangibleObject*> currentThreat = this->currentThreat.get();
-
-	if (currentThreat != nullptr && !currentThreat->isDestroyed() && !cooldownTimerMap.isPast("doEvaluation")) {
-		if (currentThreat->isCreatureObject()) {
-			ManagedReference<CreatureObject*> currentCreo = currentThreat->asCreatureObject();
-
-			if (currentCreo != nullptr && !currentCreo->isDead() && !currentCreo->isIncapacitated()) {
-				return currentCreo;
-			}
-		} else {
-			return currentThreat;
-		}
-	}
-
-	threatMatrix.clear();
-
-	ManagedReference<TangibleObject*> selfStrong = cast<TangibleObject*>(self.get().get());
-
-	for (int i = 0; i < size(); ++i) {
-		ThreatMapEntry* entry = &elementAt(i).getValue();
-		TangibleObject* tano = elementAt(i).getKey();
-
-		if (tano == nullptr || selfStrong == nullptr) {
-			continue;
-		}
-
-		if (selfStrong->isCreatureObject()) {
-			CreatureObject* selfCreo = selfStrong->asCreatureObject();
-
-			if (selfCreo == nullptr || !tano->isAttackableBy(selfCreo)) // Removed range check
-				continue;
-
-			if (tano->isCreatureObject()) {
-				CreatureObject* creature = tano->asCreatureObject();
-
-				if (creature != nullptr && !creature->isDead() && !creature->isIncapacitated()) {
-					threatMatrix.add(creature, entry);
-				}
-			} else {
-				threatMatrix.add(tano, entry);
-			}
-		} else if (selfStrong->isShipObject()) {
-			ShipObject* selfShip = selfStrong->asShipObject();
-
-			if (selfShip == nullptr || !tano->isAttackableBy(selfShip)) // Removed range check
-				continue;
-
-			threatMatrix.add(tano, entry);
-		} else {
-			if (tano->isCreatureObject()) {
-				CreatureObject* creature = tano->asCreatureObject();
-				if (creature != nullptr && !creature->isDead() && !creature->isIncapacitated()) {
-					threatMatrix.add(creature, entry);
-				}
-			} else {
-				threatMatrix.add(tano, entry);
-			}
 		}
 	}
 
