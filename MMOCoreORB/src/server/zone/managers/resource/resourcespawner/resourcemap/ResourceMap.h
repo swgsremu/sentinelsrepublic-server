@@ -78,8 +78,9 @@ public:
 	 * map for surveying and sampling/.
 	 * \param resname The unique name of the resource spawn
 	 * \param resourceSpawn The ResourceSpawn object to be added
+	 * \return true if successfully added, false if duplicate name exists
 	*/
-	void add(const String& resname, ManagedReference<ResourceSpawn* > resourceSpawn);
+	bool add(const String& resname, ManagedReference<ResourceSpawn* > resourceSpawn);
 
 	/**
 	 * Removes resource from  global spawn map

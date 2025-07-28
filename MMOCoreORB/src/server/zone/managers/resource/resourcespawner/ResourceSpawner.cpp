@@ -171,7 +171,11 @@ void ResourceSpawner::loadResourceSpawns() {
 			}
 		}
 
-		resourceMap->add(resourceSpawn->getName(), resourceSpawn);
+		if (!resourceMap->add(resourceSpawn->getName(), resourceSpawn)) {
+			warning("Failed to add resource " + resourceSpawn->getName() + " to map - duplicate name found during load");
+			// Resource already exists in map, skip this one
+			continue;
+		}
 
 		if (!resourceSpawn->inShift()) {
 			despawn(resourceSpawn);
@@ -248,7 +252,7 @@ void ResourceSpawner::checkForDuplicateResources() {
 		if (spawns->size() > 1) {
 			duplicatesFound++;
 			
-			String resourceName = iter.getNextKey();
+			String resourceName = spawns->get(0)->getName().toLowerCase();
 			StringBuffer msg;
 			msg << "Found " << spawns->size() << " resources with name '" << resourceName << "':";
 			
@@ -305,7 +309,15 @@ void ResourceSpawner::checkForDuplicateResources() {
 		
 		despawn(spawn);
 		
-		resourceMap->drop(spawn->getName().toLowerCase());
+		// Find and remove the specific spawn from resourceMap
+		String lowerName = spawn->getName().toLowerCase();
+		for (int j = 0; j < resourceMap->size(); ++j) {
+			if (resourceMap->elementAt(j).getKey() == lowerName && 
+			    resourceMap->elementAt(j).getValue() == spawn) {
+				resourceMap->remove(j);
+				break;
+			}
+		}
 		
 		Locker locker(spawn);
 		spawn->destroyObjectFromDatabase(true);
@@ -391,11 +403,9 @@ void ResourceSpawner::spawnScriptResources() {
 		if (newSpawn->isType("energy") || newSpawn->isType("radioactive"))
 			newSpawn->setIsEnergy(true);
 
-		if (resourceMap->contains(newSpawn->getName().toLowerCase())) {
+		if (!resourceMap->add(newSpawn->getName(), newSpawn)) {
 			warning("Script resource duplicate detected: " + newSpawn->getName() + " - skipping");
 			newSpawn->destroyObjectFromDatabase(true);
-		} else {
-			resourceMap->add(newSpawn->getName(), newSpawn);
 		}
 
 		luaObject.pop();
@@ -636,13 +646,11 @@ ResourceSpawn* ResourceSpawner::createRecycledResourceSpawn(const ResourceTreeEn
 	if (newSpawn->isType("energy") || newSpawn->isType("radioactive"))
 		newSpawn->setIsEnergy(true);
 
-	if (resourceMap->contains(newSpawn->getName().toLowerCase())) {
+	if (!resourceMap->add(newSpawn->getName(), newSpawn)) {
 		warning("Recycled resource duplicate detected: " + newSpawn->getName() + " - preventing duplicate spawn");
 		newSpawn->destroyObjectFromDatabase(true);
 		return nullptr;
 	}
-
-	resourceMap->add(newSpawn->getName(), newSpawn);
 
 	return newSpawn;
 }
@@ -778,13 +786,11 @@ ResourceSpawn* ResourceSpawner::createResourceSpawn(const String& type,
 	if (newSpawn->isType("energy") || newSpawn->isType("radioactive"))
 		newSpawn->setIsEnergy(true);
 
-	if (resourceMap->contains(name.toLowerCase())) {
+	if (!resourceMap->add(name, newSpawn)) {
 		warning("Attempted to create duplicate resource: " + name + " - preventing duplicate spawn");
 		newSpawn->destroyObjectFromDatabase(true);
 		return nullptr;
 	}
-
-	resourceMap->add(name, newSpawn);
 
 	//resourceEntry->toString();
 	//newSpawn->print();

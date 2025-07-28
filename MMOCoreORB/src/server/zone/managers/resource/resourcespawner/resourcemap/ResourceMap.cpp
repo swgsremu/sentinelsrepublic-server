@@ -42,12 +42,12 @@ float ResourceMap::getDensityAt(const String& resourcename, String zoneName, flo
 	return resourceSpawn->getDensityAt(zoneName, x, y);
 }
 
-void ResourceMap::add(const String& resname, ManagedReference<ResourceSpawn* > resourceSpawn) {
+bool ResourceMap::add(const String& resname, ManagedReference<ResourceSpawn* > resourceSpawn) {
 	String lowerName = resname.toLowerCase();
 	
 	if (contains(lowerName)) {
 		Logger::console.error() << "ResourceMap::add - Duplicate resource prevented: " << resname;
-		return;
+		return false;
 	}
 	
 	put(lowerName, resourceSpawn);
@@ -74,6 +74,8 @@ void ResourceMap::add(const String& resname, ManagedReference<ResourceSpawn* > r
 			map->put(resourceSpawn->getName().toLowerCase(), resourceSpawn);
 		}
 	}
+	
+	return true;
 }
 /**
  * Even though we want to drop items from the
