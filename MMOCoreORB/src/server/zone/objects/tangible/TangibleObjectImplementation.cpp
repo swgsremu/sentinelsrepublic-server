@@ -987,11 +987,24 @@ int TangibleObjectImplementation::inflictDamage(TangibleObject* attacker, int da
 		if (damage > 0 && attacker != asTangibleObject())
 			getThreatMap()->addDamage(creature, (uint32)damage);
 	}
-
+	
 	if (newConditionDamage >= maxCondition) {
 		notifyObjectDestructionObservers(attacker, newConditionDamage, isCombatAction);
 		notifyObservers(ObserverEventType::OBJECTDISABLED, attacker);
 		setDisabled(true);
+		// SR2 - Remove skill mods from player if wearable is destroyed
+		if (isWearableObject()) {
+        WearableObject* wearable = cast<WearableObject*>(asTangibleObject());
+        if (wearable != nullptr && wearable->isEquipped()) {
+            ManagedReference<SceneObject*> parent = wearable->getParent();
+            if (parent != nullptr && parent->isPlayerCreature()) {
+                CreatureObject* player = cast<CreatureObject*>(parent.get());
+                if (player != nullptr) {
+                    wearable->removeSkillModsFrom(player, true);
+                }
+            }
+        }
+    }
 	}
 
 	return 0;
