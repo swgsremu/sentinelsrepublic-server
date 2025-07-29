@@ -253,7 +253,7 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 			if (object->isCreature() && petType == PetManager::CREATUREPET) {
 				const CreatureTemplate* activePetTemplate = object->getCreatureTemplate();
 
-				if (activePetTemplate == nullptr || activePetTemplate->getTemplateName() == "at_st")
+				if (activePetTemplate == nullptr || activePetTemplate->getTemplateName() == "at_st" || activePetTemplate->getTemplateName() == "at_xt")
 					continue;
 
 				if (++currentlySpawned >= maxPets) {
@@ -276,10 +276,10 @@ void PetControlDeviceImplementation::callObject(CreatureObject* player, bool ini
 				const CreatureTemplate* activePetTemplate = object->getCreatureTemplate();
 				const CreatureTemplate* callingPetTemplate = pet->getCreatureTemplate();
 
-				if (activePetTemplate == nullptr || callingPetTemplate == nullptr || activePetTemplate->getTemplateName() != "at_st")
+				if (activePetTemplate == nullptr || callingPetTemplate == nullptr || (activePetTemplate->getTemplateName() != "at_st" && activePetTemplate->getTemplateName() != "at_xt"))
 					continue;
 
-				if (++currentlySpawned >= maxPets || (activePetTemplate->getTemplateName() == "at_st" && callingPetTemplate->getTemplateName() == "at_st")) {
+				if (++currentlySpawned >= maxPets || (activePetTemplate->getTemplateName() == "at_st" && callingPetTemplate->getTemplateName() == "at_st") || (activePetTemplate->getTemplateName() == "at_xt" && callingPetTemplate->getTemplateName() == "at_xt")) {
 					player->sendSystemMessage("@pet/pet_menu:at_max"); // You already have the maximum number of pets of this type that you can call.
 					return;
 				}
@@ -919,43 +919,43 @@ void PetControlDeviceImplementation::fillAttributeList(AttributeListMessage* alm
 	if (petType == PetManager::FLIGHTCOMPUTER) {
 		auto flightComputerDatapad = getDatapad();
 
- 		if (flightComputerDatapad == nullptr) {
- 			return;
- 		}
+		if (flightComputerDatapad == nullptr) {
+			return;
+		}
 
- 		int containerSize = flightComputerDatapad->getContainerObjectsSize();
- 		int currentDataSize = 0;
- 		Vector<String> storedCommands;
+		int containerSize = flightComputerDatapad->getContainerObjectsSize();
+		int currentDataSize = 0;
+		Vector<String> storedCommands;
 
- 		for (int i = 0; i < containerSize; i++) {
- 			auto commandModule = flightComputerDatapad->getContainerObject(i).castTo<IntangibleObject*>();
+		for (int i = 0; i < containerSize; i++) {
+			auto commandModule = flightComputerDatapad->getContainerObject(i).castTo<IntangibleObject*>();
 
- 			if (commandModule == nullptr) {
- 				continue;
- 			}
+			if (commandModule == nullptr) {
+				continue;
+			}
 
- 			currentDataSize += commandModule->getDataSize();
- 			storedCommands.add(commandModule->getItemIdentifier());
- 		}
+			currentDataSize += commandModule->getDataSize();
+			storedCommands.add(commandModule->getItemIdentifier());
+		}
 
- 		// Used Memory
- 		alm->insertAttribute("droid_program_expended_memory", currentDataSize);
+		// Used Memory
+		alm->insertAttribute("droid_program_expended_memory", currentDataSize);
 
- 		// Loaded Droid Programs
- 		int totalPrograms = storedCommands.size();
+		// Loaded Droid Programs
+		int totalPrograms = storedCommands.size();
 
- 		if (totalPrograms > 0) {
- 			alm->insertAttribute("droid_program_loaded", "");
+		if (totalPrograms > 0) {
+			alm->insertAttribute("droid_program_loaded", "");
 
- 			for (int i = 0; i < totalPrograms; i++) {
- 				String programName = storedCommands.get(i);
+			for (int i = 0; i < totalPrograms; i++) {
+				String programName = storedCommands.get(i);
  
- 				alm->insertAttribute("droid_program", "@space/droid_commands:" + programName);
- 			}
- 		}
+				alm->insertAttribute("droid_program", "@space/droid_commands:" + programName);
+			}
+		}
 
- 		// Pilot's Required Cert
- 		//alm->insertAttribute("data_module_cert_needed", getStorageRating());
+		// Pilot's Required Cert
+		//alm->insertAttribute("data_module_cert_needed", getStorageRating());
 	}
 
 	if (petType == PetManager::DROIDPET) {
