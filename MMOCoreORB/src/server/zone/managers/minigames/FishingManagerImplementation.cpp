@@ -544,7 +544,7 @@ void FishingManagerImplementation::continueFishing(CreatureObject* player) {
 			if (chance + poleMod <= MISHAP - 5) { // Pole decreases chance of mishap
 					mishapEvent("@fishing:tore_bait", player, marker, boxID, true, moodString);
 			} else {
-				if (player->isInRange(marker, 2.0)) {
+				if (player->isInRange(marker, 5.0)) {
 					success(player, fish, marker, boxID);
 				} else {
 					ManagedReference<SceneObject*> newMarker = updateMarker(player, marker, boxID, true);
