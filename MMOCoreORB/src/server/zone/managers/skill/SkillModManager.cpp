@@ -103,6 +103,8 @@ void SkillModManager::verifyWearableSkillMods(CreatureObject* creature) {
 	}
 
 	Locker locker(creature);
+	
+	bool warningSent = false;
 
 	VectorMap<String, int> mods;
 	mods.setAllowOverwriteInsertPlan();
@@ -127,6 +129,14 @@ void SkillModManager::verifyWearableSkillMods(CreatureObject* creature) {
 			WearableObject* wearable = cast<WearableObject*>(object.get());
 
 			if (wearable == nullptr) {
+				continue;
+			}
+			//SR2 - Checking if item is broken before applying skill mods and giving a warning to the player
+			if(wearable->isBroken()){
+				if (!warningSent) {
+					creature->sendSystemMessage("\\#FFFFFF[\\#FF0000WARNING\\#FFFFFF] You are wearing a broken item. Be aware that stats will not apply, and you may be vulnerable if you enter combat!");
+					warningSent = true;
+				}
 				continue;
 			}
 

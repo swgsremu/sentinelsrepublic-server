@@ -58,7 +58,7 @@ class WearableObject extends TangibleObject {
 	@read
 	public abstract native void applySkillModsTo(CreatureObject creature);
 
-	public abstract native void removeSkillModsFrom(CreatureObject creature);
+	public abstract native void removeSkillModsFrom(CreatureObject creature, boolean justBroken = false);
 
 	@dirty
 	public boolean isWearableObject() {

@@ -190,9 +190,9 @@ void WearableObjectImplementation::applyAttachment(CreatureObject* player, Attac
 		applySkillModsTo(player);
 	}
 }
-
+// SR2 - Checking if item is broken before applying skill mods
 void WearableObjectImplementation::applySkillModsTo(CreatureObject* creature) const {
-	if (creature == nullptr) {
+	if (creature == nullptr || isBroken()) {
 		return;
 	}
 
@@ -209,16 +209,18 @@ void WearableObjectImplementation::applySkillModsTo(CreatureObject* creature) co
 
 	SkillModManager::instance()->verifyWearableSkillMods(creature);
 }
-
-void WearableObjectImplementation::removeSkillModsFrom(CreatureObject* creature) {
+// SR2 - Checking if item is broken before removing, or if it just broke. 
+void WearableObjectImplementation::removeSkillModsFrom(CreatureObject* creature, bool justBroken) {
 	if (creature == nullptr) {
+		return;
+	}
+	if (isBroken() && !justBroken) {
 		return;
 	}
 
 	for (int i = 0; i < wearableSkillMods.size(); ++i) {
 		String name = wearableSkillMods.elementAt(i).getKey();
 		int value = wearableSkillMods.get(name);
-
 		if (!SkillModManager::instance()->isWearableModDisabled(name))
 		{
 			creature->removeSkillMod(SkillModManager::WEARABLE, name, value, true);
@@ -238,10 +240,19 @@ bool WearableObjectImplementation::isEquipped() {
 }
 
 String WearableObjectImplementation::repairAttempt(int repairChance) {
+	CreatureObject* player = nullptr;
+	ManagedReference<SceneObject*> parent = getParent();
+	if (parent != nullptr && parent->isPlayerCreature()) {
+    	player = cast<CreatureObject*>(parent.get());
+	}
+	
 	String message = "@error_message:";
 
 	if(repairChance < 25) {
 		message += "sys_repair_failed";
+		if (isEquipped()){
+			removeSkillModsFrom(player);
+		}
 		setMaxCondition(1, true);
 		setConditionDamage(0, true);
 	} else if(repairChance < 50) {
