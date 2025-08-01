@@ -1475,7 +1475,7 @@ void ChatManagerImplementation::handleSpatialChatInternalMessage(CreatureObject*
 		broadcastChatMessage(player, formattedMessage, targetID, spatialChatType, moodType, chatFlags, languageID);
 		
 		// Log spatial chat message for CSR monitoring
-		logChatMessage(player, "SPATIAL", formattedMessage.toString());
+		logChatMessage(player, "SPATIAL", formattedMessage.toString(), "");
 
 		ManagedReference<ChatMessage*> cm = new ChatMessage();
 		cm->setString(formattedMessage.toString());
@@ -1589,7 +1589,7 @@ void ChatManagerImplementation::handleChatInstantMessageToCharacter(ChatInstantM
 	receiver->sendMessage(msg);
 	
 	// Log private message for CSR monitoring
-	logChatMessage(sender, "TELL", text.toString(), receiverName);
+	logChatMessage(sender, "TELL", text.toString(), fname);
 
 	BaseMessage* amsg = new ChatOnSendInstantMessage(message->getSequence(), IM_SUCCESS);
 	sender->sendMessage(amsg);
@@ -1674,7 +1674,7 @@ void ChatManagerImplementation::handleGroupChat(CreatureObject* sender, const Un
 			group->broadcastMessage(msg);
 			
 			// Log group chat message for CSR monitoring
-			logChatMessage(sender, "GROUP", formattedMessage.toString());
+			logChatMessage(sender, "GROUP", formattedMessage.toString(), "");
 		}
 
 		group->unlock();
@@ -1730,7 +1730,7 @@ void ChatManagerImplementation::handleGuildChat(CreatureObject* sender, const Un
 		room->broadcastMessageCheckIgnore(msg, name);
 		
 		// Log guild chat message for CSR monitoring
-		logChatMessage(sender, "GUILD", formattedMessage.toString());
+		logChatMessage(sender, "GUILD", formattedMessage.toString(), "");
 	}
 
 }
@@ -2963,14 +2963,14 @@ void ChatManagerImplementation::logChatMessage(CreatureObject* sender, const Str
 		
 		// Format log entry
 		std::ostringstream logEntry;
-		logEntry << timestamp.str() << " [" << channelType << "] ";
+		logEntry << timestamp.str() << " [" << channelType.toCharArray() << "] ";
 		
 		if (channelType == "TELL" || channelType == "WHISPER") {
 			// Private message format
-			logEntry << sender->getFirstName() << " -> " << recipient << ": " << message;
+			logEntry << sender->getFirstName().toCharArray() << " -> " << recipient.toCharArray() << ": " << message.toCharArray();
 		} else {
 			// Regular chat format
-			logEntry << sender->getFirstName() << ": " << message;
+			logEntry << sender->getFirstName().toCharArray() << ": " << message.toCharArray();
 		}
 		
 		// Write to log file
@@ -3010,15 +3010,24 @@ void ChatManagerImplementation::logPrivateMessageToDatabase(CreatureObject* send
 		String planet = zone ? zone->getZoneName() : "unknown";
 		Vector3 position = sender->getWorldPosition();
 		
+		// Create escaped copies
+		String senderName = sender->getFirstName();
+		String messageEscaped = message;
+		String recipientsEscaped = recipientsJson.toString();
+		
+		ServerDatabase::instance()->escapeString(senderName);
+		ServerDatabase::instance()->escapeString(messageEscaped);
+		ServerDatabase::instance()->escapeString(recipientsEscaped);
+		
 		StringBuffer query;
 		query << "INSERT INTO chat_logs (sender_oid, sender_name, sender_account_id, message, channel_type, recipients, planet, location_x, location_y, location_z, timestamp, galaxy_id) ";
 		query << "VALUES (" 
 			  << sender->getObjectID() << ", "
-			  << "'" << ServerDatabase::instance()->escapeString(sender->getFirstName()) << "', "
+			  << "'" << senderName << "', "
 			  << accountId << ", "
-			  << "'" << ServerDatabase::instance()->escapeString(message) << "', "
+			  << "'" << messageEscaped << "', "
 			  << "'" << channelType.toLowerCase() << "', "
-			  << "'" << ServerDatabase::instance()->escapeString(recipientsJson.toString()) << "', "
+			  << "'" << recipientsEscaped << "', "
 			  << "'" << planet << "', "
 			  << position.getX() << ", "
 			  << position.getY() << ", "
@@ -3047,13 +3056,20 @@ void ChatManagerImplementation::logPublicMessageToDatabase(CreatureObject* sende
 		String planet = zone ? zone->getZoneName() : "unknown";
 		Vector3 position = sender->getWorldPosition();
 		
+		// Create escaped copies
+		String senderName = sender->getFirstName();
+		String messageEscaped = message;
+		
+		ServerDatabase::instance()->escapeString(senderName);
+		ServerDatabase::instance()->escapeString(messageEscaped);
+		
 		StringBuffer query;
 		query << "INSERT INTO chat_logs (sender_oid, sender_name, sender_account_id, message, channel_type, planet, location_x, location_y, location_z, timestamp, galaxy_id) ";
 		query << "VALUES (" 
 			  << sender->getObjectID() << ", "
-			  << "'" << ServerDatabase::instance()->escapeString(sender->getFirstName()) << "', "
+			  << "'" << senderName << "', "
 			  << accountId << ", "
-			  << "'" << ServerDatabase::instance()->escapeString(message) << "', "
+			  << "'" << messageEscaped << "', "
 			  << "'" << channelType.toLowerCase() << "', "
 			  << "'" << planet << "', "
 			  << position.getX() << ", "

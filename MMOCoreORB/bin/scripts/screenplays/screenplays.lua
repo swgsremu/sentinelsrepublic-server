@@ -31,8 +31,8 @@ includeFile("helperfuncs.lua")
 includeFile("playerTriggers.lua")
 
 -- CSR Integration Scripts
-includeFile("../managers/csr_command_processor.lua")
-includeFile("../managers/player_action_logger.lua")
+-- includeFile("../managers/csr_command_processor.lua") -- Disabled: Lua doesn't have database access
+-- includeFile("../managers/player_action_logger.lua") -- Disabled: Lua doesn't have database access
 
 -- Theme parks
 includeFile("themepark/conversations/goru_conv_handler.lua")

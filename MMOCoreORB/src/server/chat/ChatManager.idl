@@ -506,7 +506,7 @@ class ChatManager extends ManagedService implements Logger {
 	
 	// CSR Chat Logging Methods
 	@local
-	public native void logChatMessage(CreatureObject sender, final string channelType, final string message, final string recipient = "");
+	public native void logChatMessage(CreatureObject sender, final string channelType, final string message, final string recipient);
 	
 	@local 
 	private native void logPrivateMessageToDatabase(CreatureObject sender, final string recipient, final string message, final string channelType);
