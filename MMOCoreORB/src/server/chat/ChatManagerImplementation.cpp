@@ -51,6 +51,15 @@
 #include "templates/string/StringFile.h"
 #include "templates/faction/Factions.h"
 
+#include <fstream>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+
+#include "server/ServerCore.h"
+#include "conf/ConfigManager.h"
+#include "server/db/ServerDatabase.h"
+
 ChatManagerImplementation::ChatManagerImplementation(ZoneServer* serv, int initsize) : ManagedServiceImplementation() {
 	server = serv;
 	playerManager = nullptr;
@@ -1464,6 +1473,9 @@ void ChatManagerImplementation::handleSpatialChatInternalMessage(CreatureObject*
 		UnicodeString formattedMessage(formatMessage(msg));
 
 		broadcastChatMessage(player, formattedMessage, targetID, spatialChatType, moodType, chatFlags, languageID);
+		
+		// Log spatial chat message for CSR monitoring
+		logChatMessage(player, "SPATIAL", formattedMessage.toString());
 
 		ManagedReference<ChatMessage*> cm = new ChatMessage();
 		cm->setString(formattedMessage.toString());
@@ -1575,6 +1587,9 @@ void ChatManagerImplementation::handleChatInstantMessageToCharacter(ChatInstantM
 
 	BaseMessage* msg = new ChatInstantMessageToClient("SWG", sender->getZoneServer()->getGalaxyName(), name, text);
 	receiver->sendMessage(msg);
+	
+	// Log private message for CSR monitoring
+	logChatMessage(sender, "TELL", text.toString(), receiverName);
 
 	BaseMessage* amsg = new ChatOnSendInstantMessage(message->getSequence(), IM_SUCCESS);
 	sender->sendMessage(amsg);
@@ -1657,6 +1672,9 @@ void ChatManagerImplementation::handleGroupChat(CreatureObject* sender, const Un
 		if (room != nullptr) {
 			BaseMessage* msg = new ChatRoomMessage(name, server->getGalaxyName(), formattedMessage, room->getRoomID());
 			group->broadcastMessage(msg);
+			
+			// Log group chat message for CSR monitoring
+			logChatMessage(sender, "GROUP", formattedMessage.toString());
 		}
 
 		group->unlock();
@@ -1710,6 +1728,9 @@ void ChatManagerImplementation::handleGuildChat(CreatureObject* sender, const Un
 	if (room != nullptr) {
 		BaseMessage* msg = new ChatRoomMessage(name, server->getGalaxyName(), formattedMessage, room->getRoomID());
 		room->broadcastMessageCheckIgnore(msg, name);
+		
+		// Log guild chat message for CSR monitoring
+		logChatMessage(sender, "GUILD", formattedMessage.toString());
 	}
 
 }
@@ -2925,4 +2946,125 @@ void ChatManagerImplementation::initializeDiscordBot() {
 
 	discordBot = new DiscordBot();
 	discordBot->InitializeBot(botName, botToken);
+}
+
+// CSR Chat Logging Methods
+void ChatManagerImplementation::logChatMessage(CreatureObject* sender, const String& channelType, const String& message, const String& recipient) {
+	try {
+		// Get current timestamp
+		auto now = std::time(nullptr);
+		auto tm = *std::localtime(&now);
+		
+		std::ostringstream timestamp;
+		timestamp << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S]");
+		
+		// Determine log file based on channel type
+		String logFile = "logs/chat.log";
+		
+		// Format log entry
+		std::ostringstream logEntry;
+		logEntry << timestamp.str() << " [" << channelType << "] ";
+		
+		if (channelType == "TELL" || channelType == "WHISPER") {
+			// Private message format
+			logEntry << sender->getFirstName() << " -> " << recipient << ": " << message;
+		} else {
+			// Regular chat format
+			logEntry << sender->getFirstName() << ": " << message;
+		}
+		
+		// Write to log file
+		std::ofstream file(logFile.toCharArray(), std::ios::app);
+		if (file.is_open()) {
+			file << logEntry.str() << std::endl;
+			file.close();
+		}
+		
+		// Also log to database for real-time monitoring
+		if (channelType == "TELL" || channelType == "WHISPER") {
+			logPrivateMessageToDatabase(sender, recipient, message, channelType);
+		} else {
+			logPublicMessageToDatabase(sender, message, channelType);
+		}
+		
+	} catch (...) {
+		// Silently fail to not impact gameplay
+	}
+}
+
+void ChatManagerImplementation::logPrivateMessageToDatabase(CreatureObject* sender, const String& recipient, const String& message, const String& channelType) {
+	try {
+		// Get account ID
+		ManagedReference<PlayerObject*> ghost = sender->getPlayerObject();
+		if (ghost == nullptr)
+			return;
+			
+		int accountId = ghost->getAccountID();
+		
+		// Format recipients JSON
+		StringBuffer recipientsJson;
+		recipientsJson << "{\"primary\": \"" << recipient << "\"}";
+		
+		// Get location data
+		ManagedReference<Zone*> zone = sender->getZone();
+		String planet = zone ? zone->getZoneName() : "unknown";
+		Vector3 position = sender->getWorldPosition();
+		
+		StringBuffer query;
+		query << "INSERT INTO chat_logs (sender_oid, sender_name, sender_account_id, message, channel_type, recipients, planet, location_x, location_y, location_z, timestamp, galaxy_id) ";
+		query << "VALUES (" 
+			  << sender->getObjectID() << ", "
+			  << "'" << ServerDatabase::instance()->escapeString(sender->getFirstName()) << "', "
+			  << accountId << ", "
+			  << "'" << ServerDatabase::instance()->escapeString(message) << "', "
+			  << "'" << channelType.toLowerCase() << "', "
+			  << "'" << ServerDatabase::instance()->escapeString(recipientsJson.toString()) << "', "
+			  << "'" << planet << "', "
+			  << position.getX() << ", "
+			  << position.getY() << ", "
+			  << position.getZ() << ", "
+			  << "NOW(), "
+			  << "1)"; // Galaxy ID
+			  
+		ServerDatabase::instance()->executeStatement(query.toString());
+		
+	} catch (...) {
+		// Silent fail
+	}
+}
+
+void ChatManagerImplementation::logPublicMessageToDatabase(CreatureObject* sender, const String& message, const String& channelType) {
+	try {
+		// Get account ID
+		ManagedReference<PlayerObject*> ghost = sender->getPlayerObject();
+		if (ghost == nullptr)
+			return;
+			
+		int accountId = ghost->getAccountID();
+		
+		// Get location data
+		ManagedReference<Zone*> zone = sender->getZone();
+		String planet = zone ? zone->getZoneName() : "unknown";
+		Vector3 position = sender->getWorldPosition();
+		
+		StringBuffer query;
+		query << "INSERT INTO chat_logs (sender_oid, sender_name, sender_account_id, message, channel_type, planet, location_x, location_y, location_z, timestamp, galaxy_id) ";
+		query << "VALUES (" 
+			  << sender->getObjectID() << ", "
+			  << "'" << ServerDatabase::instance()->escapeString(sender->getFirstName()) << "', "
+			  << accountId << ", "
+			  << "'" << ServerDatabase::instance()->escapeString(message) << "', "
+			  << "'" << channelType.toLowerCase() << "', "
+			  << "'" << planet << "', "
+			  << position.getX() << ", "
+			  << position.getY() << ", "
+			  << position.getZ() << ", "
+			  << "NOW(), "
+			  << "1)"; // Galaxy ID
+			  
+		ServerDatabase::instance()->executeStatement(query.toString());
+		
+	} catch (...) {
+		// Silent fail
+	}
 }
