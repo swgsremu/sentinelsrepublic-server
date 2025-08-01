@@ -11,6 +11,7 @@
 #include "server/zone/managers/skill/SkillModManager.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/managers/admin/AdminCommandLogger.h"
 
 void ObjectControllerImplementation::loadCommands() {
 	configManager = new CommandConfigManager(server);
@@ -148,6 +149,23 @@ float ObjectControllerImplementation::activateCommand(CreatureObject* object, un
 		String skillMod;
 		int value = queueCommand->getSkillMod(i, skillMod);
 		object->addSkillMod(SkillModManager::ABILITYBONUS, skillMod, -value, false);
+	}
+
+	// Log all commands executed by admins (admin level > 0)
+	try {
+		if (object->isPlayerCreature()) {
+			Reference<PlayerObject*> ghost = object->getSlottedObject("ghost").castTo<PlayerObject*>();
+			if (ghost != nullptr && ghost->getAdminLevel() > 0) {
+				// Log to database
+				String commandName = "/" + queueCommand->getQueueCommandName();
+				bool success = (errorNumber == QueueCommand::SUCCESS);
+				String errorMsg = success ? "" : "Error code: " + String::valueOf(errorNumber);
+				
+				AdminCommandLogger::instance()->logCommand(object, commandName, arguments.toString(), success, errorMsg);
+			}
+		}
+	} catch (const Exception& e) {
+		Logger::error("Error logging admin command to database: " + e.getMessage());
 	}
 
 	//onFail onComplete must clear the action from client queue
