@@ -1,4 +1,5 @@
 #include "AdminCommandLogger.h"
+#include "AdminCommandWhitelist.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/db/ServerDatabase.h"
 #include "engine/db/Database.h"
@@ -25,6 +26,11 @@ void AdminCommandLogger::logCommand(CreatureObject* admin, const String& command
     
     // Only log commands from admins (level > 0)
     if (adminLevel <= 0) {
+        return;
+    }
+    
+    // Check if this command should be logged
+    if (!AdminCommandWhitelist::shouldLogCommand(command)) {
         return;
     }
     
