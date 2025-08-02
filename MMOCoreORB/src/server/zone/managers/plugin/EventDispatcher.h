@@ -16,8 +16,8 @@ namespace plugin {
  */
 class EventDispatcher : public Singleton<EventDispatcher>, public Logger, public Object {
 private:
-	Vector<Reference<IEventListener*>> eventListeners;
-	Vector<Reference<ICommandHandler*>> commandHandlers;
+	Vector<IEventListener*> eventListeners;
+	Vector<ICommandHandler*> commandHandlers;
 	mutable Mutex listenerMutex;
 	mutable Mutex handlerMutex;
 	
@@ -122,7 +122,7 @@ public:
 		Locker locker(&listenerMutex);
 		
 		for (int i = 0; i < eventListeners.size(); ++i) {
-			Reference<IEventListener*> listener = eventListeners.get(i);
+			IEventListener* listener = eventListeners.get(i);
 			if (listener != nullptr) {
 				try {
 					listener->onChatEvent(data);
@@ -142,7 +142,7 @@ public:
 		Locker locker(&listenerMutex);
 		
 		for (int i = 0; i < eventListeners.size(); ++i) {
-			Reference<IEventListener*> listener = eventListeners.get(i);
+			IEventListener* listener = eventListeners.get(i);
 			if (listener != nullptr) {
 				try {
 					listener->onPlayerEvent(data);
@@ -162,7 +162,7 @@ public:
 		Locker locker(&listenerMutex);
 		
 		for (int i = 0; i < eventListeners.size(); ++i) {
-			Reference<IEventListener*> listener = eventListeners.get(i);
+			IEventListener* listener = eventListeners.get(i);
 			if (listener != nullptr) {
 				try {
 					listener->onCommandEvent(data);
@@ -182,7 +182,7 @@ public:
 		Locker locker(&listenerMutex);
 		
 		for (int i = 0; i < eventListeners.size(); ++i) {
-			Reference<IEventListener*> listener = eventListeners.get(i);
+			IEventListener* listener = eventListeners.get(i);
 			if (listener != nullptr) {
 				try {
 					listener->onSystemEvent(data);
@@ -203,7 +203,7 @@ public:
 		Locker locker(&handlerMutex);
 		
 		for (int i = 0; i < commandHandlers.size(); ++i) {
-			Reference<ICommandHandler*> handler = commandHandlers.get(i);
+			ICommandHandler* handler = commandHandlers.get(i);
 			if (handler != nullptr && handler->canHandleCommand(cmd)) {
 				try {
 					return handler->handleCommand(cmd, params);
@@ -225,7 +225,7 @@ public:
 		Locker locker(&handlerMutex);
 		
 		for (int i = 0; i < commandHandlers.size(); ++i) {
-			Reference<ICommandHandler*> handler = commandHandlers.get(i);
+			ICommandHandler* handler = commandHandlers.get(i);
 			if (handler != nullptr && handler->canHandleCommand(cmd)) {
 				return true;
 			}
@@ -241,7 +241,7 @@ public:
 		Locker locker(&handlerMutex);
 		
 		for (int i = 0; i < commandHandlers.size(); ++i) {
-			Reference<ICommandHandler*> handler = commandHandlers.get(i);
+			ICommandHandler* handler = commandHandlers.get(i);
 			if (handler != nullptr && handler->canHandleCommand(cmd)) {
 				return handler->getRequiredAdminLevel(cmd);
 			}

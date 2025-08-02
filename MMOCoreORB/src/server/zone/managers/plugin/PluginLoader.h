@@ -18,24 +18,15 @@ namespace plugin {
  */
 class PluginLoader : public Singleton<PluginLoader>, public Logger, public Object {
 private:
-	class LoadedPlugin : public Object {
-	public:
+	struct LoadedPlugin {
 		String filename;
 		void* handle;
-		Reference<IPlugin*> plugin;
+		IPlugin* plugin;
 		
-		LoadedPlugin() : handle(nullptr) {}
-		
-		bool toBinaryStream(ObjectOutputStream* stream) {
-			return false; // Don't serialize plugins
-		}
-		
-		bool parseFromBinaryStream(ObjectInputStream* stream) {
-			return false; // Don't deserialize plugins
-		}
+		LoadedPlugin() : handle(nullptr), plugin(nullptr) {}
 	};
 	
-	Vector<LoadedPlugin> loadedPlugins;
+	Vector<LoadedPlugin*> loadedPlugins;
 	mutable Mutex pluginMutex;
 	
 public:
@@ -65,6 +56,10 @@ public:
 		while ((entry = readdir(dir)) != nullptr) {
 			String filename = entry->d_name;
 			
+			// Skip . and ..
+			if (filename == "." || filename == "..")
+				continue;
+			
 			// Only load .so files
 			if (filename.endsWith(".so")) {
 				String fullPath = directory + "/" + filename;
@@ -85,7 +80,7 @@ public:
 		
 		// Check if already loaded
 		for (int i = 0; i < loadedPlugins.size(); ++i) {
-			if (loadedPlugins.get(i).filename == filename) {
+			if (loadedPlugins.get(i)->filename == filename) {
 				warning("Plugin already loaded: " + filename);
 				return false;
 			}
@@ -134,10 +129,10 @@ public:
 		EventDispatcher::instance()->registerCommandHandler(plugin);
 		
 		// Store the loaded plugin
-		LoadedPlugin loadedPlugin;
-		loadedPlugin.filename = filename;
-		loadedPlugin.handle = handle;
-		loadedPlugin.plugin = plugin;
+		LoadedPlugin* loadedPlugin = new LoadedPlugin();
+		loadedPlugin->filename = filename;
+		loadedPlugin->handle = handle;
+		loadedPlugin->plugin = plugin;
 		loadedPlugins.add(loadedPlugin);
 		
 		// Notify plugin it's loaded
@@ -158,8 +153,8 @@ public:
 		Locker locker(&pluginMutex);
 		
 		for (int i = 0; i < loadedPlugins.size(); ++i) {
-			LoadedPlugin& loaded = loadedPlugins.get(i);
-			if (loaded.filename == filename) {
+			LoadedPlugin* loaded = loadedPlugins.get(i);
+			if (loaded->filename == filename) {
 				return unloadPluginAt(i);
 			}
 		}
@@ -202,9 +197,9 @@ public:
 		
 		Vector<String> result;
 		for (int i = 0; i < loadedPlugins.size(); ++i) {
-			const LoadedPlugin& loaded = loadedPlugins.get(i);
-			if (loaded.plugin != nullptr) {
-				result.add(loaded.plugin->getPluginName() + " (" + loaded.filename + ")");
+			LoadedPlugin* loaded = loadedPlugins.get(i);
+			if (loaded->plugin != nullptr) {
+				result.add(loaded->plugin->getPluginName() + " (" + loaded->filename + ")");
 			}
 		}
 		
@@ -219,34 +214,35 @@ private:
 		if (index < 0 || index >= loadedPlugins.size())
 			return false;
 			
-		LoadedPlugin& loaded = loadedPlugins.get(index);
+		LoadedPlugin* loaded = loadedPlugins.get(index);
 		
-		info("Unloading plugin: " + loaded.filename, true);
+		info("Unloading plugin: " + loaded->filename, true);
 		
 		// Notify plugin it's being unloaded
-		if (loaded.plugin != nullptr) {
+		if (loaded->plugin != nullptr) {
 			try {
-				loaded.plugin->onPluginUnloaded();
+				loaded->plugin->onPluginUnloaded();
 			} catch (const Exception& e) {
 				error("Exception in onPluginUnloaded: " + e.getMessage());
 			}
 			
 			// Unregister from event dispatcher
-			EventDispatcher::instance()->unregisterListener(loaded.plugin);
-			EventDispatcher::instance()->unregisterCommandHandler(loaded.plugin);
+			EventDispatcher::instance()->unregisterListener(loaded->plugin);
+			EventDispatcher::instance()->unregisterCommandHandler(loaded->plugin);
 		}
 		
 		// Delete the plugin instance
-		loaded.plugin = nullptr;
+		loaded->plugin = nullptr;
 		
 		// Unload the shared library
-		if (loaded.handle != nullptr) {
-			if (dlclose(loaded.handle) != 0) {
+		if (loaded->handle != nullptr) {
+			if (dlclose(loaded->handle) != 0) {
 				error("Failed to unload plugin library: " + String(dlerror()));
 			}
 		}
 		
-		// Remove from list
+		// Remove from list and delete the LoadedPlugin object
+		delete loaded;
 		loadedPlugins.remove(index);
 		
 		return true;
