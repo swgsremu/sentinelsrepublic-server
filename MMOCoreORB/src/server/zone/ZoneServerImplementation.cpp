@@ -38,7 +38,6 @@
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/chat/ChatManager.h"
 #include "server/zone/managers/ship/ShipManager.h"
-#include "server/zone/managers/csr/CSRCommandProcessor.h"
 #include "server/zone/managers/plugin/PluginLoader.h"
 
 #include "server/zone/ZoneProcessServer.h"
@@ -324,12 +323,6 @@ void ZoneServerImplementation::startManagers() {
 	chatManager->loadPersistentRooms();
 
 	//Loads the FactionManager LUA Config.
-	
-	// Start CSR Command Processor
-	info("Starting CSR Command Processor...", true);
-	Task* csrProcessor = new CSRCommandProcessor(_this.getReferenceUnsafeStaticCast());
-	csrProcessor->schedule(5000); // Schedule to start after 5 seconds
-	
 	FactionManager::instance()->loadData();
 
 	//Start global screen plays
