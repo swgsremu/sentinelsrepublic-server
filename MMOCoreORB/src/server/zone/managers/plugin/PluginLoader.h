@@ -3,6 +3,7 @@
 
 #include "PluginInterface.h"
 #include "EventDispatcher.h"
+#include "EventDispatcherBridge.h"
 #include "engine/util/Singleton.h"
 #include "system/io/File.h"
 #include <dlfcn.h>
@@ -108,11 +109,28 @@ public:
 		// Create the plugin instance
 		IPlugin* plugin = nullptr;
 		try {
-			plugin = createPlugin();
-			if (plugin == nullptr) {
-				error("createPlugin returned null: " + filename);
-				dlclose(handle);
-				return false;
+			// Try to get the simple plugin interface first
+			typedef ::server::zone::managers::plugin::IPlugin* (*CreateSimplePluginFunc)();
+			CreateSimplePluginFunc createSimplePlugin = (CreateSimplePluginFunc) dlsym(handle, "createPlugin");
+			
+			if (createSimplePlugin != nullptr) {
+				// This is a simple plugin, wrap it
+				auto simplePlugin = createSimplePlugin();
+				if (simplePlugin == nullptr) {
+					error("createPlugin returned null: " + filename);
+					dlclose(handle);
+					return false;
+				}
+				// Wrap the simple plugin with our adapter
+				plugin = new EventDispatcherBridge::PluginWrapper(simplePlugin);
+			} else {
+				// Try legacy interface
+				plugin = createPlugin();
+				if (plugin == nullptr) {
+					error("createPlugin returned null: " + filename);
+					dlclose(handle);
+					return false;
+				}
 			}
 		} catch (const Exception& e) {
 			error("Exception creating plugin: " + e.getMessage());
@@ -232,6 +250,22 @@ private:
 		}
 		
 		// Delete the plugin instance
+		// Check if it's a wrapped plugin
+		auto wrapper = dynamic_cast<EventDispatcherBridge::PluginWrapper*>(loaded->plugin);
+		if (wrapper != nullptr) {
+			// Get the wrapped plugin before deleting wrapper
+			auto simplePlugin = wrapper->getWrappedPlugin();
+			delete wrapper;
+			// Now destroy the simple plugin
+			typedef void (*DestroySimplePluginFunc)(::server::zone::managers::plugin::IPlugin*);
+			DestroySimplePluginFunc destroyPlugin = (DestroySimplePluginFunc) dlsym(loaded->handle, "destroyPlugin");
+			if (destroyPlugin != nullptr) {
+				destroyPlugin(simplePlugin);
+			}
+		} else {
+			// Legacy plugin
+			delete loaded->plugin;
+		}
 		loaded->plugin = nullptr;
 		
 		// Unload the shared library
