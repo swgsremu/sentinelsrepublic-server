@@ -14,6 +14,8 @@ namespace zone {
 namespace managers {
 namespace plugin {
 
+using PluginWrapper = EventDispatcherBridge::PluginWrapper;
+
 /**
  * Plugin loader manages loading and unloading of dynamic plugins
  */
@@ -110,7 +112,7 @@ public:
 		IPlugin* plugin = nullptr;
 		try {
 			// Try to get the simple plugin interface first
-			typedef ::server::zone::managers::plugin::IPlugin* (*CreateSimplePluginFunc)();
+			typedef ::plugin::simple::IPlugin* (*CreateSimplePluginFunc)();
 			CreateSimplePluginFunc createSimplePlugin = (CreateSimplePluginFunc) dlsym(handle, "createPlugin");
 			
 			if (createSimplePlugin != nullptr) {
@@ -122,7 +124,7 @@ public:
 					return false;
 				}
 				// Wrap the simple plugin with our adapter
-				plugin = new EventDispatcherBridge::PluginWrapper(simplePlugin);
+				plugin = new PluginWrapper(simplePlugin);
 			} else {
 				// Try legacy interface
 				plugin = createPlugin();
@@ -251,13 +253,13 @@ private:
 		
 		// Delete the plugin instance
 		// Check if it's a wrapped plugin
-		auto wrapper = dynamic_cast<EventDispatcherBridge::PluginWrapper*>(loaded->plugin);
+		auto wrapper = dynamic_cast<PluginWrapper*>(loaded->plugin);
 		if (wrapper != nullptr) {
 			// Get the wrapped plugin before deleting wrapper
 			auto simplePlugin = wrapper->getWrappedPlugin();
 			delete wrapper;
 			// Now destroy the simple plugin
-			typedef void (*DestroySimplePluginFunc)(::server::zone::managers::plugin::IPlugin*);
+			typedef void (*DestroySimplePluginFunc)(::plugin::simple::IPlugin*);
 			DestroySimplePluginFunc destroyPlugin = (DestroySimplePluginFunc) dlsym(loaded->handle, "destroyPlugin");
 			if (destroyPlugin != nullptr) {
 				destroyPlugin(simplePlugin);

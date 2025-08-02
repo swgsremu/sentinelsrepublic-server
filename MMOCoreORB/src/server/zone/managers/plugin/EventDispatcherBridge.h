@@ -12,9 +12,9 @@ namespace plugin {
 /**
  * Bridge to convert between full engine types and lightweight plugin types
  */
-class EventDispatcherBridge {
-public:
-	static ChatEventDataLight convertChatEvent(const ChatEventData& data) {
+namespace EventDispatcherBridge {
+
+	inline ChatEventDataLight convertChatEvent(const ChatEventData& data) {
 		ChatEventDataLight light;
 		light.sender = data.sender.get();
 		light.senderName = data.senderName.toCharArray();
@@ -32,7 +32,7 @@ public:
 		return light;
 	}
 	
-	static PlayerEventDataLight convertPlayerEvent(const PlayerEventData& data) {
+	inline PlayerEventDataLight convertPlayerEvent(const PlayerEventData& data) {
 		PlayerEventDataLight light;
 		light.player = data.player.get();
 		light.playerName = data.playerName.toCharArray();
@@ -48,7 +48,7 @@ public:
 		return light;
 	}
 	
-	static CommandEventDataLight convertCommandEvent(const CommandEventData& data) {
+	inline CommandEventDataLight convertCommandEvent(const CommandEventData& data) {
 		CommandEventDataLight light;
 		light.executor = data.executor.get();
 		light.executorName = data.executorName.toCharArray();
@@ -64,21 +64,20 @@ public:
 		light.timestamp = data.timestamp.getMiliTime();
 		return light;
 	}
-};
 
 /**
  * Wrapper that implements the full interface but delegates to a simple plugin
  */
-class PluginWrapper : public IPlugin, public IEventListener, public ICommandHandler {
+class PluginWrapper : public IPlugin {
 private:
-	::server::zone::managers::plugin::IPlugin* simplePlugin;
-	::server::zone::managers::plugin::IEventListener* eventListener;
-	::server::zone::managers::plugin::ICommandHandler* commandHandler;
+	::plugin::simple::IPlugin* simplePlugin;
+	::plugin::simple::IEventListener* eventListener;
+	::plugin::simple::ICommandHandler* commandHandler;
 	
 public:
-	PluginWrapper(::server::zone::managers::plugin::IPlugin* plugin) : simplePlugin(plugin) {
-		eventListener = dynamic_cast<::server::zone::managers::plugin::IEventListener*>(plugin);
-		commandHandler = dynamic_cast<::server::zone::managers::plugin::ICommandHandler*>(plugin);
+	PluginWrapper(::plugin::simple::IPlugin* plugin) : simplePlugin(plugin) {
+		eventListener = dynamic_cast<::plugin::simple::IEventListener*>(plugin);
+		commandHandler = dynamic_cast<::plugin::simple::ICommandHandler*>(plugin);
 	}
 	
 	virtual ~PluginWrapper() {
@@ -87,11 +86,11 @@ public:
 	
 	// IPlugin interface
 	virtual String getPluginName() const override {
-		return simplePlugin->getPluginName().c_str();
+		return String(simplePlugin->getPluginName().c_str());
 	}
 	
 	virtual String getPluginVersion() const override {
-		return simplePlugin->getPluginVersion().c_str();
+		return String(simplePlugin->getPluginVersion().c_str());
 	}
 	
 	virtual void onPluginLoaded() override {
@@ -153,7 +152,7 @@ public:
 		if (commandHandler) {
 			auto commands = commandHandler->getSupportedCommands();
 			for (const auto& cmd : commands) {
-				result.add(cmd.c_str());
+				result.add(String(cmd.c_str()));
 			}
 		}
 		return result;
@@ -167,10 +166,12 @@ public:
 	}
 	
 	// Get the wrapped plugin
-	::server::zone::managers::plugin::IPlugin* getWrappedPlugin() {
+	::plugin::simple::IPlugin* getWrappedPlugin() {
 		return simplePlugin;
 	}
 };
+
+} // namespace EventDispatcherBridge
 
 } // namespace plugin
 } // namespace managers

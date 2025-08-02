@@ -5,10 +5,14 @@
 #include <vector>
 #include <string>
 
-namespace server {
-namespace zone {
-namespace managers {
 namespace plugin {
+namespace simple {
+
+// Import light data types
+using ::server::zone::managers::plugin::ChatEventDataLight;
+using ::server::zone::managers::plugin::PlayerEventDataLight;
+using ::server::zone::managers::plugin::CommandEventDataLight;
+using ::server::zone::managers::plugin::CommandParametersLight;
 
 /**
  * Simple plugin interface that doesn't depend on engine types
@@ -45,15 +49,13 @@ public:
 	virtual int getRequiredAdminLevel(const std::string& cmd) const = 0;
 };
 
+} // namespace simple
 } // namespace plugin
-} // namespace managers
-} // namespace zone
-} // namespace server
 
 // Export functions that plugins must implement
 extern "C" {
-	server::zone::managers::plugin::IPlugin* createPlugin();
-	void destroyPlugin(server::zone::managers::plugin::IPlugin* plugin);
+	plugin::simple::IPlugin* createPlugin();
+	void destroyPlugin(plugin::simple::IPlugin* plugin);
 }
 
 #endif // PLUGININTERFACESIMPLE_H_
