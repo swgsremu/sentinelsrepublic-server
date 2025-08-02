@@ -39,6 +39,7 @@
 #include "server/chat/ChatManager.h"
 #include "server/zone/managers/ship/ShipManager.h"
 #include "server/zone/managers/csr/CSRCommandProcessor.h"
+#include "server/zone/managers/plugin/PluginLoader.h"
 
 #include "server/zone/ZoneProcessServer.h"
 #include "ZonePacketHandler.h"
@@ -350,6 +351,17 @@ void ZoneServerImplementation::startManagers() {
 
 	frsManager = new FrsManager(_this.getReferenceUnsafeStaticCast());
 	frsManager->initialize();
+	
+	// Initialize plugin system
+	info(true) << "ZoneServerImplementation -- Starting Plugin System...";
+	
+	// Get plugin directory from config, default to bin/plugins
+	String pluginDirectory = ConfigManager::instance()->getString("Core3.PluginDirectory", "bin/plugins");
+	
+	// Load plugins
+	PluginLoader::instance()->loadPlugins(pluginDirectory);
+	
+	info(true) << "ZoneServerImplementation -- Plugin System Started.";
 
 	info(true) << "ZoneServerImplementation -- Managers Started.";
 }
@@ -444,6 +456,11 @@ void ZoneServerImplementation::shutdown() {
 
 void ZoneServerImplementation::stopManagers() {
 	info(true) << "ZoneServerImplementation -- Stopping Managers...";
+	
+	// Stop plugin system first
+	info(true) << "ZoneServerImplementation -- Stopping Plugin System...";
+	PluginLoader::instance()->unloadAllPlugins();
+	info(true) << "ZoneServerImplementation -- Plugin System Stopped.";
 
 	missionManager = nullptr;
 	radialManager = nullptr;

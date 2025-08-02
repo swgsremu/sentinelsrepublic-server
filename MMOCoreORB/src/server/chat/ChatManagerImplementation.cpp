@@ -59,6 +59,7 @@
 #include "server/ServerCore.h"
 #include "conf/ConfigManager.h"
 #include "server/db/ServerDatabase.h"
+#include "server/zone/managers/plugin/EventDispatcher.h"
 
 ChatManagerImplementation::ChatManagerImplementation(ZoneServer* serv, int initsize) : ManagedServiceImplementation() {
 	server = serv;
@@ -774,6 +775,25 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 
 	BaseMessage* amsg = new ChatOnSendRoomMessage(counter);
 	channel->broadcastMessage(amsg);
+	
+	// Log chat room messages for CSR monitoring
+	// Determine the channel type based on the room type
+	String channelType = "spatial"; // default
+	if (channel->getChatRoomType() == ChatRoom::GROUP) {
+		channelType = "group";
+	} else if (channel->getChatRoomType() == ChatRoom::GUILD) {
+		channelType = "guild";
+	} else if (channel->getParent() != nullptr) {
+		String parentName = channel->getParent()->getFullPath();
+		if (parentName.contains("group")) {
+			channelType = "group";
+		} else if (parentName.contains("guild")) {
+			channelType = "guild";
+		}
+	}
+	
+	// Log to database
+	logPublicMessageToDatabase(sender, formattedMessage.toString(), channelType);
 
 	#ifdef WITH_DPP
 	auto discordBotIsRunning = discordBot != nullptr;
@@ -1474,8 +1494,8 @@ void ChatManagerImplementation::handleSpatialChatInternalMessage(CreatureObject*
 
 		broadcastChatMessage(player, formattedMessage, targetID, spatialChatType, moodType, chatFlags, languageID);
 		
-		// Log spatial chat message for CSR monitoring
-		logChatMessage(player, "SPATIAL", formattedMessage.toString(), "");
+		// Dispatch spatial chat event to plugins
+		dispatchChatEvent(player, "SPATIAL", formattedMessage.toString(), "");
 
 		ManagedReference<ChatMessage*> cm = new ChatMessage();
 		cm->setString(formattedMessage.toString());
@@ -1588,8 +1608,8 @@ void ChatManagerImplementation::handleChatInstantMessageToCharacter(ChatInstantM
 	BaseMessage* msg = new ChatInstantMessageToClient("SWG", sender->getZoneServer()->getGalaxyName(), name, text);
 	receiver->sendMessage(msg);
 	
-	// Log private message for CSR monitoring
-	logChatMessage(sender, "TELL", text.toString(), fname);
+	// Dispatch private message event to plugins
+	dispatchChatEvent(sender, "TELL", text.toString(), fname);
 
 	BaseMessage* amsg = new ChatOnSendInstantMessage(message->getSequence(), IM_SUCCESS);
 	sender->sendMessage(amsg);
@@ -1673,8 +1693,8 @@ void ChatManagerImplementation::handleGroupChat(CreatureObject* sender, const Un
 			BaseMessage* msg = new ChatRoomMessage(name, server->getGalaxyName(), formattedMessage, room->getRoomID());
 			group->broadcastMessage(msg);
 			
-			// Log group chat message for CSR monitoring
-			logChatMessage(sender, "GROUP", formattedMessage.toString(), "");
+			// Dispatch group chat event to plugins
+			dispatchChatEvent(sender, "GROUP", formattedMessage.toString(), "");
 		}
 
 		group->unlock();
@@ -1729,8 +1749,8 @@ void ChatManagerImplementation::handleGuildChat(CreatureObject* sender, const Un
 		BaseMessage* msg = new ChatRoomMessage(name, server->getGalaxyName(), formattedMessage, room->getRoomID());
 		room->broadcastMessageCheckIgnore(msg, name);
 		
-		// Log guild chat message for CSR monitoring
-		logChatMessage(sender, "GUILD", formattedMessage.toString(), "");
+		// Dispatch guild chat event to plugins
+		dispatchChatEvent(sender, "GUILD", formattedMessage.toString(), "");
 	}
 
 }
@@ -2948,47 +2968,41 @@ void ChatManagerImplementation::initializeDiscordBot() {
 	discordBot->InitializeBot(botName, botToken);
 }
 
-// CSR Chat Logging Methods
-void ChatManagerImplementation::logChatMessage(CreatureObject* sender, const String& channelType, const String& message, const String& recipient) {
+// Plugin Event Dispatching
+void ChatManagerImplementation::dispatchChatEvent(CreatureObject* sender, const String& channelType, const String& message, const String& recipient) {
 	try {
-		// Get current timestamp
-		auto now = std::time(nullptr);
-		auto tm = *std::localtime(&now);
+		// Create chat event data
+		ChatEventData eventData;
+		eventData.sender = sender;
+		eventData.senderName = sender->getFirstName();
+		eventData.senderOID = sender->getObjectID();
+		eventData.message = message;
+		eventData.channelType = channelType.toLowerCase();
+		eventData.recipientName = recipient;
 		
-		std::ostringstream timestamp;
-		timestamp << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S]");
-		
-		// Determine log file based on channel type
-		String logFile = "logs/chat.log";
-		
-		// Format log entry
-		std::ostringstream logEntry;
-		logEntry << timestamp.str() << " [" << channelType.toCharArray() << "] ";
-		
-		if (channelType == "TELL" || channelType == "WHISPER") {
-			// Private message format
-			logEntry << sender->getFirstName().toCharArray() << " -> " << recipient.toCharArray() << ": " << message.toCharArray();
-		} else {
-			// Regular chat format
-			logEntry << sender->getFirstName().toCharArray() << ": " << message.toCharArray();
+		// Get sender account ID
+		ManagedReference<PlayerObject*> ghost = sender->getPlayerObject();
+		if (ghost != nullptr) {
+			eventData.senderAccountID = ghost->getAccountID();
 		}
 		
-		// Write to log file
-		std::ofstream file(logFile.toCharArray(), std::ios::app);
-		if (file.is_open()) {
-			file << logEntry.str() << std::endl;
-			file.close();
+		// Get location data
+		ManagedReference<Zone*> zone = sender->getZone();
+		if (zone != nullptr) {
+			eventData.planet = zone->getZoneName();
+			const Vector3& position = sender->getWorldPosition();
+			eventData.posX = position.getX();
+			eventData.posY = position.getY();
+			eventData.posZ = position.getZ();
 		}
 		
-		// Also log to database for real-time monitoring
-		if (channelType == "TELL" || channelType == "WHISPER") {
-			logPrivateMessageToDatabase(sender, recipient, message, channelType);
-		} else {
-			logPublicMessageToDatabase(sender, message, channelType);
-		}
+		// Dispatch to event listeners
+		EventDispatcher::instance()->dispatchChatEvent(eventData);
 		
+	} catch (const Exception& e) {
+		error("Exception in dispatchChatEvent: " + e.getMessage());
 	} catch (...) {
-		// Silently fail to not impact gameplay
+		error("Unknown exception in dispatchChatEvent");
 	}
 }
 

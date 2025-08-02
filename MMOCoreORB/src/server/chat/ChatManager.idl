@@ -504,10 +504,11 @@ class ChatManager extends ManagedService implements Logger {
 		return srRoom;
 	}
 	
-	// CSR Chat Logging Methods
+	// Plugin Event System
 	@local
-	public native void logChatMessage(CreatureObject sender, final string channelType, final string message, final string recipient);
+	public native void dispatchChatEvent(CreatureObject sender, final string channelType, final string message, final string recipient);
 	
+	// Legacy methods (to be removed after plugin migration)
 	@local 
 	private native void logPrivateMessageToDatabase(CreatureObject sender, final string recipient, final string message, final string channelType);
 	
