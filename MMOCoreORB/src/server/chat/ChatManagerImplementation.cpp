@@ -794,6 +794,9 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 	
 	// Log to database
 	logPublicMessageToDatabase(sender, formattedMessage.toString(), channelType);
+	
+	// Dispatch chat room event to plugins
+	dispatchChatEvent(sender, channelType.toUpperCase(), formattedMessage.toString(), "");
 
 	#ifdef WITH_DPP
 	auto discordBotIsRunning = discordBot != nullptr;
@@ -1797,6 +1800,9 @@ void ChatManagerImplementation::handlePlanetChat(CreatureObject* sender, const U
 	if (room != nullptr) {
 		BaseMessage* msg = new ChatRoomMessage(fullName, server->getGalaxyName(), formattedMessage, room->getRoomID());
 		room->broadcastMessageCheckIgnore(msg, name);
+		
+		// Dispatch planet chat event to plugins
+		dispatchChatEvent(sender, "PLANET", formattedMessage.toString(), "");
 	}
 
 }
@@ -1836,6 +1842,9 @@ void ChatManagerImplementation::handleAuctionChat(CreatureObject* sender, const 
 	if (auctionRoom != nullptr) {
 		BaseMessage* msg = new ChatRoomMessage(fullName, server->getGalaxyName(), formattedMessage, auctionRoom->getRoomID());
 		auctionRoom->broadcastMessageCheckIgnore(msg, name);
+		
+		// Dispatch auction chat event to plugins
+		dispatchChatEvent(sender, "AUCTION", formattedMessage.toString(), "");
 	}
 
 }
