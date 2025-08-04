@@ -42,6 +42,7 @@
 
 
 object_mobile_space_shipwright_trainer_01 = object_mobile_shared_space_shipwright_trainer_01:new {
+	objectMenuComponent = "TrainerMenuComponent"
 
 }
 
