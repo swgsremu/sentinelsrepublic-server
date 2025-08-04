@@ -27,6 +27,7 @@ namespace csr {
 class CSRCommandProcessor : public Task, public Logger {
 private:
     static CSRCommandProcessor* instance;
+    static Mutex instanceMutex;
     Reference<ZoneServer*> zoneServer;
     bool isRunning;
     int pollInterval; // milliseconds
@@ -55,10 +56,21 @@ public:
     void stop();
     
     static CSRCommandProcessor* getInstance(ZoneServer* server = nullptr) {
+        Locker locker(&instanceMutex);
+        
         if (instance == nullptr && server != nullptr) {
             instance = new CSRCommandProcessor(server);
         }
         return instance;
+    }
+    
+    static void destroyInstance() {
+        Locker locker(&instanceMutex);
+        
+        if (instance != nullptr) {
+            delete instance;
+            instance = nullptr;
+        }
     }
 };
 

@@ -18,6 +18,7 @@ namespace managers {
 namespace csr {
 
 CSRCommandProcessor* CSRCommandProcessor::instance = nullptr;
+Mutex CSRCommandProcessor::instanceMutex;
 
 CSRCommandProcessor::CSRCommandProcessor(ZoneServer* server) : 
     Task(), 

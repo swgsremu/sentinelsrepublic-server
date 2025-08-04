@@ -470,6 +470,7 @@ void ZoneServerImplementation::stopManagers() {
 		csrProcessor->stop();
 		info(true) << "ZoneServerImplementation -- CSR Command Processor stopped.";
 	}
+	CSRCommandProcessor::destroyInstance();
 
 	missionManager = nullptr;
 	radialManager = nullptr;
