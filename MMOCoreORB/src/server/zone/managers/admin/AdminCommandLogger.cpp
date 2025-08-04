@@ -4,6 +4,8 @@
 #include "server/db/ServerDatabase.h"
 #include "engine/db/Database.h"
 
+using namespace server::zone::managers::admin;
+
 AdminCommandLogger::AdminCommandLogger() : Logger("AdminCommandLogger") {
     info("Admin Command Logger initialized", true);
 }
