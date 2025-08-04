@@ -354,8 +354,8 @@ void ZoneServerImplementation::startManagers() {
 	// Initialize plugin system
 	info(true) << "ZoneServerImplementation -- Starting Plugin System...";
 	
-	// Get plugin directory from config, default to bin/plugins
-	String pluginDirectory = ConfigManager::instance()->getString("Core3.PluginDirectory", "bin/plugins");
+	// Get plugin directory from config, default to plugins (relative to bin directory)
+	String pluginDirectory = ConfigManager::instance()->getString("Core3.PluginDirectory", "plugins");
 	
 	// Load plugins
 	PluginLoader::instance()->loadPlugins(pluginDirectory);
