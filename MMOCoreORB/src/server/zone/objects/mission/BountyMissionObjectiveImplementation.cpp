@@ -134,6 +134,16 @@ void BountyMissionObjectiveImplementation::complete() {
 
 	completedMission = true;
 
+	// Reset the bounty on the target player after mission completion BH SR2
+	MissionManager* missionManager = owner->getZoneServer()->getMissionManager();
+
+	if (missionManager != nullptr) {
+    ManagedReference<CreatureObject*> target = owner->getZoneServer()->getObject(mission->getTargetObjectId()).castTo<CreatureObject*>();
+    if (target != nullptr && target->isPlayerCreature()) {
+        missionManager->updatePlayerBountyReward(mission->getTargetObjectId(), 0);
+    	}
+	}
+
 	locker.release();
 
 	MissionObjectiveImplementation::complete();
@@ -641,27 +651,30 @@ void BountyMissionObjectiveImplementation::handlePlayerKilled(ManagedObject* arg
 	if (target == nullptr)
 		return;
 
-	int minXpLoss = -50000;
-	int maxXpLoss = -500000;
-
 	VisibilityManager::instance()->clearVisibility(target);
-	int rewardCreds = mission->getRewardCredits() + mission->getBonusCredits();
-	int xpLoss = rewardCreds * -2;
-
-	if (xpLoss > minXpLoss)
-		xpLoss = minXpLoss;
-	else if (xpLoss < maxXpLoss)
-		xpLoss = maxXpLoss;
-
-	auto playerManager = zoneServer->getPlayerManager();
-
-	if (playerManager != nullptr)
-		playerManager->awardExperience(target, "jedi_general", xpLoss, true);
-
-	StringIdChatParameter message("base_player", "prose_revoke_xp");
-	message.setDI(xpLoss * -1);
-	message.setTO("exp_n", "jedi_general");
-	target->sendSystemMessage(message);
+	// Only remove XP if the target is a padawan, but clear visibility for all targets
+	if(target->hasSkill("force_title_jedi_rank_02")){
+		int minXpLoss = -50000;
+		int maxXpLoss = -500000;
+		
+		int rewardCreds = mission->getRewardCredits() + mission->getBonusCredits();
+		int xpLoss = rewardCreds * -2;
+	
+		if (xpLoss > minXpLoss)
+			xpLoss = minXpLoss;
+		else if (xpLoss < maxXpLoss)
+			xpLoss = maxXpLoss;
+	
+		auto playerManager = zoneServer->getPlayerManager();
+	
+		if (playerManager != nullptr)
+			playerManager->awardExperience(target, "jedi_general", xpLoss, true);
+	
+		StringIdChatParameter message("base_player", "prose_revoke_xp");
+		message.setDI(xpLoss * -1);
+		message.setTO("exp_n", "jedi_general");
+		target->sendSystemMessage(message);
+	}
 
 	complete();
 }

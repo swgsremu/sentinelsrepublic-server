@@ -46,6 +46,7 @@ public:
 		try {
 			Locker clocker(insO, creature);
 
+			insO->updateInstallationWork();
 			insO->setActive(false);
 		} catch (Exception& e) {
 		}
