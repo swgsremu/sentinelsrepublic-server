@@ -12,6 +12,7 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/managers/admin/AdminCommandLogger.h"
+#include "server/zone/managers/plugin/EventDispatcher.h"
 
 void ObjectControllerImplementation::loadCommands() {
 	configManager = new CommandConfigManager(server);
@@ -214,4 +215,33 @@ void ObjectControllerImplementation::logAdminCommand(SceneObject* object, const 
 	}
 
 	adminLog.info() << object->getDisplayedName() << " used '/" << queueCommand->getQueueCommandName() << "' on " << name << " with params '" << arguments.toString() << "'";
+	
+	// Dispatch admin command event to plugins
+	if (object->isCreatureObject()) {
+		
+		CreatureObject* creature = object->asCreatureObject();
+		server::zone::managers::plugin::CommandEventData eventData;
+		eventData.executor = creature;
+		eventData.executorName = creature->getFirstName();
+		eventData.executorOID = creature->getObjectID();
+		
+		if (creature->isPlayerCreature()) {
+			ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+			if (ghost != nullptr) {
+				eventData.executorAccountID = ghost->getAccountID();
+			}
+		}
+		
+		eventData.command = queueCommand->getQueueCommandName();
+		eventData.arguments = arguments.toString();
+		if (targetObject != nullptr && targetObject->isCreatureObject()) {
+			eventData.target = targetObject->asCreatureObject();
+		}
+		eventData.targetName = name;
+		eventData.targetOID = targetID;
+		eventData.success = true;
+		eventData.result = "Command executed";
+		
+		server::zone::managers::plugin::EventDispatcher::instance()->dispatchCommandEvent(eventData);
+	}
 }

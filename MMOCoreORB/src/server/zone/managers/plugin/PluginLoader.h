@@ -145,8 +145,10 @@ public:
 		}
 		
 		// Register with event dispatcher
+		info("Registering plugin as event listener and command handler", true);
 		EventDispatcher::instance()->registerListener(plugin);
 		EventDispatcher::instance()->registerCommandHandler(plugin);
+		info("Plugin registered successfully", true);
 		
 		// Store the loaded plugin
 		LoadedPlugin* loadedPlugin = new LoadedPlugin();
@@ -163,6 +165,14 @@ public:
 		}
 		
 		info("Successfully loaded plugin: " + plugin->getPluginName() + " v" + plugin->getPluginVersion(), true);
+		
+		// Test dispatch a chat event
+		info("Testing chat event dispatch to plugin", true);
+		server::zone::managers::plugin::ChatEventData testData;
+		testData.senderName = "TestSender";
+		testData.message = "Test message from PluginLoader";
+		testData.channelType = "TEST";
+		EventDispatcher::instance()->dispatchChatEvent(testData);
 		return true;
 	}
 	

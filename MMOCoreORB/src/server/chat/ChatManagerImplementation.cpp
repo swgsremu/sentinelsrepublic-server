@@ -15,6 +15,7 @@
 #include "server/zone/managers/player/PlayerMap.h"
 #include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/managers/creature/PetManager.h"
+#include "server/zone/managers/plugin/EventDispatcher.h"
 
 #include "server/zone/packets/chat/ChatRoomList.h"
 #include "server/zone/packets/chat/ChatRoomMessage.h"
@@ -2981,12 +2982,12 @@ void ChatManagerImplementation::initializeDiscordBot() {
 void ChatManagerImplementation::dispatchChatEvent(CreatureObject* sender, const String& channelType, const String& message, const String& recipient) {
 	try {
 		// Create chat event data
-		ChatEventData eventData;
+		server::zone::managers::plugin::ChatEventData eventData;
 		eventData.sender = sender;
 		eventData.senderName = sender->getFirstName();
 		eventData.senderOID = sender->getObjectID();
 		eventData.message = message;
-		eventData.channelType = channelType.toLowerCase();
+		eventData.channelType = channelType;
 		eventData.recipientName = recipient;
 		
 		// Get sender account ID
@@ -3006,7 +3007,8 @@ void ChatManagerImplementation::dispatchChatEvent(CreatureObject* sender, const 
 		}
 		
 		// Dispatch to event listeners
-		EventDispatcher::instance()->dispatchChatEvent(eventData);
+		info("ChatManager dispatching chat event - channel: " + channelType + " message: " + message, true);
+		server::zone::managers::plugin::EventDispatcher::instance()->dispatchChatEvent(eventData);
 		
 	} catch (const Exception& e) {
 		error("Exception in dispatchChatEvent: " + e.getMessage());

@@ -39,6 +39,7 @@
 #include "server/chat/ChatManager.h"
 #include "server/zone/managers/ship/ShipManager.h"
 #include "server/zone/managers/plugin/PluginLoader.h"
+#include "server/zone/managers/csr/CSRCommandProcessor.h"
 
 #include "server/zone/ZoneProcessServer.h"
 #include "ZonePacketHandler.h"
@@ -355,6 +356,14 @@ void ZoneServerImplementation::startManagers() {
 	PluginLoader::instance()->loadPlugins(pluginDirectory);
 	
 	info(true) << "ZoneServerImplementation -- Plugin System Started.";
+	
+	// Start CSR Command Processor
+	info(true) << "ZoneServerImplementation -- Starting CSR Command Processor...";
+	CSRCommandProcessor* csrProcessor = CSRCommandProcessor::getInstance(_this.getReferenceUnsafeStaticCast());
+	if (csrProcessor != nullptr) {
+		csrProcessor->start();
+		info(true) << "ZoneServerImplementation -- CSR Command Processor started.";
+	}
 
 	info(true) << "ZoneServerImplementation -- Managers Started.";
 }
@@ -454,6 +463,13 @@ void ZoneServerImplementation::stopManagers() {
 	info(true) << "ZoneServerImplementation -- Stopping Plugin System...";
 	PluginLoader::instance()->unloadAllPlugins();
 	info(true) << "ZoneServerImplementation -- Plugin System Stopped.";
+	
+	// Stop CSR Command Processor
+	CSRCommandProcessor* csrProcessor = CSRCommandProcessor::getInstance();
+	if (csrProcessor != nullptr) {
+		csrProcessor->stop();
+		info(true) << "ZoneServerImplementation -- CSR Command Processor stopped.";
+	}
 
 	missionManager = nullptr;
 	radialManager = nullptr;

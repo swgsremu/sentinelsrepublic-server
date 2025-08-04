@@ -36,8 +36,10 @@ public:
 	 * Register an event listener
 	 */
 	void registerListener(IEventListener* listener) {
-		if (listener == nullptr)
+		if (listener == nullptr) {
+			warning("Attempted to register null listener");
 			return;
+		}
 			
 		Locker locker(&listenerMutex);
 		
@@ -48,7 +50,13 @@ public:
 		}
 		
 		eventListeners.add(listener);
-		info("Registered event listener: " + listener->getPluginName(), true);
+		info("Registered event listener: " + listener->getPluginName() + " Total listeners: " + String::valueOf(eventListeners.size()), true);
+		
+		// Test cast to IPlugin
+		IPlugin* plugin = dynamic_cast<IPlugin*>(listener);
+		if (plugin != nullptr) {
+			info("Listener is also an IPlugin", true);
+		}
 	}
 	
 	/**
@@ -121,10 +129,13 @@ public:
 	void dispatchChatEvent(const ChatEventData& data) {
 		Locker locker(&listenerMutex);
 		
+		info("dispatchChatEvent called with message: " + data.message + " channel: " + data.channelType + " listeners: " + String::valueOf(eventListeners.size()), true);
+		
 		for (int i = 0; i < eventListeners.size(); ++i) {
 			IEventListener* listener = eventListeners.get(i);
 			if (listener != nullptr) {
 				try {
+					info("Dispatching chat event to listener: " + listener->getPluginName(), true);
 					listener->onChatEvent(data);
 				} catch (const Exception& e) {
 					error("Exception in chat event listener: " + e.getMessage());

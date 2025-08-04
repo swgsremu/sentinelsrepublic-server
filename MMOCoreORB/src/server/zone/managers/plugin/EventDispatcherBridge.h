@@ -103,9 +103,13 @@ public:
 	
 	// IEventListener interface
 	virtual void onChatEvent(const ChatEventData& data) override {
+		Logger::console.info("PluginWrapper::onChatEvent called", true);
 		if (eventListener) {
+			Logger::console.info("Calling eventListener->onChatEvent", true);
 			auto lightData = EventDispatcherBridge::convertChatEvent(data);
 			eventListener->onChatEvent(lightData);
+		} else {
+			Logger::console.info("eventListener is null", true);
 		}
 	}
 	
