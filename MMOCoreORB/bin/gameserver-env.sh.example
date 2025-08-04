@@ -1,0 +1,12 @@
+#!/bin/bash
+# CSR Plugin Environment Configuration for SWGEmu Game Server
+# Copy this file to gameserver-env.sh and update with your actual values
+
+# Redis connection settings for CSR plugin
+export CSR_REDIS_HOST="localhost"  # Change to your Redis host
+export CSR_REDIS_PORT="6379"
+export CSR_REDIS_PASSWORD="your-secure-redis-password"  # Must match web UI's REDIS_PASSWORD
+
+echo "CSR Redis environment configured for game server:"
+echo "  Host: $CSR_REDIS_HOST:$CSR_REDIS_PORT"
+echo "  Password: [HIDDEN]"
