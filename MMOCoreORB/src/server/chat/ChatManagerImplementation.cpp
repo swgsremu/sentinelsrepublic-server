@@ -792,7 +792,6 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 		}
 	}
 	
-	// Dispatch chat room event to plugins
 	dispatchChatEvent(sender, channelType.toUpperCase(), formattedMessage.toString(), "");
 
 	#ifdef WITH_DPP
@@ -1494,7 +1493,6 @@ void ChatManagerImplementation::handleSpatialChatInternalMessage(CreatureObject*
 
 		broadcastChatMessage(player, formattedMessage, targetID, spatialChatType, moodType, chatFlags, languageID);
 		
-		// Dispatch spatial chat event to plugins
 		dispatchChatEvent(player, "SPATIAL", formattedMessage.toString(), "");
 
 		ManagedReference<ChatMessage*> cm = new ChatMessage();
@@ -1608,7 +1606,6 @@ void ChatManagerImplementation::handleChatInstantMessageToCharacter(ChatInstantM
 	BaseMessage* msg = new ChatInstantMessageToClient("SWG", sender->getZoneServer()->getGalaxyName(), name, text);
 	receiver->sendMessage(msg);
 	
-	// Dispatch private message event to plugins
 	dispatchChatEvent(sender, "TELL", text.toString(), fname);
 
 	BaseMessage* amsg = new ChatOnSendInstantMessage(message->getSequence(), IM_SUCCESS);
@@ -1693,7 +1690,6 @@ void ChatManagerImplementation::handleGroupChat(CreatureObject* sender, const Un
 			BaseMessage* msg = new ChatRoomMessage(name, server->getGalaxyName(), formattedMessage, room->getRoomID());
 			group->broadcastMessage(msg);
 			
-			// Dispatch group chat event to plugins
 			dispatchChatEvent(sender, "GROUP", formattedMessage.toString(), "");
 		}
 
@@ -1749,7 +1745,6 @@ void ChatManagerImplementation::handleGuildChat(CreatureObject* sender, const Un
 		BaseMessage* msg = new ChatRoomMessage(name, server->getGalaxyName(), formattedMessage, room->getRoomID());
 		room->broadcastMessageCheckIgnore(msg, name);
 		
-		// Dispatch guild chat event to plugins
 		dispatchChatEvent(sender, "GUILD", formattedMessage.toString(), "");
 	}
 
@@ -1798,7 +1793,6 @@ void ChatManagerImplementation::handlePlanetChat(CreatureObject* sender, const U
 		BaseMessage* msg = new ChatRoomMessage(fullName, server->getGalaxyName(), formattedMessage, room->getRoomID());
 		room->broadcastMessageCheckIgnore(msg, name);
 		
-		// Dispatch planet chat event to plugins
 		dispatchChatEvent(sender, "PLANET", formattedMessage.toString(), "");
 	}
 
@@ -1840,7 +1834,6 @@ void ChatManagerImplementation::handleAuctionChat(CreatureObject* sender, const 
 		BaseMessage* msg = new ChatRoomMessage(fullName, server->getGalaxyName(), formattedMessage, auctionRoom->getRoomID());
 		auctionRoom->broadcastMessageCheckIgnore(msg, name);
 		
-		// Dispatch auction chat event to plugins
 		dispatchChatEvent(sender, "AUCTION", formattedMessage.toString(), "");
 	}
 
@@ -2974,10 +2967,8 @@ void ChatManagerImplementation::initializeDiscordBot() {
 	discordBot->InitializeBot(botName, botToken);
 }
 
-// Plugin Event Dispatching
 void ChatManagerImplementation::dispatchChatEvent(CreatureObject* sender, const String& channelType, const String& message, const String& recipient) {
 	try {
-		// Create chat event data
 		server::zone::managers::plugin::ChatEventData eventData;
 		eventData.sender = sender;
 		eventData.senderName = sender->getFirstName();
@@ -2986,13 +2977,11 @@ void ChatManagerImplementation::dispatchChatEvent(CreatureObject* sender, const 
 		eventData.channelType = channelType;
 		eventData.recipientName = recipient;
 		
-		// Get sender account ID
 		ManagedReference<PlayerObject*> ghost = sender->getPlayerObject();
 		if (ghost != nullptr) {
 			eventData.senderAccountID = ghost->getAccountID();
 		}
 		
-		// Get location data
 		ManagedReference<Zone*> zone = sender->getZone();
 		if (zone != nullptr) {
 			eventData.planet = zone->getZoneName();
@@ -3002,7 +2991,6 @@ void ChatManagerImplementation::dispatchChatEvent(CreatureObject* sender, const 
 			eventData.posZ = position.getZ();
 		}
 		
-		// Dispatch to event listeners
 		info("ChatManager dispatching chat event - channel: " + channelType + " message: " + message, true);
 		server::zone::managers::plugin::EventDispatcher::instance()->dispatchChatEvent(eventData);
 		
