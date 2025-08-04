@@ -509,5 +509,9 @@ class ChatManager extends ManagedService implements Logger {
 	public ChatRoom getsrRoom() {
 		return srRoom;
 	}
+	
+	// Plugin Event System
+	@local
+	public native void dispatchChatEvent(CreatureObject sender, final string channelType, final string message, final string recipient);
 }
 

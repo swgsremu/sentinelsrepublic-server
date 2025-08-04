@@ -90,6 +90,19 @@ Core3 = {
 	ZoneProcessingThreads = 10,
 	ZoneAllowedConnections = 30000,
 	ZoneGalaxyID = 2, --The actual zone server's galaxyID. Should coordinate with your login server.
+	
+	------Plugin System config------
+	PluginDirectory = "plugins",
+	EnablePlugins = true,
+	
+	------CSR Monitor Plugin config------
+	CSRMonitor_LogChat = true,
+	CSRMonitor_LogActions = true,
+	CSRMonitor_LogCommands = true,
+	CSRMonitor_BatchSize = 100,
+	CSRMonitor_FlushInterval = 5000,
+	CSRMonitor_RedisHost = "127.0.0.1",
+	CSRMonitor_RedisPort = 6379,
 
 	-------- GROUND ZONES -------
 	ZonesEnabled = {
