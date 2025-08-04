@@ -3,6 +3,7 @@
 
 #include "PluginInterface.h"
 #include "PluginInterfaceSimple.h"
+#include <string>
 
 namespace server {
 namespace zone {
@@ -14,17 +15,33 @@ namespace plugin {
  */
 namespace EventDispatcherBridge {
 
-	inline ChatEventDataLight convertChatEvent(const ChatEventData& data) {
+	// Store strings to prevent dangling pointers
+	struct ChatEventStrings {
+		std::string senderName;
+		std::string message;
+		std::string channelType;
+		std::string recipientName;
+		std::string planet;
+	};
+	
+	inline ChatEventDataLight convertChatEvent(const ChatEventData& data, ChatEventStrings& strings) {
+		// Store strings in the provided structure
+		strings.senderName = data.senderName.toStdString();
+		strings.message = data.message.toStdString();
+		strings.channelType = data.channelType.toStdString();
+		strings.recipientName = data.recipientName.toStdString();
+		strings.planet = data.planet.toStdString();
+		
 		ChatEventDataLight light;
 		light.sender = data.sender.get();
-		light.senderName = data.senderName.toCharArray();
+		light.senderName = strings.senderName.c_str();
 		light.senderOID = data.senderOID;
 		light.senderAccountID = data.senderAccountID;
-		light.message = data.message.toCharArray();
-		light.channelType = data.channelType.toCharArray();
-		light.recipientName = data.recipientName.toCharArray();
+		light.message = strings.message.c_str();
+		light.channelType = strings.channelType.c_str();
+		light.recipientName = strings.recipientName.c_str();
 		light.recipientOID = data.recipientOID;
-		light.planet = data.planet.toCharArray();
+		light.planet = strings.planet.c_str();
 		light.posX = data.posX;
 		light.posY = data.posY;
 		light.posZ = data.posZ;
@@ -32,15 +49,28 @@ namespace EventDispatcherBridge {
 		return light;
 	}
 	
-	inline PlayerEventDataLight convertPlayerEvent(const PlayerEventData& data) {
+	struct PlayerEventStrings {
+		std::string playerName;
+		std::string eventType;
+		std::string details;
+		std::string planet;
+	};
+	
+	inline PlayerEventDataLight convertPlayerEvent(const PlayerEventData& data, PlayerEventStrings& strings) {
+		// Store strings in the provided structure
+		strings.playerName = data.playerName.toStdString();
+		strings.eventType = data.eventType.toStdString();
+		strings.details = ""; // Would need to serialize HashTable
+		strings.planet = "";  // Would need to get from player
+		
 		PlayerEventDataLight light;
 		light.player = data.player.get();
-		light.playerName = data.playerName.toCharArray();
+		light.playerName = strings.playerName.c_str();
 		light.playerOID = data.playerOID;
 		light.accountID = data.accountID;
-		light.eventType = data.eventType.toCharArray();
-		light.details = ""; // Would need to serialize HashTable
-		light.planet = "";  // Would need to get from player
+		light.eventType = strings.eventType.c_str();
+		light.details = strings.details.c_str();
+		light.planet = strings.planet.c_str();
 		light.posX = 0;
 		light.posY = 0;
 		light.posZ = 0;
@@ -48,18 +78,33 @@ namespace EventDispatcherBridge {
 		return light;
 	}
 	
-	inline CommandEventDataLight convertCommandEvent(const CommandEventData& data) {
+	struct CommandEventStrings {
+		std::string executorName;
+		std::string command;
+		std::string arguments;
+		std::string targetName;
+		std::string result;
+	};
+	
+	inline CommandEventDataLight convertCommandEvent(const CommandEventData& data, CommandEventStrings& strings) {
+		// Store strings in the provided structure
+		strings.executorName = data.executorName.toStdString();
+		strings.command = data.command.toStdString();
+		strings.arguments = data.arguments.toStdString();
+		strings.targetName = data.targetName.toStdString();
+		strings.result = data.result.toStdString();
+		
 		CommandEventDataLight light;
 		light.executor = data.executor.get();
-		light.executorName = data.executorName.toCharArray();
+		light.executorName = strings.executorName.c_str();
 		light.executorOID = data.executorOID;
 		light.executorAccountID = data.executorAccountID;
-		light.command = data.command.toCharArray();
-		light.arguments = data.arguments.toCharArray();
+		light.command = strings.command.c_str();
+		light.arguments = strings.arguments.c_str();
 		light.target = data.target.get();
-		light.targetName = data.targetName.toCharArray();
+		light.targetName = strings.targetName.c_str();
 		light.targetOID = data.targetOID;
-		light.result = data.result.toCharArray();
+		light.result = strings.result.c_str();
 		light.success = data.success;
 		light.timestamp = data.timestamp.getMiliTime();
 		return light;
@@ -106,7 +151,8 @@ public:
 		Logger::console.info("PluginWrapper::onChatEvent called", true);
 		if (eventListener) {
 			Logger::console.info("Calling eventListener->onChatEvent", true);
-			auto lightData = EventDispatcherBridge::convertChatEvent(data);
+			ChatEventStrings strings;
+			auto lightData = EventDispatcherBridge::convertChatEvent(data, strings);
 			eventListener->onChatEvent(lightData);
 		} else {
 			Logger::console.info("eventListener is null", true);
@@ -115,14 +161,16 @@ public:
 	
 	virtual void onPlayerEvent(const PlayerEventData& data) override {
 		if (eventListener) {
-			auto lightData = EventDispatcherBridge::convertPlayerEvent(data);
+			PlayerEventStrings strings;
+			auto lightData = EventDispatcherBridge::convertPlayerEvent(data, strings);
 			eventListener->onPlayerEvent(lightData);
 		}
 	}
 	
 	virtual void onCommandEvent(const CommandEventData& data) override {
 		if (eventListener) {
-			auto lightData = EventDispatcherBridge::convertCommandEvent(data);
+			CommandEventStrings strings;
+			auto lightData = EventDispatcherBridge::convertCommandEvent(data, strings);
 			eventListener->onCommandEvent(lightData);
 		}
 	}

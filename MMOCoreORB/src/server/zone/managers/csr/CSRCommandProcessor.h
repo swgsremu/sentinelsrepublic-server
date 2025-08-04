@@ -79,6 +79,4 @@ public:
 } // namespace zone
 } // namespace server
 
-using namespace server::zone::managers::csr;
-
 #endif /* CSRCOMMANDPROCESSOR_H_ */

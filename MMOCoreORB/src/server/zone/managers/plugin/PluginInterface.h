@@ -154,6 +154,4 @@ public:
 } // namespace zone
 } // namespace server
 
-using namespace server::zone::managers::plugin;
-
 #endif // PLUGININTERFACE_H_

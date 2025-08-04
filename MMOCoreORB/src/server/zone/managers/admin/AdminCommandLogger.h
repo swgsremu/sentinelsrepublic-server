@@ -25,6 +25,4 @@ private:
 } // namespace zone
 } // namespace server
 
-using namespace server::zone::managers::admin;
-
 #endif /* ADMINCOMMANDLOGGER_H_ */
