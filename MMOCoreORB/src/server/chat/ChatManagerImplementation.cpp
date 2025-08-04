@@ -777,8 +777,7 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 	BaseMessage* amsg = new ChatOnSendRoomMessage(counter);
 	channel->broadcastMessage(amsg);
 	
-	// Log chat room messages for CSR monitoring
-	// Determine the channel type based on the room type
+
 	String channelType = "spatial"; // default
 	if (channel->getChatRoomType() == ChatRoom::GROUP) {
 		channelType = "group";
@@ -792,9 +791,6 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 			channelType = "guild";
 		}
 	}
-	
-	// Log to database
-	logPublicMessageToDatabase(sender, formattedMessage.toString(), channelType);
 	
 	// Dispatch chat room event to plugins
 	dispatchChatEvent(sender, channelType.toUpperCase(), formattedMessage.toString(), "");
@@ -3017,95 +3013,3 @@ void ChatManagerImplementation::dispatchChatEvent(CreatureObject* sender, const 
 	}
 }
 
-void ChatManagerImplementation::logPrivateMessageToDatabase(CreatureObject* sender, const String& recipient, const String& message, const String& channelType) {
-	try {
-		// Get account ID
-		ManagedReference<PlayerObject*> ghost = sender->getPlayerObject();
-		if (ghost == nullptr)
-			return;
-			
-		int accountId = ghost->getAccountID();
-		
-		// Format recipients JSON
-		StringBuffer recipientsJson;
-		recipientsJson << "{\"primary\": \"" << recipient << "\"}";
-		
-		// Get location data
-		ManagedReference<Zone*> zone = sender->getZone();
-		String planet = zone ? zone->getZoneName() : "unknown";
-		Vector3 position = sender->getWorldPosition();
-		
-		// Create escaped copies
-		String senderName = sender->getFirstName();
-		String messageEscaped = message;
-		String recipientsEscaped = recipientsJson.toString();
-		
-		ServerDatabase::instance()->escapeString(senderName);
-		ServerDatabase::instance()->escapeString(messageEscaped);
-		ServerDatabase::instance()->escapeString(recipientsEscaped);
-		
-		StringBuffer query;
-		query << "INSERT INTO chat_logs (sender_oid, sender_name, sender_account_id, message, channel_type, recipients, planet, location_x, location_y, location_z, timestamp, galaxy_id) ";
-		query << "VALUES (" 
-			  << sender->getObjectID() << ", "
-			  << "'" << senderName << "', "
-			  << accountId << ", "
-			  << "'" << messageEscaped << "', "
-			  << "'" << channelType.toLowerCase() << "', "
-			  << "'" << recipientsEscaped << "', "
-			  << "'" << planet << "', "
-			  << position.getX() << ", "
-			  << position.getY() << ", "
-			  << position.getZ() << ", "
-			  << "NOW(), "
-			  << "1)"; // Galaxy ID
-			  
-		ServerDatabase::instance()->executeStatement(query.toString());
-		
-	} catch (...) {
-		// Silent fail
-	}
-}
-
-void ChatManagerImplementation::logPublicMessageToDatabase(CreatureObject* sender, const String& message, const String& channelType) {
-	try {
-		// Get account ID
-		ManagedReference<PlayerObject*> ghost = sender->getPlayerObject();
-		if (ghost == nullptr)
-			return;
-			
-		int accountId = ghost->getAccountID();
-		
-		// Get location data
-		ManagedReference<Zone*> zone = sender->getZone();
-		String planet = zone ? zone->getZoneName() : "unknown";
-		Vector3 position = sender->getWorldPosition();
-		
-		// Create escaped copies
-		String senderName = sender->getFirstName();
-		String messageEscaped = message;
-		
-		ServerDatabase::instance()->escapeString(senderName);
-		ServerDatabase::instance()->escapeString(messageEscaped);
-		
-		StringBuffer query;
-		query << "INSERT INTO chat_logs (sender_oid, sender_name, sender_account_id, message, channel_type, planet, location_x, location_y, location_z, timestamp, galaxy_id) ";
-		query << "VALUES (" 
-			  << sender->getObjectID() << ", "
-			  << "'" << senderName << "', "
-			  << accountId << ", "
-			  << "'" << messageEscaped << "', "
-			  << "'" << channelType.toLowerCase() << "', "
-			  << "'" << planet << "', "
-			  << position.getX() << ", "
-			  << position.getY() << ", "
-			  << position.getZ() << ", "
-			  << "NOW(), "
-			  << "1)"; // Galaxy ID
-			  
-		ServerDatabase::instance()->executeStatement(query.toString());
-		
-	} catch (...) {
-		// Silent fail
-	}
-}

@@ -507,12 +507,5 @@ class ChatManager extends ManagedService implements Logger {
 	// Plugin Event System
 	@local
 	public native void dispatchChatEvent(CreatureObject sender, final string channelType, final string message, final string recipient);
-	
-	// Legacy methods (to be removed after plugin migration)
-	@local 
-	private native void logPrivateMessageToDatabase(CreatureObject sender, final string recipient, final string message, final string channelType);
-	
-	@local
-	private native void logPublicMessageToDatabase(CreatureObject sender, final string message, final string channelType);
 }
 
