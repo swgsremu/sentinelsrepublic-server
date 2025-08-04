@@ -41,6 +41,8 @@
 #include "server/zone/managers/plugin/PluginLoader.h"
 #include "server/zone/managers/csr/CSRCommandProcessor.h"
 
+
+
 #include "server/zone/ZoneProcessServer.h"
 #include "ZonePacketHandler.h"
 #include "ZoneHandler.h"
@@ -48,6 +50,9 @@
 #include "SpaceZoneLoadManagersTask.h"
 #include "ZoneLoadManagersTask.h"
 #include "ShutdownTask.h"
+
+using namespace server::zone::managers::plugin;
+using namespace server::zone::managers::csr;
 
 ZoneServerImplementation::ZoneServerImplementation(ConfigManager* config) :
 		ManagedServiceImplementation(), Logger("ZoneServer") {
@@ -359,7 +364,7 @@ void ZoneServerImplementation::startManagers() {
 	
 	// Start CSR Command Processor
 	info(true) << "ZoneServerImplementation -- Starting CSR Command Processor...";
-	server::zone::managers::csr::CSRCommandProcessor* csrProcessor = server::zone::managers::csr::CSRCommandProcessor::getInstance(_this.getReferenceUnsafeStaticCast());
+	CSRCommandProcessor* csrProcessor = CSRCommandProcessor::getInstance(_this.getReferenceUnsafeStaticCast());
 	if (csrProcessor != nullptr) {
 		csrProcessor->start();
 		info(true) << "ZoneServerImplementation -- CSR Command Processor started.";
@@ -465,12 +470,12 @@ void ZoneServerImplementation::stopManagers() {
 	info(true) << "ZoneServerImplementation -- Plugin System Stopped.";
 	
 	// Stop CSR Command Processor
-	server::zone::managers::csr::CSRCommandProcessor* csrProcessor = server::zone::managers::csr::CSRCommandProcessor::getInstance();
+	CSRCommandProcessor* csrProcessor = CSRCommandProcessor::getInstance();
 	if (csrProcessor != nullptr) {
 		csrProcessor->stop();
 		info(true) << "ZoneServerImplementation -- CSR Command Processor stopped.";
 	}
-	server::zone::managers::csr::CSRCommandProcessor::destroyInstance();
+	CSRCommandProcessor::destroyInstance();
 
 	missionManager = nullptr;
 	radialManager = nullptr;

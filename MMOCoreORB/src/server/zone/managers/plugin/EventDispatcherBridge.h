@@ -26,11 +26,11 @@ namespace EventDispatcherBridge {
 	
 	inline ChatEventDataLight convertChatEvent(const ChatEventData& data, ChatEventStrings& strings) {
 		// Store strings in the provided structure
-		strings.senderName = data.senderName.toStdString();
-		strings.message = data.message.toStdString();
-		strings.channelType = data.channelType.toStdString();
-		strings.recipientName = data.recipientName.toStdString();
-		strings.planet = data.planet.toStdString();
+		strings.senderName = std::string(data.senderName.toCharArray());
+		strings.message = std::string(data.message.toCharArray());
+		strings.channelType = std::string(data.channelType.toCharArray());
+		strings.recipientName = std::string(data.recipientName.toCharArray());
+		strings.planet = std::string(data.planet.toCharArray());
 		
 		ChatEventDataLight light;
 		light.sender = data.sender.get();
@@ -58,8 +58,8 @@ namespace EventDispatcherBridge {
 	
 	inline PlayerEventDataLight convertPlayerEvent(const PlayerEventData& data, PlayerEventStrings& strings) {
 		// Store strings in the provided structure
-		strings.playerName = data.playerName.toStdString();
-		strings.eventType = data.eventType.toStdString();
+		strings.playerName = std::string(data.playerName.toCharArray());
+		strings.eventType = std::string(data.eventType.toCharArray());
 		strings.details = ""; // Would need to serialize HashTable
 		strings.planet = "";  // Would need to get from player
 		
@@ -88,11 +88,11 @@ namespace EventDispatcherBridge {
 	
 	inline CommandEventDataLight convertCommandEvent(const CommandEventData& data, CommandEventStrings& strings) {
 		// Store strings in the provided structure
-		strings.executorName = data.executorName.toStdString();
-		strings.command = data.command.toStdString();
-		strings.arguments = data.arguments.toStdString();
-		strings.targetName = data.targetName.toStdString();
-		strings.result = data.result.toStdString();
+		strings.executorName = std::string(data.executorName.toCharArray());
+		strings.command = std::string(data.command.toCharArray());
+		strings.arguments = std::string(data.arguments.toCharArray());
+		strings.targetName = std::string(data.targetName.toCharArray());
+		strings.result = std::string(data.result.toCharArray());
 		
 		CommandEventDataLight light;
 		light.executor = data.executor.get();
