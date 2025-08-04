@@ -359,7 +359,7 @@ void ZoneServerImplementation::startManagers() {
 	
 	// Start CSR Command Processor
 	info(true) << "ZoneServerImplementation -- Starting CSR Command Processor...";
-	CSRCommandProcessor* csrProcessor = CSRCommandProcessor::getInstance(_this.getReferenceUnsafeStaticCast());
+	server::zone::managers::csr::CSRCommandProcessor* csrProcessor = server::zone::managers::csr::CSRCommandProcessor::getInstance(_this.getReferenceUnsafeStaticCast());
 	if (csrProcessor != nullptr) {
 		csrProcessor->start();
 		info(true) << "ZoneServerImplementation -- CSR Command Processor started.";
@@ -465,12 +465,12 @@ void ZoneServerImplementation::stopManagers() {
 	info(true) << "ZoneServerImplementation -- Plugin System Stopped.";
 	
 	// Stop CSR Command Processor
-	CSRCommandProcessor* csrProcessor = CSRCommandProcessor::getInstance();
+	server::zone::managers::csr::CSRCommandProcessor* csrProcessor = server::zone::managers::csr::CSRCommandProcessor::getInstance();
 	if (csrProcessor != nullptr) {
 		csrProcessor->stop();
 		info(true) << "ZoneServerImplementation -- CSR Command Processor stopped.";
 	}
-	CSRCommandProcessor::destroyInstance();
+	server::zone::managers::csr::CSRCommandProcessor::destroyInstance();
 
 	missionManager = nullptr;
 	radialManager = nullptr;

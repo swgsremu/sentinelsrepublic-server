@@ -162,7 +162,7 @@ float ObjectControllerImplementation::activateCommand(CreatureObject* object, un
 				bool success = (errorNumber == QueueCommand::SUCCESS);
 				String errorMsg = success ? "" : "Error code: " + String::valueOf(errorNumber);
 				
-				AdminCommandLogger::instance()->logCommand(object, commandName, arguments.toString(), success, errorMsg);
+				server::zone::managers::admin::AdminCommandLogger::instance()->logCommand(object, commandName, arguments.toString(), success, errorMsg);
 			}
 		}
 	} catch (const Exception& e) {
