@@ -10,6 +10,7 @@
 #include "server/zone/managers/objectcontroller/ObjectController.h"
 #include "server/db/ServerDatabase.h"
 #include "server/chat/ChatManager.h"
+#include "engine/db/Database.h"
 
 namespace server {
 namespace zone {
@@ -19,7 +20,7 @@ namespace csr {
 CSRCommandProcessor* CSRCommandProcessor::instance = nullptr;
 
 CSRCommandProcessor::CSRCommandProcessor(ZoneServer* server) : 
-    Task("CSRCommandProcessor"), 
+    Task(), 
     Logger("CSRCommandProcessor"),
     zoneServer(server), 
     isRunning(false),
@@ -75,7 +76,7 @@ void CSRCommandProcessor::processPendingCommands() {
             String parameters = res->getString(2);
             String issuedBy = res->getString(3);
             
-            info("Processing CSR command: " + command + " (ID: " + String::valueOf(commandId)), true);
+            info("Processing CSR command: " + command + " (ID: " + String::valueOf(commandId) + ")", true);
             
             // Execute the command
             executeCommand(commandId, command, parameters, issuedBy);
@@ -344,9 +345,17 @@ bool CSRCommandProcessor::executeGrantCredits(const String& parameters, String& 
 
 void CSRCommandProcessor::updateCommandStatus(int commandId, const String& status, const String& result) {
     try {
+        // Create copies for escaping
+        String escapedStatus = status;
+        String escapedResult = result;
+        
+        // Escape strings to prevent SQL injection
+        Database::escapeString(escapedStatus);
+        Database::escapeString(escapedResult);
+        
         StringBuffer query;
-        query << "UPDATE csr_bot_commands SET status = '" << status 
-              << "', executed_at = NOW(), result = '" << ServerDatabase::escapeString(result)
+        query << "UPDATE csr_bot_commands SET status = '" << escapedStatus 
+              << "', executed_at = NOW(), result = '" << escapedResult
               << "' WHERE id = " << commandId;
         
         ServerDatabase::instance()->executeStatement(query.toString());

@@ -8,6 +8,17 @@
 #include "engine/engine.h"
 #include "server/zone/ZoneServer.h"
 
+// Forward declarations
+namespace server {
+namespace zone {
+namespace objects {
+namespace creature {
+    class CreatureObject;
+} // namespace creature
+} // namespace objects
+} // namespace zone
+} // namespace server
+
 namespace server {
 namespace zone {
 namespace managers {
@@ -33,7 +44,7 @@ private:
     bool executeGrantCredits(const String& parameters, String& result);
     
     void updateCommandStatus(int commandId, const String& status, const String& result);
-    Reference<CreatureObject*> findPlayerByName(const String& name);
+    Reference<server::zone::objects::creature::CreatureObject*> findPlayerByName(const String& name);
     
 public:
     CSRCommandProcessor(ZoneServer* server);
