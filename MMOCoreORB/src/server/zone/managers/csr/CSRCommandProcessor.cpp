@@ -65,6 +65,12 @@ void CSRCommandProcessor::run() {
 
 void CSRCommandProcessor::processPendingCommands() {
     try {
+        // First, mark any stale commands as failed (older than 5 minutes)
+        String staleQuery = "UPDATE csr_bot_commands SET status = 'failed', "
+                           "result = 'Command timed out', executed_at = NOW() "
+                           "WHERE status = 'pending' AND issued_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)";
+        ServerDatabase::instance()->executeStatement(staleQuery);
+        
         // Query for pending commands
         String query = "SELECT id, command, parameters, issued_by FROM csr_bot_commands "
                       "WHERE status = 'pending' ORDER BY issued_at ASC LIMIT 10";
@@ -76,6 +82,9 @@ void CSRCommandProcessor::processPendingCommands() {
             String command = res->getString(1);
             String parameters = res->getString(2);
             String issuedBy = res->getString(3);
+            
+            // Immediately mark as processing to prevent re-execution
+            updateCommandStatus(commandId, "processing", "Command is being processed");
             
             info("Processing CSR command: " + command + " (ID: " + String::valueOf(commandId) + ")", true);
             
