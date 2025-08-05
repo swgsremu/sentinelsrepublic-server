@@ -22,6 +22,7 @@ admin = {
 		"admin_server_admin_02",
 		"admin_spawn_management_01",
 		"admin_spawn_management_02",
+		"admin_spawn_management_03",
 	}
 }
 

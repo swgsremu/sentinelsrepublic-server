@@ -832,3 +832,6 @@ RunSlashCommandsFile("waypoint.lua")
 RunSlashCommandsFile("unstick.lua")
 RunSlashCommandsFile("launchIntoSpace.lua")
 RunSlashCommandsFile("createVendor.lua")
+
+--SR2 Edits
+RunSlashCommandsFile("../custom_scripts/commands/commands.lua")
