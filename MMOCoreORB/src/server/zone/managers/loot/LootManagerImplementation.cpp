@@ -74,8 +74,12 @@ bool LootManagerImplementation::loadConfigData() {
 	levelChance = lua->getGlobalFloat("levelChance");
 	baseChance = lua->getGlobalFloat("baseChance");
 	baseModifier = lua->getGlobalFloat("baseModifier");
-	yellowChance = lua->getGlobalFloat("yellowChance");
-	yellowModifier = lua->getGlobalFloat("yellowModifier");
+	refinedChance = lua->getGlobalFloat("refinedChance");
+	refinedModifier = lua->getGlobalFloat("refinedModifier");
+	epicChance = lua->getGlobalFloat("epicChance");
+	epicModifier = lua->getGlobalFloat("epicModifier");
+	enhancedChance = lua->getGlobalFloat("enhancedChance");
+	enhancedModifier = lua->getGlobalFloat("enhancedModifier");
 	exceptionalChance = lua->getGlobalFloat("exceptionalChance");
 	exceptionalModifier = lua->getGlobalFloat("exceptionalModifier");
 	legendaryChance = lua->getGlobalFloat("legendaryChance");
@@ -263,18 +267,41 @@ void LootManagerImplementation::setCustomObjectName(TangibleObject* object, cons
 		}
 	}
 
-	String suffixName = "";
+	String displayName = object->getDisplayedName();
+	String colorPrefix;
+	String colorSuffix = "\\#.";
+	
+	if (excMod >= legendaryModifier) {
+		colorPrefix = "\\#ff8000";
+	} else if (excMod >= exceptionalModifier) {
+		colorPrefix = "\\#c29b26";
+	} else if (excMod >= epicModifier) {
+		colorPrefix = "\\#a335ee";
+	} else if (excMod >= enhancedModifier) {
+		colorPrefix = "\\#0070dd";
+	} else if (excMod >= refinedModifier) {
+		colorPrefix = "\\#1eff00"; // akctully green. :D
+	} else {
+		colorPrefix = "";
+		colorSuffix = "";
+	}
 
 	if (excMod >= legendaryModifier) {
-		suffixName = " (Legendary)";
-	} else if (excMod >= exceptionalModifier) {
-		suffixName = " (Exceptional)";
-	}
-
-	if (suffixName != "") {
-		object->setCustomObjectName(object->getDisplayedName() + suffixName, false);
+		object->setCustomObjectName(colorPrefix + displayName + " (Legendary)" + colorSuffix, false);
 		object->addMagicBit(false);
-	}
+	} else if (excMod >= exceptionalModifier) {
+		object->setCustomObjectName(colorPrefix + displayName + " (Exceptional)" + colorSuffix, false);
+		object->addMagicBit(false);
+	} else if (excMod >= epicModifier) {
+		object->setCustomObjectName(colorPrefix + displayName + " (Epic)" + colorSuffix, false);
+		object->addMagicBit(false);
+	} else if (excMod >= enhancedModifier) {
+		object->setCustomObjectName(colorPrefix + displayName + " (Enhanced)" + colorSuffix, false);
+		object->addMagicBit(false);
+	} else if (excMod >= refinedModifier) {
+		object->setCustomObjectName(colorPrefix + displayName + colorSuffix, false);
+		object->addMagicBit(false);
+	} 	
 }
 
 void LootManagerImplementation::setJunkValue(TangibleObject* prototype, const LootItemTemplate* itemTemplate, int level, float excMod) {
@@ -290,7 +317,7 @@ void LootManagerImplementation::setJunkValue(TangibleObject* prototype, const Lo
 
 	if (excMod >= legendaryModifier) {
 		junkValue *= 2.5f;
-	} else if (excMod >= yellowModifier) {
+	} else if (excMod >= refinedModifier) {
 		junkValue *= 1.25;
 	}
 
@@ -328,7 +355,6 @@ void LootManagerImplementation::setRandomLootValues(TransactionLog& trx, Tangibl
 	} else if (lootValues.getDynamicValues() > 0) {
 		trx.addState("lootIsYellow", true);
 		yellowLooted.increment();
-
 		prototype->addMagicBit(false);
 	}
 
@@ -405,6 +431,12 @@ TangibleObject* LootManagerImplementation::createLootObject(TransactionLog& trx,
 		excMod = legendaryModifier;
 	} else if (System::random(exceptionalChance) <= chance) {
 		excMod = exceptionalModifier;
+	} else if (System::random(epicChance) <= chance) {
+		excMod = epicModifier;
+	} else if (System::random(enhancedChance) <= chance) {
+		excMod = enhancedModifier;
+	} else if (System::random(refinedChance) <= chance) {
+		excMod = refinedModifier;
 	}
 
 #ifdef DEBUG_LOOT_MAN
@@ -715,7 +747,6 @@ bool LootManagerImplementation::createLootFromCollection(TransactionLog& trx, Sc
 		if (roll > lootChance)
 			continue;
 
- 		// Start at 0
 		int tempChance = 0;
 
 		const LootGroups* lootGroups = collectionEntry->getLootGroups();
@@ -1061,8 +1092,8 @@ float LootManagerImplementation::getRandomModifier(const LootItemTemplate* itemT
 	if (excMod <= baseModifier) {
 		float chance = LootValues::getLevelRankValue(level, 0.2f, 0.9f) * levelChance;
 
-		if (System::random(yellowChance) <= chance) {
-			excMod = yellowModifier;
+		if (System::random(refinedChance) <= chance) {
+			excMod = refinedModifier;
 		} else if (System::random(baseChance) <= chance) {
 			excMod = baseModifier;
 		} else {
@@ -1078,9 +1109,15 @@ float LootManagerImplementation::getRandomModifier(const LootItemTemplate* itemT
 		modMin = exceptionalModifier;
 	} else if (excMod >= exceptionalModifier) {
 		modMax = exceptionalModifier;
-		modMin = yellowModifier;
-	} else if (excMod >= yellowModifier) {
-		modMax = yellowModifier;
+		modMin = epicModifier;
+	} else if (excMod >= epicModifier) {
+		modMax = epicModifier;
+		modMin = enhancedModifier;
+	} else if (excMod >= enhancedModifier) {
+		modMax = enhancedModifier;
+		modMin = refinedModifier;
+	} else if (excMod >= refinedModifier) {
+		modMax = refinedModifier;
 		modMin = baseModifier;
 	} else if (excMod >= baseModifier) {
 		modMax = baseModifier;

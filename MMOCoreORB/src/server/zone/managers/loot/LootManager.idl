@@ -37,8 +37,14 @@ class LootManager extends ManagedService implements Logger {
 	private transient float baseChance;
 	private transient float baseModifier;
 
-	private transient float yellowChance;
-	private transient float yellowModifier;
+	private transient float refinedChance;
+	private transient float refinedModifier;
+
+	private transient float enhancedChance;
+	private	transient float enhancedModifier;
+
+	private transient float epicChance;
+	private transient float epicModifier;
 
 	private transient float exceptionalChance;
 	private transient float exceptionalModifier;
@@ -139,8 +145,14 @@ class LootManager extends ManagedService implements Logger {
 		baseChance = 0.0;
 		baseModifier = 0.0;
 
-		yellowChance = 0.0;
-		yellowModifier = 0.0;
+		refinedChance = 0.0;
+		refinedModifier = 0.0;
+
+		enhancedChance = 0.0; 
+		enhancedModifier = 0.0; 
+
+		epicChance = 0.0;
+		epicModifier = 0.0;
 
 		exceptionalChance = 0.0;
 		exceptionalModifier = 0.0;
