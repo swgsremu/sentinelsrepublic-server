@@ -2052,7 +2052,7 @@ void MissionManagerImplementation::addPlayerToBountyList(uint64 targetId, int re
 		PlayerBounty* bounty = new PlayerBounty(targetId, reward);
 		ObjectManager::instance()->persistObject(bounty, 1, "playerbounties");
 		playerBountyList.put(targetId, bounty);
-
+		updatePlayerBountyOnlineStatus(targetId, true);
 		info("Adding player " + String::valueOf(targetId) + " to bounty hunter list.", true);
 	}
 }
