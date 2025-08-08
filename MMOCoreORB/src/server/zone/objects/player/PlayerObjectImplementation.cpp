@@ -1818,7 +1818,7 @@ class BountyMissionTimeoutTask : public Task {
 
 	public: 
 	BountyMissionTimeoutTask(MissionObject* obj) : object(obj) {}
-	static constexpr uint64 BOUNTY_OFFLINE_TIMEOUT = 10 * 60 * 1000;
+	static constexpr uint64 BOUNTY_OFFLINE_TIMEOUT = 1000 * 60; 
 	void run() override {
 		ManagedReference<MissionObject*> missionRef = object.get();		
 		if(missionRef == nullptr)
@@ -1910,7 +1910,7 @@ void PlayerObjectImplementation::notifyOffline() {
 		ManagedReference<MissionObject*> bountyMission = missionManager->getBountyHunterMission(playerCreature);
 		if (bountyMission != nullptr){
 			BountyMissionTimeoutTask* bountyTimeoutTask = new BountyMissionTimeoutTask(bountyMission);
-			int64 checkTime = 1000 * 60 * 11; 
+			int64 checkTime = 1000 * 60 * 10; 
 			bountyTimeoutTask->schedule(checkTime);
 		}
 	}
