@@ -774,6 +774,15 @@ function SpaceEscortScreenplay:notifyEnteredQuestArea(pActiveArea, pShip)
 		local playerID = SceneObject(pPilot):getObjectID()
 		local playerLocation = readData(playerID .. ":" .. self.className .. ":location:")
 
+		-- Check if player is at the correct starting waypoint
+		local assignedStart = readData(playerID .. self.className .. ":startPoint:")
+		local activeAreaID = SceneObject(pActiveArea):getObjectID()
+		local areaEscortNumber = readData(activeAreaID .. ":" .. self.className)
+
+		if (areaEscortNumber ~= assignedStart) then
+			return 0
+		end
+
 		-- Check to see if player needs to be updated
 		if (playerLocation > 1) then
 			return 0
