@@ -2285,8 +2285,8 @@ void ShipObjectImplementation::updateActualEngineValues(bool notifyClient, ShipD
 	float actualYawAccel = getEngineYawAccelerationRate() * componentEfficiency;
 	float actualRollAccel = getEngineRollAccelerationRate() * componentEfficiency;
 	float actualPitch = getEnginePitchRate() * componentEfficiency * rotationFactor;
-	float actualYaw = getEnginePitchRate() * componentEfficiency * rotationFactor;
-	float actualRoll = getEnginePitchRate() * componentEfficiency;
+	float actualYaw = getEngineYawRate() * componentEfficiency * rotationFactor;
+	float actualRoll = getEngineRollRate() * componentEfficiency;
 	float actualSpeed = calculateActualMaxSpeed();
 
 	if (deltaVector == nullptr && notifyClient) {
