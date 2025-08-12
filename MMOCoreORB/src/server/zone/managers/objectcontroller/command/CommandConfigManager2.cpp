@@ -179,6 +179,7 @@
 #include "server/zone/objects/creature/commands/DumpTargetInformationCommand.h"
 #include "server/zone/objects/creature/commands/DumpZoneInformationCommand.h"
 #include "server/zone/objects/creature/commands/EatCommand.h"
+#include "server/zone/objects/creature/commands/EcTasksCommand.h"
 #include "server/zone/objects/creature/commands/EditAppearanceCommand.h"
 #include "server/zone/objects/creature/commands/EditBankCommand.h"
 #include "server/zone/objects/creature/commands/EditBankAccountCommand.h"
@@ -581,6 +582,7 @@ void CommandConfigManager::registerCommands2() {
 	commandFactory.registerCommand<DumpTargetInformationCommand>(String("dumpTargetInformation").toLowerCase());
 	commandFactory.registerCommand<DumpZoneInformationCommand>(String("dumpZoneInformation").toLowerCase());
 	commandFactory.registerCommand<EatCommand>(String("eat").toLowerCase());
+	commandFactory.registerCommand<EcTasksCommand>(String("ectasks").toLowerCase());
 	commandFactory.registerCommand<EditAppearanceCommand>(String("editAppearance").toLowerCase());
 	commandFactory.registerCommand<EditBankCommand>(String("editBank").toLowerCase());
 	commandFactory.registerCommand<EditBankAccountCommand>(String("editBankAccount").toLowerCase());

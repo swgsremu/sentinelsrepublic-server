@@ -1057,10 +1057,20 @@ void MissionManagerImplementation::randomizeGenericSurveyMission(CreatureObject*
 }
 
 void MissionManagerImplementation::randomizeGenericBountyMission(CreatureObject* player, MissionObject* mission, const uint32 faction, Vector<ManagedReference<PlayerBounty*>>* potentialTargets) {
-	if (!player->hasSkill("combat_bountyhunter_novice")) {
+	// BH SR2 - Add player bounties that are not jedi. 
+	bool playerJedi = false;
+	
+	ManagedReference<PlayerObject*> playerGhost = player->getPlayerObject();
+	
+	if (playerGhost != nullptr) {
+		playerJedi = playerGhost->isJedi();
+	}
+	
+	if (!player->hasSkill("combat_bountyhunter_novice") && !playerJedi) {
 		player->sendSystemMessage("@mission/mission_generic:not_bounty_hunter_terminal");
 		return;
 	}
+
 
 	Zone* playerZone = player->getZone();
 
@@ -1110,20 +1120,51 @@ void MissionManagerImplementation::randomizeGenericBountyMission(CreatureObject*
 			mission->setTargetOptionalTemplate("");
 
 			ManagedReference<CreatureObject*> creature = server->getObject(target->getTargetPlayerID()).castTo<CreatureObject*>();
+			String creatorName = "";
 			String name = "";
+			String stfFile = "mission/mission_bounty_jedi";
+			String missionTargetName = "Unidentified Player";
+			String missionTitle = "Unidentified player target";
 
-			if (creature != nullptr && ConfigManager::instance()->getBool("Core3.MissionManager.AnonymousBountyTerminals", false)) {
-				if (creature->getFaction() == Factions::FACTIONIMPERIAL)
-					name = "Imperial Jedi";
-				else if (creature->getFaction() == Factions::FACTIONREBEL)
-					name = "Rebel Jedi";
-				else
-					name = "Neutral Jedi";
+			ManagedReference<PlayerObject*> targetGhost = creature->getPlayerObject();
 
-				ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+			if (targetGhost != nullptr && ConfigManager::instance()->getBool("Core3.MissionManager.AnonymousBountyTerminals", false)) {
+				bool isJedi = targetGhost->isJedi();
+				int faction = creature->getFaction();
+
+
+				if (faction == Factions::FACTIONIMPERIAL) {
+					if (isJedi) {
+						name = "Imperial Oppressor";
+						mission->setMissionTitle("Player Bounty", "Imperial Oppressor player target");
+					} else {
+						name = "Imperial Murderer";
+						stfFile = "mission/mission_bounty_neutral_hard";
+						mission->setMissionTitle("Player Bounty", "Imperial Murderer player target");
+					}
+				} else if (faction == Factions::FACTIONREBEL) {
+					if (isJedi) {
+						name = "Rebel Jedi";
+						stfFile = "mission/mission_bounty_imperial_hard_jedi";
+						mission->setMissionTitle("Player Bounty", "Rebel Jedi player target");
+					} else {
+						name = "Rebel Murderer";
+						stfFile = "mission/mission_bounty_imperial_hard";
+						mission->setMissionTitle("Player Bounty", "Rebel Murderer player target");
+					}
+				} else {
+					if (isJedi) {
+						name = "Mercenary Force User";
+						mission->setMissionTitle("Player Bounty", "Mercenary Force user player target");
+					} else {
+						name = "Mercenary Murderer";
+						stfFile = "mission/mission_bounty_neutral_hard";						
+						mission->setMissionTitle("Player Bounty", "Mercenary Murderer player target");
+					}
+				}
 
 				int rewardCreds = 0;
-				if (ghost->getJediState() >= 4)
+				if (targetGhost->getJediState() >= 4)
 					rewardCreds = 50000;
 				else
 					rewardCreds = 25000;
@@ -1143,14 +1184,15 @@ void MissionManagerImplementation::randomizeGenericBountyMission(CreatureObject*
 				mission->setRewardCredits(getRealBountyReward(creature, target));
 			}
 
-			mission->setMissionTargetName(name);
+			mission->setMissionTargetName(missionTargetName);
+			mission->setRewardCredits(target->getReward());
 			mission->setMissionDifficulty(75);
 
 			// Set the Title, Creator, and Description of the mission.
 
 			int randTexts = 0;
 
-			String stfFile = "mission/mission_bounty_jedi";
+			// String stfFile = "mission/mission_bounty_jedi";
 
 			UnicodeString numberOfEntries = StringIdManager::instance()->getStringId(String::hashCode("@" + stfFile  + ":" + "number_of_entries"));
 
@@ -1163,7 +1205,6 @@ void MissionManagerImplementation::randomizeGenericBountyMission(CreatureObject*
 			mission->setMissionNumber(randTexts);
 
 			UnicodeString possibleCreatorName = StringIdManager::instance()->getStringId(String::hashCode("@" + stfFile + "m" + String::valueOf(randTexts) + "o"));
-			String creatorName = "";
 
 
 			if (!possibleCreatorName.isEmpty()) {
@@ -1173,7 +1214,7 @@ void MissionManagerImplementation::randomizeGenericBountyMission(CreatureObject*
 			}
 
 			mission->setCreatorName(creatorName);
-			mission->setMissionTitle(stfFile, "m" + String::valueOf(randTexts) + "t");
+			// mission->setMissionTitle(stfFile, "m" + String::valueOf(randTexts) + "t");
 			mission->setMissionDescription(stfFile, "m" + String::valueOf(randTexts) + "d");
 		}
 	} else {
@@ -2011,7 +2052,7 @@ void MissionManagerImplementation::addPlayerToBountyList(uint64 targetId, int re
 		PlayerBounty* bounty = new PlayerBounty(targetId, reward);
 		ObjectManager::instance()->persistObject(bounty, 1, "playerbounties");
 		playerBountyList.put(targetId, bounty);
-
+		updatePlayerBountyOnlineStatus(targetId, true);
 		info("Adding player " + String::valueOf(targetId) + " to bounty hunter list.", true);
 	}
 }
@@ -2401,4 +2442,15 @@ bool MissionManagerImplementation::sendPlayerBountyDebug(CreatureObject* creatur
 	creature->sendMessage(box->generateMessage());
 
 	return true;
+}
+
+int MissionManagerImplementation::getPlayerBounty(uint64 targetId) {
+	Locker listLocker(&playerBountyListMutex);
+
+	if (playerBountyList.contains(targetId)) {
+		return playerBountyList.get(targetId)->getReward();
+	}
+	else{
+		return 0;
+	}
 }

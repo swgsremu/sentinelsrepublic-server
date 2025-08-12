@@ -1,5 +1,5 @@
 /*
- 				Copyright <SWGEmu>
+				Copyright <SWGEmu>
 		See file COPYING for copying conditions. */
 
 #include "ResourceSpawner.h"
@@ -367,18 +367,29 @@ bool ResourceSpawner::ghDumpAll() {
 	/* This is custom code written to export resources in a way that an additional script can easily push them to Galaxy Harvester -c0pp3r */
 	if(!scriptLoading)
 		return false;
-	planets =  new Vector<String> ();
-	planets->add("corellia");
-	planets->add("dantooine");
-	planets->add("dathomir");
-	planets->add("endor");
-	planets->add("lok");
-	planets->add("naboo");
-	planets->add("rori");
-	planets->add("talus");
-	planets->add("tatooine");
-	planets->add("yavin4");
-	//String planets = "corellia";
+
+	// Get enabled zones from config (ZonesEnabled in config/config-local.lua)
+	Vector<String> planets;
+
+	// Use ConfigManager to get enabled zones
+	const SortedVector<String>& enabledZones = ConfigManager::instance()->getEnabledZones();
+	for (int i = 0; i < enabledZones.size(); ++i) {
+		planets.add(enabledZones.get(i));
+	}
+
+	if (planets.size() == 0) {
+		// fallback to all planets if config is missing
+		planets.add("corellia");
+		planets.add("dantooine");
+		planets.add("dathomir");
+		planets.add("endor");
+		planets.add("lok");
+		planets.add("naboo");
+		planets.add("rori");
+		planets.add("talus");
+		planets.add("tatooine");
+		planets.add("yavin4");
+	}
 
 	try {
 		File* ghfile = new File("scripts/managers/ghoutput.xml");
@@ -405,43 +416,48 @@ bool ResourceSpawner::ghDumpAll() {
 				inPhase = 1;
 			}
 			if(String::valueOf(inPhase) == "1") {
-				for(int j = 0; j < planets->size(); ++j){
-					ZoneResourceMap* zoneMap = resourceMap->getZoneResourceList(planets->get(j));
+				for(int j = 0; j < planets.size(); ++j){
+					ZoneResourceMap* zoneMap = resourceMap->getZoneResourceList(planets.get(j));
 					ManagedReference<ResourceSpawn*> resourceSpawn;
-					
-					for (int b = 0; b< zoneMap->size(); ++b) {
-						resourceSpawn = zoneMap->get(b);
-						if (spawn->getName() == resourceSpawn->getName()){
-							ghwriter->writeLine("<resource>");
-							
-							ghwriter->write("<SpawnName>");
-							ghwriter->write(spawn->getName());
-							ghwriter->writeLine("</SpawnName>");
-							ghwriter->write("<resType>");
-							for(int i = 0; i < 8; ++i) {
-								String spawnClass = spawn->getClass(i);
-								if(spawnClass != "") {
-									last = i;
-									String spawnClass2 = spawn->getStfClass(i);
+					// If the zone map is not null, we can proceed to check for resources
+					if(zoneMap != nullptr) {
+						for (int b = 0; b< zoneMap->size(); ++b) {
+							resourceSpawn = zoneMap->get(b);
+							if (spawn->getName() == resourceSpawn->getName()){
+								ghwriter->writeLine("<resource>");
+								
+								ghwriter->write("<SpawnName>");
+								ghwriter->write(spawn->getName());
+								ghwriter->writeLine("</SpawnName>");
+								ghwriter->write("<resType>");
+								for(int i = 0; i < 8; ++i) {
+									String spawnClass = spawn->getClass(i);
+									if(spawnClass != "") {
+										last = i;
+										String spawnClass2 = spawn->getStfClass(i);
+									}
 								}
-							}
-							ghwriter->write(spawn->getStfClass(last));
-							ghwriter->writeLine("</resType>");
-							//ghwriter->writeLine("<attributes>");
-							for(int i = 0; i < 12; ++i) {
-								String attribute = "";
-								int value = spawn->getAttributeAndValue(attribute, i);
-								if(attribute != "") {
-									ghwriter->writeLine("<attribute name=\"" + attribute + "\">" + String::valueOf(value) + "</attribute>");
+								ghwriter->write(spawn->getStfClass(last));
+								ghwriter->writeLine("</resType>");
+								//ghwriter->writeLine("<attributes>");
+								for(int i = 0; i < 12; ++i) {
+									String attribute = "";
+									int value = spawn->getAttributeAndValue(attribute, i);
+									if(attribute != "") {
+										ghwriter->writeLine("<attribute name=\"" + attribute + "\">" + String::valueOf(value) + "</attribute>");
+									}
 								}
+								//ghwriter->writeLine("</attributes>");
+								ghwriter->write("<planet>");
+								ghwriter->write(planets.get(j));
+								ghwriter->writeLine("</planet>");
+								ghwriter->writeLine("</resource>");
+								ghwriter->writeLine("");
 							}
-							//ghwriter->writeLine("</attributes>");
-							ghwriter->write("<planet>");
-							ghwriter->write(planets->get(j));
-							ghwriter->writeLine("</planet>");
-							ghwriter->writeLine("</resource>");
-							ghwriter->writeLine("");
 						}
+					} else {
+						// If the zone map is null, we skip this planet
+						continue;
 					}
 				}		
 			}

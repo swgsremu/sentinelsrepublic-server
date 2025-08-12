@@ -441,6 +441,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	luaEngine->registerFunction("hasObserver", hasObserver);
 	luaEngine->registerFunction("hasObserverType", hasObserverType);
 	luaEngine->registerFunction("spawnMobile", spawnMobile);
+	luaEngine->registerFunction("spawnMobileAsStatic", spawnMobileAsStatic);
 	luaEngine->registerFunction("spawnEventMobile", spawnEventMobile);
 	luaEngine->registerFunction("spawnShipAgent", spawnShipAgent);
 	luaEngine->registerFunction("spatialChat", spatialChat);
@@ -813,6 +814,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	luaEngine->setGlobalInt("SHIP_AI_FIXED_PATROL", ShipFlag::FIXED_PATROL);
 	luaEngine->setGlobalInt("SHIP_AI_SQUADRON_PATROL", ShipFlag::SQUADRON_PATROL);
 	luaEngine->setGlobalInt("SHIP_AI_SQUADRON_FOLLOW", ShipFlag::SQUADRON_FOLLOW);
+	luaEngine->setGlobalInt("SHIP_AI_WAVE_ATTACK", ShipFlag::WAVE_ATTACK);
 
 	// ShipComponents
 	luaEngine->setGlobalInt("SHIP_REACTOR", Components::REACTOR);
@@ -2673,6 +2675,96 @@ int DirectorManager::spawnMobile(lua_State* L) {
 	//public native CreatureObject spawnCreature(unsigned int templateCRC, float x, float z, float y, unsigned long parentID = 0);
 }
 
+int DirectorManager::spawnMobileAsStatic(lua_State* L) {
+	int numberOfArguments = lua_gettop(L);
+	if (numberOfArguments != 8 && numberOfArguments != 9) {
+		String err = "incorrect number of arguments passed to DirectorManager::spawnMobileAsStatic";
+		printTraceError(L, err);
+		ERROR_CODE = INCORRECT_ARGUMENTS;
+		return 0;
+	}
+
+	bool randomRespawn = false;
+	uint64 parentID;
+	float x, y, z, heading;
+	int respawnTimer;
+	String mobile, zoneid;
+
+	if (numberOfArguments == 8) {
+		parentID = lua_tointeger(L, -1);
+		heading = lua_tonumber(L, -2);
+		y = lua_tonumber(L, -3);
+		z = lua_tonumber(L, -4);
+		x = lua_tonumber(L, -5);
+		respawnTimer = lua_tointeger(L, -6);
+		mobile = lua_tostring(L, -7);
+		zoneid = lua_tostring(L, -8);
+	} else {
+		randomRespawn = lua_toboolean(L, -1);
+		parentID = lua_tointeger(L, -2);
+		heading = lua_tonumber(L, -3);
+		y = lua_tonumber(L, -4);
+		z = lua_tonumber(L, -5);
+		x = lua_tonumber(L, -6);
+		respawnTimer = lua_tointeger(L, -7);
+		mobile = lua_tostring(L, -8);
+		zoneid = lua_tostring(L, -9);
+	}
+
+	ZoneServer* zoneServer = ServerCore::getZoneServer();
+	Zone* zone = zoneServer->getZone(zoneid);
+
+	if (zone == nullptr) {
+		lua_pushnil(L);
+		return 1;
+	}
+
+	CreatureManager* creatureManager = zone->getCreatureManager();
+
+	CreatureObject* creature;
+	bool baby = false;
+	if (mobile.contains(" baby")) {
+		baby = true;
+		mobile = mobile.subString(0,mobile.indexOf(" "));
+	}
+	uint32 templ = mobile.hashCode();
+	if (baby) {
+		creature = creatureManager->spawnCreatureAsBaby(templ, x, z, y, parentID);
+	}
+	else {
+		creature = creatureManager->spawnCreature(templ, 0, x, z, y, parentID);
+	}
+
+	if (creature == nullptr) {
+		String err = "could not spawn mobile " + mobile;
+		printTraceError(L, err);
+
+		lua_pushnil(L);
+	} else {
+		Locker locker(creature);
+
+		creature->updateDirection(Math::deg2rad(heading));
+		if (creature->isAiAgent()) {
+			AiAgent* ai = cast<AiAgent*>(creature);
+			ai->setRespawnTimer(respawnTimer);
+
+			if (randomRespawn)
+				ai->setRandomRespawn(true);
+
+			ai->addObjectFlag(ObjectFlag::STATIC);
+			ai->clearPatrolPoints(); // just being certain here
+
+			// AI Template must be updated after the creature flags are set but before anything is written to Blackboard
+			ai->setAITemplate();
+		}
+
+		creature->_setUpdated(true); //mark updated so the GC doesnt delete it while in LUA
+		lua_pushlightuserdata(L, creature);
+	}
+
+	return 1;	
+}
+
 int DirectorManager::spawnEventMobile(lua_State* L) {
 	int numberOfArguments = lua_gettop(L);
 	if (numberOfArguments != 8) {
@@ -2724,7 +2816,6 @@ int DirectorManager::spawnEventMobile(lua_State* L) {
 		creature->_setUpdated(true); //mark updated so the GC doesnt delete it while in LUA
 		lua_pushlightuserdata(L, creature);
 	}
-
 	return 1;
 }
 

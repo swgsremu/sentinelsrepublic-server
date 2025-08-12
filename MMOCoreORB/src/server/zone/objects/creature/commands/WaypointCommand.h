@@ -125,24 +125,26 @@ public:
 						}
 					}
 				} else {
-					// A waypoint in the form of /waypoint planet X Z Y - Planetary Map
+					// A waypoint in the form of /waypoint planet X Z Y or /waypoint name with spaces
 					if (advancedWaypoints) {
-						planet = arg;
+						Zone* tempZone = zoneServer->getZone(arg);
 
-						// Not a valid planet name - malformed command
-						if (zoneServer->getZone(planet) == nullptr) {
-							sendSystemMessage(creature);
-							return GENERALERROR;
-						}
+						if (tempZone != nullptr && tokenizer.hasMoreTokens()) {
+							planet = arg;
 
-						if (!checkHasMoreTokens(creature, &tokenizer, &x)) {
-							return GENERALERROR;
-						}
-						if (!checkHasMoreTokens(creature, &tokenizer, &z)) {
-							return GENERALERROR;
-						}
-						if (!checkHasMoreTokens(creature, &tokenizer, &y)) {
-							return GENERALERROR;
+							if (!checkHasMoreTokens(creature, &tokenizer, &x)) {
+								return GENERALERROR;
+							}
+
+							if (!checkHasMoreTokens(creature, &tokenizer, &z)) {
+								return GENERALERROR;
+							}
+
+							if (!checkHasMoreTokens(creature, &tokenizer, &y)) {
+								return GENERALERROR;
+							}
+						} else {
+							waypointName = waypointData;
 						}
 					}
 				}

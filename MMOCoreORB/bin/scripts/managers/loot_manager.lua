@@ -45,13 +45,17 @@ levelChance = 100
 
 --Chance dividend for attribute bonus modifiers
 baseChance = 100
-yellowChance = 1000
+refinedChance = 500
+enhancedChance = 1500
+epicChance = 5500
 exceptionalChance = 100000
 legendaryChance = 1000000
 
 --Multiplier values for bonus modifiers
 baseModifier = 1
-yellowModifier = 2
+refinedModifier = 2
+enhancedModifier = 3.5
+epicModifier = 4.5
 exceptionalModifier = 8
 legendaryModifier = 9
 

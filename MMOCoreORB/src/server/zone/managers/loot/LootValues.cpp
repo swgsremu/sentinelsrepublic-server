@@ -1,3 +1,5 @@
+// #define LOOT_DEBUG
+
 #include "server/zone/managers/loot/LootValues.h"
 #include "server/zone/managers/loot/LootManager.h"
 #include "server/zone/managers/loot/LootAttributeType.h"
@@ -87,6 +89,14 @@ void LootValues::setRandomValues() {
 		int precision = getPrecision(attribute) % 10;
 		int randomType = getCombineType(attribute);
 
+#ifdef LOOT_DEBUG
+		info(true) << "LootValues::setRandomValues() - item: " << getLoggingName() << " attribute: " << attribute
+			<< ", min: " << min
+			<< ", max: " << max
+			<< ", precision: " << precision
+			<< ", randomType: " << randomType;
+#endif
+
 		if (randomType == RandomType::STATIC || min == max) {
 			setStaticValue(attribute);
 			continue;
@@ -118,19 +128,50 @@ void LootValues::setRandomValues() {
 		}
 	}
 
-	if (modifier <= 0.f || level <= 0 || attributeIndex.size() == 0) {
+	if (level <= 0) {
+#ifdef LOOT_DEBUG
+		info(true) << "LootValues::setRandomValues() - Early return due to invalid level:" << level;
+#endif
+		return;
+	}
+	// SR2 - Handle white quality items and items with no modifier
+	// Will give a random value between min and max for each attribute
+	if (modifier <= 0.f || attributeIndex.size() == 0) {
+#ifdef LOOT_DEBUG
+		info(true) << "LootValues::setRandomValues() - Processing white quality item or no dynamic attributes";
+#endif
+		for (int i = 0; i < attributeIndex.size(); ++i) {
+			String attribute = attributeIndex.get(i);
+			int precision = getPrecision(attribute) % 10;
+			
+			if (precision == 0) {
+				setNormalValue<int>(attribute);
+			} else {
+				setNormalValue<float>(attribute);
+			}
+		}
 		return;
 	}
 
-	dynamicValues = attributeIndex.size();
-
-	if (modifier <= BonusType::ENHANCED) {
+	float bonusValue = Math::max<float>(1.0f, modifier);
+#ifdef LOOT_DEBUG
+	info(true) << "LootValues::setRandomValues() - Processing enhanced item with " 
+		<< attributeIndex.size() << " dynamic attributes";
+#endif
+	// SR2 - If the item is better than 2 (REFINED, Previously yellow)
+	if (modifier > BonusType::REFINED) {
+		dynamicValues = attributeIndex.size();
+	} else {
 		dynamicValues = getDistributedValue(1, attributeIndex.size(), level, DISTMIN, DISTMAX) * modifier;
 		dynamicValues = Math::min(dynamicValues, attributeIndex.size());
 	}
 
-	float bonusValue = Math::max(1, modifier);
-
+#ifdef LOOT_DEBUG
+	info(true) << "LootValues::setRandomValues() - dynamicValues: " << dynamicValues
+		<< ", modifier: " << modifier
+		<< ", bonusValue: " << bonusValue
+		<< ", level: " << level;
+#endif
 	for (int i = dynamicValues; -1 < --i;) {
 		int key = System::random(attributeIndex.size()-1);
 
@@ -256,14 +297,25 @@ void LootValues::setDynamicValue(const String& attribute, float percentageMax) {
 	Auto min = staticValues.getMinValue(attribute);
 	Auto max = staticValues.getMaxValue(attribute);
 	Auto value = getDistributedValue(min, max, level, DISTMIN, DISTMAX);
+	
+#ifdef LOOT_DEBUG
+	info(true) << "LootValues::setDynamicValue() - " << attribute 
+		<< " min=" << min
+		<< " max=" << max
+		<< " level=" << level
+		<< " value=" << value;
+#endif
 
-	float percent = getValuePercentage(min, max, value);
-	float percentMax = Math::max(1.f, percentageMax);
-
-	setCurrentValue(attribute, value, min, max);
-	setCurrentPercentage(attribute, percent, percentMax);
-
-	setModifierValue(attribute, percentMax);
+	if (percentageMax <= 0.f) {
+		setCurrentValue(attribute, value, min, max);
+		setCurrentPercentage(attribute, 0.f, 0.f);
+	} else {
+		float percent = getValuePercentage(min, max, value);
+		float percentMax = Math::max(1.f, percentageMax);
+		setCurrentValue(attribute, value, min, max);
+		setCurrentPercentage(attribute, percent, percentMax);
+		setModifierValue(attribute, percentMax);
+	}
 }
 
 void LootValues::setModifierValue(const String& attribute, float percentageMax) {
@@ -404,10 +456,21 @@ int LootValues::getNormalValue(int min, int max) {
 
 float LootValues::getDistributedValue(float min, float max, int level, float distMin, float distMax) {
 	if (fabs(max - min) < EPSILON) {
+#ifdef LOOT_DEBUG
+		Logger::console.info(true) << "LootValues::getDistributedValue() - Early return due to min == max:"
+			<< " min=" << min << " max=" << max;
+#endif
 		return min;
 	}
 
 	float rank = Math::clamp(-1.f, getLevelRankValue(level, distMin, distMax), 2.f);
+#ifdef LOOT_DEBUG
+	Logger::console.info(true) << "LootValues::getDistributedValue() - Initial values:"
+		<< " min=" << min
+		<< " max=" << max
+		<< " level=" << level 
+		<< " rank=" << rank;
+#endif
 	bool inverted = max < min;
 
 	float valueMin = min;
@@ -438,7 +501,16 @@ float LootValues::getDistributedValue(float min, float max, int level, float dis
 		randomVal = (valueMax - randomVal) + valueMin;
 	}
 
-	return Math::clamp(min, randomVal, max);
+	float finalValue = Math::clamp(min, randomVal, max);
+#ifdef LOOT_DEBUG
+	Logger::console.info(true) << "LootValues::getDistributedValue() - Final values:"
+		<< " randomMin=" << randomMin
+		<< " randomMax=" << randomMax
+		<< " randomVal=" << randomVal
+		<< " finalValue=" << finalValue;
+#endif
+
+	return finalValue;
 }
 
 int LootValues::getDistributedValue(int min, int max, int level, float distMin, float distMax) {

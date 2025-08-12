@@ -102,11 +102,20 @@ void WearableObjectImplementation::generateSockets(CraftingValues* craftingValue
 
 	float generatedCount = roll * MAXSOCKETS;
 
-	if (generatedCount > MAXSOCKETS)
-		generatedCount = MAXSOCKETS;
-	else if (generatedCount > 3 && generatedCount <= 3.75f)
+	float bonusChance = 0.0f;
+	if (skill > 0) {
+		// Scale bonusChance up to 40% as skill increases
+		bonusChance = ((float)skill / ((float)skill + 65.0f)) * 40.0f;
+		if (bonusChance > 40.0f) bonusChance = 40.0f;
+	}
+	if (generatedCount > 3 && generatedCount <= 3.75f) {
 		generatedCount = floor(generatedCount);
-
+		if (System::random(100) < (int)bonusChance) {
+			generatedCount = MAXSOCKETS;
+		}
+	} else if (generatedCount > MAXSOCKETS) {
+		generatedCount = MAXSOCKETS;
+	}
 	usedSocketCount = 0;
 	socketCount = (int)generatedCount;
 
@@ -181,9 +190,9 @@ void WearableObjectImplementation::applyAttachment(CreatureObject* player, Attac
 		applySkillModsTo(player);
 	}
 }
-
+// SR2 - Checking if item is broken before applying skill mods
 void WearableObjectImplementation::applySkillModsTo(CreatureObject* creature) const {
-	if (creature == nullptr) {
+	if (creature == nullptr || isBroken()) {
 		return;
 	}
 
@@ -200,16 +209,18 @@ void WearableObjectImplementation::applySkillModsTo(CreatureObject* creature) co
 
 	SkillModManager::instance()->verifyWearableSkillMods(creature);
 }
-
-void WearableObjectImplementation::removeSkillModsFrom(CreatureObject* creature) {
+// SR2 - Checking if item is broken before removing, or if it just broke. 
+void WearableObjectImplementation::removeSkillModsFrom(CreatureObject* creature, bool justBroken) {
 	if (creature == nullptr) {
+		return;
+	}
+	if (isBroken() && !justBroken) {
 		return;
 	}
 
 	for (int i = 0; i < wearableSkillMods.size(); ++i) {
 		String name = wearableSkillMods.elementAt(i).getKey();
 		int value = wearableSkillMods.get(name);
-
 		if (!SkillModManager::instance()->isWearableModDisabled(name))
 		{
 			creature->removeSkillMod(SkillModManager::WEARABLE, name, value, true);
@@ -229,10 +240,19 @@ bool WearableObjectImplementation::isEquipped() {
 }
 
 String WearableObjectImplementation::repairAttempt(int repairChance) {
+	CreatureObject* player = nullptr;
+	ManagedReference<SceneObject*> parent = getParent();
+	if (parent != nullptr && parent->isPlayerCreature()) {
+    	player = cast<CreatureObject*>(parent.get());
+	}
+	
 	String message = "@error_message:";
 
 	if(repairChance < 25) {
 		message += "sys_repair_failed";
+		if (isEquipped()){
+			removeSkillModsFrom(player);
+		}
 		setMaxCondition(1, true);
 		setConditionDamage(0, true);
 	} else if(repairChance < 50) {

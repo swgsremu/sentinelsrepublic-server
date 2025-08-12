@@ -544,7 +544,7 @@ void FishingManagerImplementation::continueFishing(CreatureObject* player) {
 			if (chance + poleMod <= MISHAP - 5) { // Pole decreases chance of mishap
 					mishapEvent("@fishing:tore_bait", player, marker, boxID, true, moodString);
 			} else {
-				if (player->isInRange(marker, 2.0)) {
+				if (player->isInRange(marker, 5.0)) {
 					success(player, fish, marker, boxID);
 				} else {
 					ManagedReference<SceneObject*> newMarker = updateMarker(player, marker, boxID, true);
@@ -581,6 +581,28 @@ void FishingManagerImplementation::success(CreatureObject* player, int fish, Sce
 	if (zoneServer == nullptr) {
 		return;
 	}
+	
+	Locker markerLocker(marker);
+	
+	Vector3 newMarkerLoc;
+	Vector3 markerLoc;
+	float playerX = player->getPositionX();
+	float playerY = player->getPositionY();
+
+	newMarkerLoc.setX(playerX);
+	newMarkerLoc.setY(playerY);
+	newMarkerLoc.setZ(marker->getPositionZ());
+
+	removeMarker(player, marker);
+
+	ManagedReference<SceneObject*> newMarker = createMarker(newMarkerLoc, zone);
+
+	if (newMarker == nullptr)
+		return;
+
+	Locker lock(player, newMarker);
+
+	setFishMarker(player, newMarker);
 
 	ManagedReference<LootManager*> lootManager = zoneServer->getLootManager();
 
@@ -596,17 +618,17 @@ void FishingManagerImplementation::success(CreatureObject* player, int fish, Sce
 
 		if (chance > 190) { // Rare Loot
 			if (System::random(4) > 1) {
-				lootID = lootManager->createLoot(trx, marker, "weapons_all", 40);
+				lootID = lootManager->createLoot(trx, newMarker, "weapons_all", 40);
 			} else {
-				lootID = lootManager->createLoot(trx, marker, "armor_all", 40);
+				lootID = lootManager->createLoot(trx, newMarker, "armor_all", 40);
 			}
 		} else { // Junk Loot Drop
-			lootID = lootManager->createLoot(trx, marker, "junk", 40);
+			lootID = lootManager->createLoot(trx, newMarker, "junk", 40);
 		}
 
 		if (lootID > 0) {
 			trx.commit();
-			sendReward(player, marker, nullptr);
+			sendReward(player, newMarker, nullptr);
 		} else {
 			trx.abort() << "FishingManagerImplementation -- Loot Object ID == 0";
 		}
@@ -716,7 +738,7 @@ void FishingManagerImplementation::success(CreatureObject* player, int fish, Sce
 					}
 				}
 
-				sendReward(player, marker, cast<SceneObject*>(lootFishObject.get()));
+				sendReward(player, newMarker, cast<SceneObject*>(lootFishObject.get()));
 
 				trx.setSubject(lootFishObject);
 				trx.addState("subjectFishType", fishName);

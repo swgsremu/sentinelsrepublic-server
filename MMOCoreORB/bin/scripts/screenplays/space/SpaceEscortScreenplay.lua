@@ -613,6 +613,9 @@ function SpaceEscortScreenplay:spawnAttackWave(pEscortAgent)
 			goto continue
 		end
 
+		-- Set as a wave attack ship
+		ShipAiAgent(pShipAgent):setWaveAttack()
+
 		-- Ship attacking the escort ship should be hyperspaced out and destroyed, just in case make sure they are cleaned up
 		ShipAiAgent(pShipAgent):setDespawnOnNoPlayerInRange(true)
 
@@ -634,8 +637,7 @@ function SpaceEscortScreenplay:spawnAttackWave(pEscortAgent)
 		writeData(agentID .. ":" .. self.className .. ":escorterID:", playerID)
 
 		-- Add aggo and set the escort ship as ShipAgents Defender
-		ShipAiAgent(pShipAgent):addAggro(pEscortAgent, 1)
-		ShipAiAgent(pShipAgent):setDefender(pEscortAgent)
+		ShipAiAgent(pShipAgent):engageShipTarget(pEscortAgent)
 
 		::continue::
 	end
@@ -771,6 +773,15 @@ function SpaceEscortScreenplay:notifyEnteredQuestArea(pActiveArea, pShip)
 
 		local playerID = SceneObject(pPilot):getObjectID()
 		local playerLocation = readData(playerID .. ":" .. self.className .. ":location:")
+
+		-- Check if player is at the correct starting waypoint
+		local assignedStart = readData(playerID .. self.className .. ":startPoint:")
+		local activeAreaID = SceneObject(pActiveArea):getObjectID()
+		local areaEscortNumber = readData(activeAreaID .. ":" .. self.className)
+
+		if (areaEscortNumber ~= assignedStart) then
+			return 0
+		end
 
 		-- Check to see if player needs to be updated
 		if (playerLocation > 1) then

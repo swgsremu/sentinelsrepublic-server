@@ -161,6 +161,7 @@
 #include "DumpTargetInformationCommand.h"
 #include "DumpZoneInformationCommand.h"
 #include "EatCommand.h"
+#include "EcTasksCommand.h"
 #include "EditAppearanceCommand.h"
 #include "EditBankCommand.h"
 #include "EditBankAccountCommand.h"

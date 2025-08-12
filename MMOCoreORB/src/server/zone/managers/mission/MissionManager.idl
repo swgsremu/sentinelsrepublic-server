@@ -207,4 +207,6 @@ class MissionManager extends Observer implements Logger {
 
 	@arg1preLocked
 	public native boolean sendPlayerBountyDebug(CreatureObject player, CreatureObject target);
+
+	public native int getPlayerBounty(unsigned long targetId);
 }
