@@ -11,6 +11,8 @@ class SRStructureObject : public Object
 {
     mutable ReadWriteLock lock; /**< Lock for thread-safe access. */
     ControlDevice* controlDevice; /**< Pointer to the control device associated with this structure. */
+    // Transient storage of packed items per cell number
+    std::unordered_map<int, std::vector<uint64>> packedCellItems;
 
 private:
     /**
@@ -116,6 +118,11 @@ public:
      * @return bool True if the structure was successfully unloaded, false otherwise.
      */
     static bool unloadFromZone(bool sendSelfDestroy);
+
+    // SR helpers: collect and restore items during pack/unpack (not persisted)
+    void clearPackedItems();
+    void collectItems(class BuildingObject* building);
+    void restoreItems(class BuildingObject* building, class ZoneServer* zoneServer);
 };
 
 #endif // SRSTRUCTUREOBJECT_H

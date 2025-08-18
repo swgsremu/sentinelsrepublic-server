@@ -53,3 +53,6 @@ includeFile("intangible/theater/serverobjects.lua")
 includeFile("intangible/vehicle/serverobjects.lua")
 
 -- Server Objects
+
+-- SR Custom: house control device registrations
+includeFile("../custom_scripts/object/intangible/house/serverobjects.lua")

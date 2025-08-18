@@ -7,6 +7,7 @@
 
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/tangible/deed/structure/StructureDeed.h"
+#include "server/zone/srcustom/objects/intangible/structure/StructureControlDevice.h"
 #include "server/zone/managers/planet/PlanetManager.h"
 #include "server/zone/managers/collision/CollisionManager.h"
 #include "QueueCommand.h"
@@ -127,8 +128,13 @@ public:
 		//We want to begin the session here.
 		ManagedReference<StructureDeed*> deed = server->getZoneServer()->getObject(deedID).castTo<StructureDeed*>();
 
-		if (deed != nullptr)
+		if (deed != nullptr) {
 			deed->placeStructure(creature, placementLoc.getX(), placementLoc.getY(), angle * 90);
+		} else {
+			ManagedReference<StructureControlDevice*> scd = server->getZoneServer()->getObject(deedID).castTo<StructureControlDevice*>();
+			if (scd != nullptr)
+				scd->placeStructure(creature, placementLoc.getX(), placementLoc.getY(), angle * 90);
+		}
 
 		return SUCCESS;
 	}

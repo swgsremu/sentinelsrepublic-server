@@ -42,7 +42,7 @@
 
 
 object_intangible_theater_base_theater = object_intangible_theater_shared_base_theater:new {
-	gameObjectType = 2060,
+	gameObjectType = 2061, -- THEATEROBJECT = 0x80D
 	noBuildRadius = 64,
 
 	childObjects = {

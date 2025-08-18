@@ -16,6 +16,7 @@
 #include "server/zone/objects/creature/ai/HelperDroidObject.h"
 #include "server/zone/objects/intangible/IntangibleObject.h"
 #include "server/zone/objects/intangible/VehicleControlDevice.h"
+#include "server/zone/srcustom/objects/intangible/structure/StructureControlDevice.h"
 #include "server/zone/objects/intangible/PetControlDevice.h"
 #include "server/zone/objects/intangible/ShipControlDevice.h"
 #include "server/zone/objects/intangible/TheaterObject.h"

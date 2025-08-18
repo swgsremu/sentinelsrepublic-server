@@ -2,8 +2,10 @@
 
 #include <server/zone/ZoneServer.h>
 #include <server/zone/objects/building/BuildingObject.h>
+#include <server/zone/objects/tangible/sign/SignObject.h>
 #include <server/zone/srcustom/objects/player/sessions/PackupStructureSession.h>
-#include "server/zone/srcustom/objects/intangible/structure/StructureControlDevice.h"
+#include "server/zone/objects/intangible/ControlDevice.h"
+#include "engine/util/u3d/Vector3.h"
 
 
 const String SRStructureManager::DATAPAD_FULL_MESSAGE = "Structure Packup Failed: Your datapad is full!";
@@ -28,29 +30,7 @@ void SRStructureManager::setStructureManager(StructureManager* manager) {
 	structureManager = manager;
 }
 
-/**
- * @brief Packs up a structure and places a control device in the player's datapad.
- *
- * This method encapsulates the process of packing up a player-owned structure. It retrieves
- * the structure object from the active packup session, creates a control device representing
- * the packed structure, and places this device into the player's datapad. The method also
- * handles the transfer of maintenance fees and redeed costs associated with the structure.
- *
- * The method performs several checks to ensure the packup process is valid, including:
- *   - Verifying the existence of an active packup session.
- *   - Ensuring the structure object is valid.
- *   - Confirming the structure is redeedable.
- *   - Validating the player's datapad has sufficient space.
- *   - Successfully unloading the structure from the game zone.
- *
- * If any of these checks fail, the method sends an appropriate system message to the player
- * and cancels the packup session.
- *
- * @param creature The creature initiating the packup. This is the player character who owns the structure.
- * @return 0 if the packup was successful and the control device was placed in the player's datapad.
- *         Returns the result of `session->cancelSession()` if the packup process fails at any point.
- */
- int SRStructureManager::packupStructure(CreatureObject* creature) {
+int SRStructureManager::packupStructure(CreatureObject* creature) {
     const ManagedReference<PackupStructureSession*> session = creature->getActiveSession(SRSessionFacadeType::PACKUPSTRUCTURE).castTo<PackupStructureSession*>();
     const auto server = creature->getZoneServer();
     if (session == nullptr)
@@ -67,7 +47,7 @@ void SRStructureManager::setStructureManager(StructureManager* manager) {
     const int redeedCost = structureObject->getRedeedCost();
 
     if (structureObject->isRedeedable()) {
-        ManagedReference<StructureControlDevice*> controlDevice = server->createObject(CONTROL_DEVICE_HASH, 1).castTo<StructureControlDevice*>();
+        ManagedReference<ControlDevice*> controlDevice = server->createObject(CONTROL_DEVICE_HASH, 1).castTo<ControlDevice*>();
 
         if (controlDevice == nullptr)
             return session->cancelSession();
@@ -87,11 +67,48 @@ void SRStructureManager::setStructureManager(StructureManager* manager) {
         } else {
             ManagedReference<BuildingObject*> building = cast<BuildingObject*>(structureObject.get());
 
-            if (building == nullptr || !structureObject->getSrStructureObject()->unloadFromZone(true)) {
+            // Actually unload the structure from the world by destroying it from the zone
+            if (building == nullptr) {
                 creature->sendSystemMessage(BUILDING_NULL_OR_UNLOAD_FAILED_MESSAGE);
                 controlDevice->destroyObjectFromWorld(true);
                 controlDevice->destroyObjectFromDatabase(true);
                 return session->cancelSession();
+            }
+
+            // SR: snapshot item OIDs per cell before world removal (transient only)
+            structureObject->getSrStructureObject()->collectItems(building);
+
+            {
+                Locker buildingLock(building, creature);
+
+                // If the player is inside this building, move them to the building ejection point first
+                if (creature->getParent() != nullptr && creature->getRootParent() == building) {
+                    Vector3 ep = building->getEjectionPoint();
+                    creature->teleport(ep.getX(), ep.getZ(), ep.getY(), 0);
+                }
+
+                if (building->getZone() != nullptr) {
+                    // Remove from world but keep database entry for redeed
+                    building->destroyObjectFromWorld(true);
+                }
+            }
+
+            // Validate it is no longer in a zone
+            if (building->getZone() != nullptr) {
+                creature->sendSystemMessage(BUILDING_NULL_OR_UNLOAD_FAILED_MESSAGE);
+                controlDevice->destroyObjectFromWorld(true);
+                controlDevice->destroyObjectFromDatabase(true);
+                return session->cancelSession();
+            }
+
+            // Remove exterior sign from database so it can be cleanly recreated at the new location on unpack
+            {
+                SignObject* sign = building->getSignObject();
+                if (sign != nullptr) {
+                    Locker signLock(sign);
+                    sign->destroyObjectFromWorld(true);
+                    sign->destroyObjectFromDatabase(true);
+                }
             }
 
             if (building->getCustomObjectName() != "")

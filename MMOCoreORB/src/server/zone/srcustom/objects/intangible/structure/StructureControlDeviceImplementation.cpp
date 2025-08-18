@@ -7,11 +7,14 @@
 // #include "server/zone/objects/intangible/components/UnpackStructureComponent.h"
 #include "server/zone/objects/region/CityRegion.h"
 #include "server/zone/objects/structure/StructureObject.h"
+#include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/packets/object/ObjectMenuResponse.h"
 #include "server/zone/packets/player/EnterStructurePlacementModeMessage.h"
 #include "server/zone/packets/scene/AttributeListMessage.h"
 #include "templates/manager/TemplateManager.h"
 #include "templates/tangible/SharedStructureObjectTemplate.h"
+#include "server/zone/Zone.h"
+#include "server/zone/srcustom/objects/structure/SRStructureObject.h"
 
 namespace StructureControlDeviceMenuIDs {
 constexpr byte STATUS = 18;
@@ -124,8 +127,6 @@ void StructureControlDeviceImplementation::placeStructureMode(CreatureObject* pl
 /**
   * @brief Places the structure at the specified coordinates and angle.
   *
-  * Placeholder for the actual structure placement logic.
-  *
   * @param player The CreatureObject placing the structure.
   * @param x The x-coordinate for placement.
   * @param y The y-coordinate for placement.
@@ -138,10 +139,59 @@ int StructureControlDeviceImplementation::placeStructure(CreatureObject* player,
 	if (structure == nullptr)
 		return 1;
 
-	// Reference<UnpackStructureComponent*> component = new UnpackStructureComponent();
-	//
-	// if (component != nullptr)
-	// 	component->placeStructure(player, structure, x, y, angle);
+	Zone* zone = player->getZone();
+	if (zone == nullptr)
+		return 1;
+
+	{
+		Locker sLocker(structure, player);
+
+		float z = zone->getHeight(x, y);
+		structure->initializePosition(x, z, y);
+		structure->rotate(angle);
+
+		zone->transferObject(structure, -1, true);
+
+		// Recreate template children (sign, terminals) at the new location
+		if (structure->isBuildingObject()) {
+			auto building = structure->asBuildingObject();
+			if (building != nullptr) {
+				structure->createChildObjects();
+
+				// Force-load cell contents from DB so items are re-associated in memory
+				int total = building->getTotalCellNumber();
+				for (int i = 1; i <= total; ++i) {
+					auto cell = building->getCell(i);
+					if (cell != nullptr) {
+						cell->getContainerObjects();
+					}
+				}
+				// Restore previously packed items (transient) if any
+				structure->getSrStructureObject()->restoreItems(building, zone->getZoneServer());
+			}
+		}
+
+		structure->notifyStructurePlaced(player);
+
+		// Ensure the placing player gets the interior contents streamed
+		if (structure->isBuildingObject()) {
+			auto building = structure->asBuildingObject();
+			if (building != nullptr) {
+				building->sendContainerObjectsTo(player, true);
+			}
+		}
+	}
+
+	// Clear control-device linkage and remove the device
+	{
+		auto sr = structure->getSrStructureObject();
+		if (sr)
+			sr->setControlDevice(nullptr);
+
+		Locker dLocker(_this.getReferenceUnsafeStaticCast());
+		this->destroyObjectFromWorld(true);
+		this->destroyObjectFromDatabase(true);
+	}
 
 	return 1;
 }
@@ -162,6 +212,11 @@ int StructureControlDeviceImplementation::notifyStructurePlaced(CreatureObject* 
 	// 	component->notifyStructurePlaced(player, structure);
 
 	return 1;
+}
+
+void StructureControlDeviceImplementation::storeObject(CreatureObject* player, bool force) {
+    // For structure control device, storing means re-dedeeding the structure, which this device does not support.
+    // Silently ignore to avoid abstract-method errors from generic tasks attempting to store all control devices.
 }
 
 /**
