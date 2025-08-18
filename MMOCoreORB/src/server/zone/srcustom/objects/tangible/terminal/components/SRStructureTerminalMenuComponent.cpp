@@ -53,8 +53,14 @@ void SRStructureTerminalMenuComponent::fillObjectMenuResponse(SceneObject* scene
 }
 
 int SRStructureTerminalMenuComponent::handleObjectMenuSelect(SceneObject* sceneObject, CreatureObject* creature, byte selectedID) const {
-    if (selectedID != SRRadialIds::PACK_UP_STRUCTURE)
+    error() << "SRStructureTerminalMenuComponent: handleObjectMenuSelect called with selectedID: " << (int)selectedID;
+    
+    if (selectedID != SRRadialIds::PACK_UP_STRUCTURE) {
+        error() << "SRStructureTerminalMenuComponent: selectedID " << (int)selectedID << " != PACK_UP_STRUCTURE " << (int)SRRadialIds::PACK_UP_STRUCTURE << ", calling base handler";
         return StructureTerminalMenuComponent::handleObjectMenuSelect(sceneObject, creature, selectedID);
+    }
+
+    error() << "SRStructureTerminalMenuComponent: Pack up structure selected by player: " << creature->getFirstName();
 
     auto terminal = cast<Terminal*>(sceneObject);
     if(terminal == nullptr || !creature->isPlayerCreature())

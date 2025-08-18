@@ -20,11 +20,16 @@ constexpr int MAX_PACKUP_CODE = 999999;
 }
 
 int PackupStructureSessionImplementation::initializeSession() {
+	error() << "PackupStructureSession: initializeSession called for player: " << creatureObject->getFirstName();
+	
 	if (!creatureObject->isPlayerCreature()) {
+		error() << "PackupStructureSession: Player is not a creature, canceling session";
 		return cancelSession();
 	}
 
 	creatureObject->addActiveSession(SRSessionFacadeType::PACKUPSTRUCTURE, _this.getReferenceUnsafeStaticCast());
+	error() << "PackupStructureSession: Active session added successfully";
+	
 	Locker structureLock(structureObject, creatureObject);
 
 	CreatureObject* player = creatureObject.get();
@@ -147,20 +152,25 @@ int PackupStructureSessionImplementation::sendPackupCode() {
 }
 
 int PackupStructureSessionImplementation::packupStructure() {
+	error() << "PackupStructureSession: packupStructure called, about to call SRStructureManager";
+	
 	Locker structureLock(structureObject);
 	Locker creatureLock(creatureObject, structureObject);
 
 	creatureObject->sendSystemMessage("@player_structure:processing_packup");
 
 	if (structureObject == nullptr || structureObject->getZone() == nullptr) {
+		error() << "PackupStructureSession: structureObject is null or zone is null, canceling";
 		return cancelSession();
 	}
 
 	if (!structureObject->isRedeedable()) {
+		error() << "PackupStructureSession: structure is not redeedable, canceling";
 		creatureObject->sendSystemMessage("@player_structure:packup_items_maint");
 		return cancelSession();
 	}
 
+	error() << "PackupStructureSession: calling StructureManager getSRStructureManager()->packupStructure";
 	StructureManager::instance()->getSRStructureManager()->packupStructure(creatureObject);
 	return 0;
 }

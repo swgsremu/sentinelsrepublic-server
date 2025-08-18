@@ -52,7 +52,7 @@ includeFile("intangible/ship/serverobjects.lua")
 includeFile("intangible/theater/serverobjects.lua")
 includeFile("intangible/vehicle/serverobjects.lua")
 
--- Server Objects
-
--- SR Custom: house control device registrations
+-- Custom Scripts
 includeFile("../custom_scripts/object/intangible/house/serverobjects.lua")
+
+-- Server Objects

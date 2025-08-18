@@ -11,11 +11,18 @@ import server.zone.packets.object.ObjectMenuResponse;
 import server.zone.packets.scene.AttributeListMessage;
 
 class StructureControlDevice extends ControlDevice {
+	private float positionX;
+	private float positionY;
+	private int directionAngle;
 
 	public StructureControlDevice() {
 		Logger.setLoggingName("StructureControlDevice");
 		Logger.setLogging(false);
 		Logger.setGlobalLogging(true);
+		
+		positionX = 0.0;
+		positionY = 0.0;
+		directionAngle = 0;
 	}
 
 	/**
@@ -44,6 +51,7 @@ class StructureControlDevice extends ControlDevice {
 
 	public native int placeStructure(CreatureObject creature, float x, float y, int angle);
 	public native int notifyStructurePlaced(CreatureObject creature, StructureObject structure);
+	public native void completeStructurePlacement(CreatureObject player);
 
 	public native void storeObject(CreatureObject player, boolean force = false);
 

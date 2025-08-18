@@ -15,6 +15,9 @@
 #include "templates/tangible/SharedStructureObjectTemplate.h"
 #include "server/zone/Zone.h"
 #include "server/zone/srcustom/objects/structure/SRStructureObject.h"
+#include "server/zone/managers/object/ObjectManager.h"
+#include "server/zone/srcustom/managers/structure/SRStructureManager.h"
+#include "server/zone/srcustom/objects/intangible/structure/tasks/StructureUnpackCompleteTask.h"
 
 namespace StructureControlDeviceMenuIDs {
 constexpr byte STATUS = 18;
@@ -143,12 +146,88 @@ int StructureControlDeviceImplementation::placeStructure(CreatureObject* player,
 	if (zone == nullptr)
 		return 1;
 
+	// Get template information for construction barricade
+	const TemplateManager* templateManager = TemplateManager::instance();
+	const String serverTemplatePath = structure->getObjectTemplate()->getFullTemplateString();
+	Reference<SharedStructureObjectTemplate*> serverTemplate = dynamic_cast<SharedStructureObjectTemplate*>(templateManager->getTemplate(serverTemplatePath.hashCode()));
+
+	if (serverTemplate == nullptr)
+		return 1;
+
+	// Create construction barricade for "under construction" effect
+	String barricadeServerTemplatePath = serverTemplate->getConstructionMarkerTemplate();
+	int constructionDuration = 100; // Default fallback duration
+
+	ManagedReference<SceneObject*> constructionBarricade = nullptr;
+	if (!barricadeServerTemplatePath.isEmpty()) {
+		constructionBarricade = ObjectManager::instance()->createObject(barricadeServerTemplatePath.hashCode(), 0, "");
+
+		if (constructionBarricade != nullptr) {
+			float z = zone->getHeight(x, y);
+			constructionBarricade->initializePosition(x, z, y);
+
+			const StructureFootprint* structureFootprint = serverTemplate->getStructureFootprint();
+			int barricadeAngle = angle;
+
+			if (structureFootprint != nullptr && (structureFootprint->getRowSize() > structureFootprint->getColSize())) {
+				barricadeAngle = angle + 180;
+			}
+
+			constructionBarricade->rotate(barricadeAngle);
+
+			Locker bLocker(constructionBarricade);
+			zone->transferObject(constructionBarricade, -1, true);
+
+			constructionDuration = serverTemplate->getLotSize() * 3000; // 3 seconds per lot
+		}
+	}
+
+	// Store placement parameters for delayed construction completion
+	positionX = x;
+	positionY = y;
+	directionAngle = angle;
+
+	// Schedule construction completion task
+	Reference<Task*> task = new StructureUnpackCompleteTask(player, _this.getReferenceUnsafeStaticCast(), constructionBarricade);
+	task->schedule(constructionDuration);
+
+	return 1;
+}
+
+/**
+  * @brief Notifies the player that the structure has been placed.
+  *
+  * Placeholder for any post-placement notifications or actions.
+  *
+  * @param player The CreatureObject who placed the structure.
+  * @param structure The StructureObject that was placed.
+  * @return int Returns 1 if notification was sent, otherwise returns an error code.
+  */
+int StructureControlDeviceImplementation::notifyStructurePlaced(CreatureObject* player, StructureObject* structure) {
+	// Reference<UnpackStructureComponent*> component = new UnpackStructureComponent();
+	//
+	// if (component != nullptr)
+	// 	component->notifyStructurePlaced(player, structure);
+
+	return 1;
+}
+
+void StructureControlDeviceImplementation::completeStructurePlacement(CreatureObject* player) {
+	ManagedReference<StructureObject*> structure = this->controlledObject.get().castTo<StructureObject*>();
+
+	if (structure == nullptr || player == nullptr)
+		return;
+
+	Zone* zone = player->getZone();
+	if (zone == nullptr)
+		return;
+
 	{
 		Locker sLocker(structure, player);
 
-		float z = zone->getHeight(x, y);
-		structure->initializePosition(x, z, y);
-		structure->rotate(angle);
+		float z = zone->getHeight(positionX, positionY);
+		structure->initializePosition(positionX, z, positionY);
+		structure->rotate(directionAngle);
 
 		zone->transferObject(structure, -1, true);
 
@@ -192,26 +271,6 @@ int StructureControlDeviceImplementation::placeStructure(CreatureObject* player,
 		this->destroyObjectFromWorld(true);
 		this->destroyObjectFromDatabase(true);
 	}
-
-	return 1;
-}
-
-/**
-  * @brief Notifies the player that the structure has been placed.
-  *
-  * Placeholder for any post-placement notifications or actions.
-  *
-  * @param player The CreatureObject who placed the structure.
-  * @param structure The StructureObject that was placed.
-  * @return int Returns 1 if notification was sent, otherwise returns an error code.
-  */
-int StructureControlDeviceImplementation::notifyStructurePlaced(CreatureObject* player, StructureObject* structure) {
-	// Reference<UnpackStructureComponent*> component = new UnpackStructureComponent();
-	//
-	// if (component != nullptr)
-	// 	component->notifyStructurePlaced(player, structure);
-
-	return 1;
 }
 
 void StructureControlDeviceImplementation::storeObject(CreatureObject* player, bool force) {
