@@ -199,6 +199,7 @@
 #include "server/zone/objects/creature/commands/FeignDeathCommand.h"
 #include "server/zone/objects/creature/commands/FindCommand.h"
 #include "server/zone/objects/creature/commands/FindFriendCommand.h"
+#include "server/zone/objects/creature/commands/FindStructuresCommand.h"
 #include "server/zone/objects/creature/commands/FindMyTrainerCommand.h"
 #include "server/zone/objects/creature/commands/FindObjectCommand.h"
 #include "server/zone/objects/creature/commands/FindPlayerCommand.h"
@@ -603,6 +604,7 @@ void CommandConfigManager::registerCommands2() {
 	commandFactory.registerCommand<FindCommand>(String("find").toLowerCase());
 	commandFactory.registerCommand<FindFriendCommand>(String("findFriend").toLowerCase());
 	commandFactory.registerCommand<FindFriendCommand>(String("findFriend").toLowerCase());
+	commandFactory.registerCommand<FindStructuresCommand>(String("findStructures").toLowerCase());
 	commandFactory.registerCommand<FindMyTrainerCommand>(String("findMyTrainer").toLowerCase());
 	commandFactory.registerCommand<FindObjectCommand>(String("findObject").toLowerCase());
 	commandFactory.registerCommand<FindPlayerCommand>(String("findPlayer").toLowerCase());

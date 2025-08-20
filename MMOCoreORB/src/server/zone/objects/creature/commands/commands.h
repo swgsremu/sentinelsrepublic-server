@@ -181,6 +181,7 @@
 #include "FeignDeathCommand.h"
 #include "FindCommand.h"
 #include "FindFriendCommand.h"
+#include "FindStructuresCommand.h"
 #include "FindMyTrainerCommand.h"
 #include "FindObjectCommand.h"
 #include "FindPlayerCommand.h"
