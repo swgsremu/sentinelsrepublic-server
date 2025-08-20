@@ -702,7 +702,89 @@ int CreatureManagerImplementation::notifyDestruction(TangibleObject* destructor,
 			} else if (trx.isEnabled() && !trx.isAborted()) {
 				trx.abort() << "createLoot failed for ai object for unknown reason.";
 			}
-		}
+		}		
+			{ // Mini-Boss loot
+				bool isWorldMini = false;
+				const CreatureTemplate* creoTmpl = destructedObject->getCreatureTemplate();
+				if (creoTmpl != nullptr) {
+					String ctName = creoTmpl->getTemplateName(); 
+					if (!ctName.isEmpty() && ctName.contains("mini_boss"))
+						isWorldMini = true;
+				}
+				if (!isWorldMini) {					
+					SharedObjectTemplate* tmplPtr = destructedObject->getObjectTemplate();
+					if (tmplPtr != nullptr) {
+						String bossName = tmplPtr->getFullTemplateString();
+						if (!bossName.isEmpty() && bossName.contains("mini_boss"))
+							isWorldMini = true;
+					}
+				}
+				if (isWorldMini) {
+					LootManager* lootManager = zoneServer->getLootManager();
+					if (lootManager != nullptr) {
+						const String participationGroup = "world_mini_boss_participation"; 
+						int level = destructedObject->getLevel();
+						Vector<uint64> awarded; 
+						int totalLootDamage = 0;
+						for (int i = 0; i < copyThreatMap.size(); ++i) {
+							ThreatMapEntry e = copyThreatMap.elementAt(i).getValue();
+							int dmg = e.getLootDamage();
+							if (dmg > 0) {
+								if (totalLootDamage > INT_MAX - dmg)
+									totalLootDamage = INT_MAX;
+								else
+									totalLootDamage += dmg;
+							}
+						}
+						int minDamageForParticipation = 1; 
+						if (totalLootDamage > 0) {
+							minDamageForParticipation = (totalLootDamage * 5 + 99) / 100; 
+							if (minDamageForParticipation < 1)
+								minDamageForParticipation = 1;
+						}
+						for (int i = 0; i < copyThreatMap.size(); ++i) {
+							ManagedReference<TangibleObject*> attacker = copyThreatMap.elementAt(i).getKey();
+							if (attacker == nullptr)
+								continue;
+							CreatureObject* attackerCreature = attacker->asCreatureObject();
+							if (attackerCreature == nullptr)
+								continue;							
+							CreatureObject* ownerPlayer = nullptr;
+							if (attackerCreature->isPlayerCreature()) {
+								ownerPlayer = attackerCreature;
+							} else if (attackerCreature->isPet()) {
+								ManagedReference<CreatureObject*> linked = attackerCreature->getLinkedCreature().get();
+								if (linked != nullptr && linked->isPlayerCreature())
+									ownerPlayer = linked.get();
+							}
+							if (ownerPlayer == nullptr)
+								continue;
+							ThreatMapEntry entry = copyThreatMap.elementAt(i).getValue();
+							if (entry.getLootDamage() < minDamageForParticipation)
+								continue;
+							uint64 oid = ownerPlayer->getObjectID();
+							bool already = false;
+							for (int j = 0; j < awarded.size(); ++j) {
+								if (awarded.get(j) == oid) { already = true; break; }
+							}
+							if (already)
+								continue;
+							awarded.add(oid);
+							SceneObject* inv = ownerPlayer->getSlottedObject("inventory");
+							if (inv == nullptr)
+								continue;
+							Locker pinv(inv, destructedObject);
+							TransactionLog ptrx(TrxCode::NPCLOOT, destructedObject);
+							if (lootManager->createLoot(ptrx, inv, participationGroup, level, true) > 0) {
+								ptrx.commit(true);
+								ownerPlayer->sendSystemMessage("You received a reward for fighting.");
+							} else if (ptrx.isEnabled() && !ptrx.isAborted()) {
+								ptrx.abort() << "participation createLoot failed";
+							}
+						}
+					}
+				}
+			}
 
 		// Check to see if we can expedite the despawn of this corpse
 		// We can expedite the despawn when corpse has no loot, no credits, player cannot harvest, and no group members in range can harvest
