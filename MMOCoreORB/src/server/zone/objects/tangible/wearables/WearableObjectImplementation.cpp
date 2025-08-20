@@ -104,9 +104,9 @@ void WearableObjectImplementation::generateSockets(CraftingValues* craftingValue
 
 	float bonusChance = 0.0f;
 	if (skill > 0) {
-		// Scale bonusChance up to 40% as skill increases
-		bonusChance = ((float)skill / ((float)skill + 65.0f)) * 40.0f;
-		if (bonusChance > 40.0f) bonusChance = 40.0f;
+		// Scale bonusChance up to 70% as skill increases
+		bonusChance = ((float)skill / ((float)skill + 65.0f)) * 70.0f;
+		if (bonusChance > 70.0f) bonusChance = 70.0f;
 	}
 	if (generatedCount > 3 && generatedCount <= 3.75f) {
 		generatedCount = floor(generatedCount);
