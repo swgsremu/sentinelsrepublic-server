@@ -89,10 +89,9 @@ public:
 	    					
 	    					if (price > 0) {
 	    						float costPerUnit = (float)price / (float)actualCount;
-	    						StringBuffer sb;
-	    						sb << " - " << Math::getPrecision(costPerUnit, 2) << "/cpu";
-	    						String suffix = sb.toString();
-	    						
+	    						char cpuBuffer[32];
+	    						snprintf(cpuBuffer, sizeof(cpuBuffer), " - %.2f/cpu", costPerUnit);
+	    						String suffix = String(cpuBuffer);
 	    						// Protect against overly long names (arbitrary limit of 200 chars total)
 	    						if ((name.toString().length() + suffix.length()) <= 200) {
 	    							name = name + suffix;

@@ -958,9 +958,9 @@ AuctionItem* AuctionManagerImplementation::createVendorItem(CreatureObject* play
 			int useCount = tangible->getUseCount();
 			int actualCount = (useCount > 0) ? useCount : 1;  // Protect against zero and negative values
 			float costPerUnit = (float)price / (float)actualCount;
-			String costPerUnitStr = String::valueOf(Math::getPrecision(costPerUnit, 2));
-			String suffix = " - " + costPerUnitStr + "/cpu";
-			
+			char cpuBuffer[32];
+			snprintf(cpuBuffer, sizeof(cpuBuffer), " - %.2f/cpu", costPerUnit);
+			String suffix = String(cpuBuffer);
 			// Protect against overly long names (arbitrary limit of 200 chars total)
 			if ((name.length() + suffix.length()) <= 200) {
 				name = name + suffix;
