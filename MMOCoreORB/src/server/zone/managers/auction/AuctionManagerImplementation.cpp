@@ -2604,8 +2604,8 @@ int AuctionManagerImplementation::doRelistStockroom(TerminalListVector* items, C
 	bool bRelist = false;
 
 	uint64 oid = item->getAuctionedItemObjectID();
-	if ((item->getStatus() == AuctionItem::SOLD && item->getBuyerID() == player->getObjectID()) ||
-			(item->getStatus() == AuctionItem::EXPIRED && item->getOwnerID() == player->getObjectID())) {
+	//(item->getStatus() == AuctionItem::SOLD && item->getBuyerID() == player->getObjectID()) ||
+	if (item->getStatus() == AuctionItem::EXPIRED && item->getOwnerID() == player->getObjectID()) {
 			bRelist = true;
 	}
 
