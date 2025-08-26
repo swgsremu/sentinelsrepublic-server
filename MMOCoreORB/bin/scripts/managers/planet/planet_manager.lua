@@ -514,7 +514,7 @@ tatooine = {
 		{name = "Mos Entha Shuttle B", x = 1395.447, z = 7, y = 3467.0117, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 1, landingRange = 6},
 		{name = "Mos Entha Shuttle A", x = 1730.8828, z = 7, y = 3184.6135, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 1, landingRange = 6},
 		{name = "Jabba's Palace", x = -6171.6, z = 90.0, y = -6381.5, interplanetaryTravelAllowed = 0, incomingTravelAllowed = 0, landingRange = 3},
-		-- {name = "Wayfar", x = -5082, z = 75, y = -6611, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3}
+		{name = "Wayfar", x = -5082, z = 75, y = -6611, interplanetaryTravelAllowed = 1, incomingTravelAllowed = 1, landingRange = 3}
 	},
 
 	jtlLaunchPoint = {"space_tatooine",2300,-5900,1900},
