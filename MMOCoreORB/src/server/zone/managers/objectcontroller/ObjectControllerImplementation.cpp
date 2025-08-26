@@ -11,6 +11,8 @@
 #include "server/zone/managers/skill/SkillModManager.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
+#include "server/zone/managers/admin/AdminCommandLogger.h"
+#include "server/zone/managers/plugin/EventDispatcher.h"
 
 void ObjectControllerImplementation::loadCommands() {
 	configManager = new CommandConfigManager(server);
@@ -151,6 +153,23 @@ float ObjectControllerImplementation::activateCommand(CreatureObject* object, un
 		object->addSkillMod(SkillModManager::ABILITYBONUS, skillMod, -value, false);
 	}
 
+	// Log all commands executed by admins (admin level > 0)
+	try {
+		if (object->isPlayerCreature()) {
+			Reference<PlayerObject*> ghost = object->getSlottedObject("ghost").castTo<PlayerObject*>();
+			if (ghost != nullptr && ghost->getAdminLevel() > 0) {
+				// Log to database
+				String commandName = "/" + queueCommand->getQueueCommandName();
+				bool success = (errorNumber == QueueCommand::SUCCESS);
+				String errorMsg = success ? "" : "Error code: " + String::valueOf(errorNumber);
+				
+				server::zone::managers::admin::AdminCommandLogger::instance()->logCommand(object, commandName, arguments.toString(), success, errorMsg);
+			}
+		}
+	} catch (const Exception& e) {
+		Logger::error("Error logging admin command to database: " + e.getMessage());
+	}
+
 	//onFail onComplete must clear the action from client queue
 	if (errorNumber != QueueCommand::SUCCESS) {
 		queueCommand->onFail(actionCount, object, errorNumber);
@@ -197,4 +216,33 @@ void ObjectControllerImplementation::logAdminCommand(SceneObject* object, const 
 	}
 
 	adminLog.info() << object->getDisplayedName() << " used '/" << queueCommand->getQueueCommandName() << "' on " << name << " with params '" << arguments.toString() << "'";
+	
+	// Dispatch admin command event to plugins
+	if (object->isCreatureObject()) {
+		
+		CreatureObject* creature = object->asCreatureObject();
+		server::zone::managers::plugin::CommandEventData eventData;
+		eventData.executor = creature;
+		eventData.executorName = creature->getFirstName();
+		eventData.executorOID = creature->getObjectID();
+		
+		if (creature->isPlayerCreature()) {
+			ManagedReference<PlayerObject*> ghost = creature->getPlayerObject();
+			if (ghost != nullptr) {
+				eventData.executorAccountID = ghost->getAccountID();
+			}
+		}
+		
+		eventData.command = queueCommand->getQueueCommandName();
+		eventData.arguments = arguments.toString();
+		if (targetObject != nullptr && targetObject->isCreatureObject()) {
+			eventData.target = targetObject->asCreatureObject();
+		}
+		eventData.targetName = name;
+		eventData.targetOID = targetID;
+		eventData.success = true;
+		eventData.result = "Command executed";
+		
+		server::zone::managers::plugin::EventDispatcher::instance()->dispatchCommandEvent(eventData);
+	}
 }

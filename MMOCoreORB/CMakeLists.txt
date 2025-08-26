@@ -349,6 +349,16 @@ add_subdirectory(src/server/ping)
 add_subdirectory(src/server/login)
 add_subdirectory(src/server/chat)
 
+# Build plugins if enabled
+option(BUILD_PLUGINS "Build server plugins" ON)
+if (BUILD_PLUGINS)
+	if (EXISTS "${CMAKE_SOURCE_DIR}/../plugins/csr-monitor/CMakeLists.txt")
+		add_subdirectory(${CMAKE_SOURCE_DIR}/../plugins/csr-monitor ${CMAKE_BINARY_DIR}/plugins/csr-monitor)
+		message(STATUS "CSR Monitor plugin will be built")
+	else()
+		message(WARNING "CSR Monitor plugin source not found at ${CMAKE_SOURCE_DIR}/../plugins/csr-monitor")
+	endif()
+endif()
 
 if (ENABLE_BUILD_CLIENT)
 	add_subdirectory(src/client)

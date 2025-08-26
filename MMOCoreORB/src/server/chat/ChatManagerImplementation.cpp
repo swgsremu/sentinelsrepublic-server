@@ -15,6 +15,7 @@
 #include "server/zone/managers/player/PlayerMap.h"
 #include "server/zone/managers/object/ObjectManager.h"
 #include "server/zone/managers/creature/PetManager.h"
+#include "server/zone/managers/plugin/EventDispatcher.h"
 
 #include "server/zone/packets/chat/ChatRoomList.h"
 #include "server/zone/packets/chat/ChatRoomMessage.h"
@@ -50,6 +51,16 @@
 #include "server/chat/room/ChatRoomMap.h"
 #include "templates/string/StringFile.h"
 #include "templates/faction/Factions.h"
+
+#include <fstream>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+
+#include "server/ServerCore.h"
+#include "conf/ConfigManager.h"
+#include "server/db/ServerDatabase.h"
+#include "server/zone/managers/plugin/EventDispatcher.h"
 
 ChatManagerImplementation::ChatManagerImplementation(ZoneServer* serv, int initsize) : ManagedServiceImplementation() {
 	server = serv;
@@ -769,6 +780,23 @@ void ChatManagerImplementation::handleChatRoomMessage(CreatureObject* sender, co
 
 	BaseMessage* amsg = new ChatOnSendRoomMessage(counter);
 	channel->broadcastMessage(amsg);
+	
+
+	String channelType = "spatial"; // default
+	if (channel->getChatRoomType() == ChatRoom::GROUP) {
+		channelType = "group";
+	} else if (channel->getChatRoomType() == ChatRoom::GUILD) {
+		channelType = "guild";
+	} else if (channel->getParent() != nullptr) {
+		String parentName = channel->getParent()->getFullPath();
+		if (parentName.contains("group")) {
+			channelType = "group";
+		} else if (parentName.contains("guild")) {
+			channelType = "guild";
+		}
+	}
+	
+	dispatchChatEvent(sender, channelType.toUpperCase(), formattedMessage.toString(), "");
 
 	#ifdef WITH_DPP
 	auto discordBotIsRunning = discordBot != nullptr;
@@ -1468,6 +1496,8 @@ void ChatManagerImplementation::handleSpatialChatInternalMessage(CreatureObject*
 		UnicodeString formattedMessage(formatMessage(msg));
 
 		broadcastChatMessage(player, formattedMessage, targetID, spatialChatType, moodType, chatFlags, languageID);
+		
+		dispatchChatEvent(player, "SPATIAL", formattedMessage.toString(), "");
 
 		ManagedReference<ChatMessage*> cm = new ChatMessage();
 		cm->setString(formattedMessage.toString());
@@ -1579,6 +1609,8 @@ void ChatManagerImplementation::handleChatInstantMessageToCharacter(ChatInstantM
 
 	BaseMessage* msg = new ChatInstantMessageToClient("SWG", sender->getZoneServer()->getGalaxyName(), name, text);
 	receiver->sendMessage(msg);
+	
+	dispatchChatEvent(sender, "TELL", text.toString(), fname);
 
 	BaseMessage* amsg = new ChatOnSendInstantMessage(message->getSequence(), IM_SUCCESS);
 	sender->sendMessage(amsg);
@@ -1661,6 +1693,8 @@ void ChatManagerImplementation::handleGroupChat(CreatureObject* sender, const Un
 		if (room != nullptr) {
 			BaseMessage* msg = new ChatRoomMessage(name, server->getGalaxyName(), formattedMessage, room->getRoomID());
 			group->broadcastMessage(msg);
+			
+			dispatchChatEvent(sender, "GROUP", formattedMessage.toString(), "");
 		}
 
 		group->unlock();
@@ -1714,6 +1748,8 @@ void ChatManagerImplementation::handleGuildChat(CreatureObject* sender, const Un
 	if (room != nullptr) {
 		BaseMessage* msg = new ChatRoomMessage(name, server->getGalaxyName(), formattedMessage, room->getRoomID());
 		room->broadcastMessageCheckIgnore(msg, name);
+		
+		dispatchChatEvent(sender, "GUILD", formattedMessage.toString(), "");
 	}
 
 }
@@ -1760,6 +1796,8 @@ void ChatManagerImplementation::handlePlanetChat(CreatureObject* sender, const U
 	if (room != nullptr) {
 		BaseMessage* msg = new ChatRoomMessage(fullName, server->getGalaxyName(), formattedMessage, room->getRoomID());
 		room->broadcastMessageCheckIgnore(msg, name);
+		
+		dispatchChatEvent(sender, "PLANET", formattedMessage.toString(), "");
 	}
 
 }
@@ -1799,6 +1837,8 @@ void ChatManagerImplementation::handleAuctionChat(CreatureObject* sender, const 
 	if (auctionRoom != nullptr) {
 		BaseMessage* msg = new ChatRoomMessage(fullName, server->getGalaxyName(), formattedMessage, auctionRoom->getRoomID());
 		auctionRoom->broadcastMessageCheckIgnore(msg, name);
+		
+		dispatchChatEvent(sender, "AUCTION", formattedMessage.toString(), "");
 	}
 
 }
@@ -2969,3 +3009,38 @@ void ChatManagerImplementation::initializeDiscordBot() {
 	discordBot = new DiscordBot();
 	discordBot->InitializeBot(botName, botToken);
 }
+
+void ChatManagerImplementation::dispatchChatEvent(CreatureObject* sender, const String& channelType, const String& message, const String& recipient) {
+	try {
+		server::zone::managers::plugin::ChatEventData eventData;
+		eventData.sender = sender;
+		eventData.senderName = sender->getFirstName();
+		eventData.senderOID = sender->getObjectID();
+		eventData.message = message;
+		eventData.channelType = channelType;
+		eventData.recipientName = recipient;
+		
+		ManagedReference<PlayerObject*> ghost = sender->getPlayerObject();
+		if (ghost != nullptr) {
+			eventData.senderAccountID = ghost->getAccountID();
+		}
+		
+		ManagedReference<Zone*> zone = sender->getZone();
+		if (zone != nullptr) {
+			eventData.planet = zone->getZoneName();
+			const Vector3& position = sender->getWorldPosition();
+			eventData.posX = position.getX();
+			eventData.posY = position.getY();
+			eventData.posZ = position.getZ();
+		}
+		
+		info("ChatManager dispatching chat event - channel: " + channelType + " message: " + message, true);
+		server::zone::managers::plugin::EventDispatcher::instance()->dispatchChatEvent(eventData);
+		
+	} catch (const Exception& e) {
+		error("Exception in dispatchChatEvent: " + e.getMessage());
+	} catch (...) {
+		error("Unknown exception in dispatchChatEvent");
+	}
+}
+

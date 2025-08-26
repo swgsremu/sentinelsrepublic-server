@@ -38,6 +38,10 @@
 #include "server/zone/managers/frs/FrsManager.h"
 #include "server/chat/ChatManager.h"
 #include "server/zone/managers/ship/ShipManager.h"
+#include "server/zone/managers/plugin/PluginLoader.h"
+#include "server/zone/managers/csr/CSRCommandProcessor.h"
+
+
 
 #include "server/zone/ZoneProcessServer.h"
 #include "ZonePacketHandler.h"
@@ -46,6 +50,9 @@
 #include "SpaceZoneLoadManagersTask.h"
 #include "ZoneLoadManagersTask.h"
 #include "ShutdownTask.h"
+
+using namespace server::zone::managers::plugin;
+using namespace server::zone::managers::csr;
 
 ZoneServerImplementation::ZoneServerImplementation(ConfigManager* config) :
 		ManagedServiceImplementation(), Logger("ZoneServer") {
@@ -343,6 +350,25 @@ void ZoneServerImplementation::startManagers() {
 
 	frsManager = new FrsManager(_this.getReferenceUnsafeStaticCast());
 	frsManager->initialize();
+	
+	// Initialize plugin system
+	info(true) << "ZoneServerImplementation -- Starting Plugin System...";
+	
+	// Get plugin directory from config, default to plugins (relative to bin directory)
+	String pluginDirectory = ConfigManager::instance()->getString("Core3.PluginDirectory", "plugins");
+	
+	// Load plugins
+	PluginLoader::instance()->loadPlugins(pluginDirectory);
+	
+	info(true) << "ZoneServerImplementation -- Plugin System Started.";
+	
+	// Start CSR Command Processor
+	info(true) << "ZoneServerImplementation -- Starting CSR Command Processor...";
+	CSRCommandProcessor* csrProcessor = CSRCommandProcessor::getInstance(_this.getReferenceUnsafeStaticCast());
+	if (csrProcessor != nullptr) {
+		csrProcessor->start();
+		info(true) << "ZoneServerImplementation -- CSR Command Processor started.";
+	}
 
 	info(true) << "ZoneServerImplementation -- Managers Started.";
 }
@@ -437,6 +463,19 @@ void ZoneServerImplementation::shutdown() {
 
 void ZoneServerImplementation::stopManagers() {
 	info(true) << "ZoneServerImplementation -- Stopping Managers...";
+	
+	// Stop plugin system first
+	info(true) << "ZoneServerImplementation -- Stopping Plugin System...";
+	PluginLoader::instance()->unloadAllPlugins();
+	info(true) << "ZoneServerImplementation -- Plugin System Stopped.";
+	
+	// Stop CSR Command Processor
+	CSRCommandProcessor* csrProcessor = CSRCommandProcessor::getInstance();
+	if (csrProcessor != nullptr) {
+		csrProcessor->stop();
+		info(true) << "ZoneServerImplementation -- CSR Command Processor stopped.";
+	}
+	CSRCommandProcessor::destroyInstance();
 
 	missionManager = nullptr;
 	radialManager = nullptr;
