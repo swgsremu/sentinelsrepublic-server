@@ -36,6 +36,7 @@
 #include "server/zone/objects/factorycrate/FactoryCrate.h"
 #include "server/zone/objects/transaction/TransactionLog.h"
 #include "system/lang/UnicodeString.h"
+#include "system/lang/Math.h"
 
 void AuctionManagerImplementation::initialize() {
 	Locker locker(_this.getReferenceUnsafeStaticCast());
@@ -949,6 +950,23 @@ AuctionItem* AuctionManagerImplementation::createVendorItem(CreatureObject* play
 		region = cityRegion->getCityRegionName();
 
 	String name = objectToSell->getDisplayedName();
+	
+	// Add cost per unit to the item name for vendor listings
+	if (objectToSell->isTangibleObject()) {
+		ManagedReference<TangibleObject*> tangible = cast<TangibleObject*>(objectToSell);
+		if (tangible != nullptr && price > 0) {
+			int useCount = tangible->getUseCount();
+			int actualCount = (useCount > 0) ? useCount : 1;  // Protect against zero and negative values
+			float costPerUnit = (float)price / (float)actualCount;
+			char cpuBuffer[32];
+			snprintf(cpuBuffer, sizeof(cpuBuffer), " - %.2f/cpu", costPerUnit);
+			String suffix = String(cpuBuffer);
+			// Protect against overly long names (arbitrary limit of 200 chars total)
+			if ((name.length() + suffix.length()) <= 200) {
+				name = name + suffix;
+			}
+		}
+	}
 
 	Locker locker(item);
 
@@ -1957,6 +1975,28 @@ void AuctionManagerImplementation::getItemAttributes(CreatureObject* player, uin
 	}
 
 	UnicodeString description(auctionItem->getItemDescription());
+	String costPerUnitStr = "";
+	bool hasCostPerUnit = false;
+	
+	// Calculate cost per unit once for reuse (only for attribute, not description to avoid redundancy)
+	if (object->isTangibleObject()) {
+		ManagedReference<TangibleObject*> tangible = cast<TangibleObject*>(object.get());
+		if (tangible != nullptr) {
+			int useCount = tangible->getUseCount();
+			int price = auctionItem->getPrice();
+			
+			// Calculate cost per unit for any item with a price
+			if (price > 0) {
+				int actualCount = (useCount > 0) ? useCount : 1;  // Protect against zero and negative values
+				float costPerUnit = (float)price / (float)actualCount;
+				StringBuffer costPerUnitBuffer;
+				costPerUnitBuffer << Math::getPrecision(costPerUnit, 2);
+				costPerUnitStr = costPerUnitBuffer.toString();
+				hasCostPerUnit = true;
+			}
+		}
+	}
+	
 	AttributeListMessage* msg = new AttributeListMessage(objectid, description);
 
 	// For objects that don't fill the attribute list normally...
@@ -1964,6 +2004,11 @@ void AuctionManagerImplementation::getItemAttributes(CreatureObject* player, uin
 		object->getAttributeListComponent()->fillAttributeList(msg, player, object);
 	} else
 		object->fillAttributeList(msg, player);
+
+	// Add cost per unit attribute if we calculated it
+	if (hasCostPerUnit) {
+		msg->insertAttribute("cost_per_unit", costPerUnitStr);
+	}
 
 	PlayerObject* ghost = player->getPlayerObject();
 
@@ -2559,8 +2604,8 @@ int AuctionManagerImplementation::doRelistStockroom(TerminalListVector* items, C
 	bool bRelist = false;
 
 	uint64 oid = item->getAuctionedItemObjectID();
-	if ((item->getStatus() == AuctionItem::SOLD && item->getBuyerID() == player->getObjectID()) ||
-			(item->getStatus() == AuctionItem::EXPIRED && item->getOwnerID() == player->getObjectID())) {
+	//(item->getStatus() == AuctionItem::SOLD && item->getBuyerID() == player->getObjectID()) ||
+	if (item->getStatus() == AuctionItem::EXPIRED && item->getOwnerID() == player->getObjectID()) {
 			bRelist = true;
 	}
 

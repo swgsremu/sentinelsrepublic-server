@@ -77,11 +77,11 @@ int main(int argc, char* argv[]) {
 		} else {
 			bool truncateData = arguments.contains("clean");
 
-			SRPreInitialize(); // SR Modification to init custom
+            SRPreInitialize(); // SR Modification to init custom
+            SRRegisterComponents(); // SR custom: override/register components BEFORE server constructs objects
 
-			ServerCore core(truncateData, arguments);
-			
-			SRPostInitialize(); // SR Modification to init custom
+            ServerCore core(truncateData, arguments);
+            SRPostInitialize(); // SR Modification to init custom
 			
 			core.start();
 		}

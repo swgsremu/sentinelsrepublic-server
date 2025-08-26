@@ -9,6 +9,7 @@
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/player/sui/inputbox/SuiInputBox.h"
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
+#include "server/zone/objects/player/sui/SuiCallback.h"
 #include "server/zone/objects/structure/StructureObject.h"
 #include "server/zone/Zone.h"
 #include "server/zone/srcustom/objects/scene/SRSessionFacadeType.h" 
@@ -19,11 +20,16 @@ constexpr int MAX_PACKUP_CODE = 999999;
 }
 
 int PackupStructureSessionImplementation::initializeSession() {
+	error() << "PackupStructureSession: initializeSession called for player: " << creatureObject->getFirstName();
+	
 	if (!creatureObject->isPlayerCreature()) {
+		error() << "PackupStructureSession: Player is not a creature, canceling session";
 		return cancelSession();
 	}
 
 	creatureObject->addActiveSession(SRSessionFacadeType::PACKUPSTRUCTURE, _this.getReferenceUnsafeStaticCast());
+	error() << "PackupStructureSession: Active session added successfully";
+	
 	Locker structureLock(structureObject, creatureObject);
 
 	CreatureObject* player = creatureObject.get();
@@ -48,7 +54,7 @@ int PackupStructureSessionImplementation::initializeSession() {
 		<< structureObject->getSurplusMaintenance() << "/"
 		<< structureObject->getRedeedCost() << "\\#.";
 
-	const ManagedReference<SuiListBox*> sui = new SuiListBox(player);
+    const ManagedReference<SuiListBox*> sui = new SuiListBox(player);
 	sui->setCancelButton(true, "@no");
 	sui->setOkButton(true, "@yes");
 	sui->setUsingObject(structureObject);
@@ -58,8 +64,26 @@ int PackupStructureSessionImplementation::initializeSession() {
 	sui->addMenuItem(cond.toString());
 	sui->addMenuItem(maint.toString());
 
-	player->getPlayerObject()->addSuiBox(sui);
-	player->sendMessage(sui->generateMessage());
+    // Attach a small inline callback to handle Yes/No
+    class PackupConfirmCallback : public SuiCallback {
+    public:
+        PackupConfirmCallback(ZoneServer* server, PackupStructureSession* session) : SuiCallback(server), session(session) {}
+        void run(CreatureObject* creature, SuiBox* suiBox, uint32 eventIndex, Vector<UnicodeString>* args) override {
+            const bool cancelPressed = (eventIndex == 1);
+            if (cancelPressed) {
+                session->cancelSession();
+                return;
+            }
+            session->sendPackupCode();
+        }
+    private:
+        ManagedReference<PackupStructureSession*> session;
+    };
+
+    sui->setCallback(new PackupConfirmCallback(player->getZoneServer(), _this.getReferenceUnsafeStaticCast()));
+
+    player->getPlayerObject()->addSuiBox(sui);
+    player->sendMessage(sui->generateMessage());
 
 	return 0;
 }
@@ -83,34 +107,70 @@ int PackupStructureSessionImplementation::sendPackupCode() {
 		<< redeed << " @player_structure:will_packup_suffix \n\n"
 		<< "Code: " << packupCode;
 
-	const ManagedReference<SuiInputBox*> sui = new SuiInputBox(player);
+    const ManagedReference<SuiInputBox*> sui = new SuiInputBox(player);
 	sui->setUsingObject(structureObject);
 	sui->setPromptTitle("@player_structure:confirm_packup_t");
 	sui->setPromptText(entry.toString());
 	sui->setCancelButton(true, "@cancel");
 	sui->setMaxInputSize(6);
 
-	player->getPlayerObject()->addSuiBox(sui);
-	player->sendMessage(sui->generateMessage());
+    class PackupCodeCallback : public SuiCallback {
+    public:
+        PackupCodeCallback(ZoneServer* server, PackupStructureSession* session, unsigned int code) : SuiCallback(server), session(session), code(code) {}
+        void run(CreatureObject* creature, SuiBox* suiBox, uint32 eventIndex, Vector<UnicodeString>* args) override {
+            const bool cancelPressed = (eventIndex == 1);
+            if (cancelPressed || args == nullptr || args->size() == 0) {
+                session->cancelSession();
+                return;
+            }
+            const UnicodeString& entered = args->get(0);
+            uint32 enteredCode = 0;
+            String enteredStr = entered.toString();
+            for (int i = 0; i < enteredStr.length(); ++i) {
+                char ch = enteredStr[i];
+                if (ch < '0' || ch > '9') { enteredCode = 0; break; }
+                enteredCode = enteredCode * 10 + static_cast<uint32>(ch - '0');
+            }
+            if (!session->isPackupCode(enteredCode)) {
+                creature->sendSystemMessage("@player_structure:invalid_packup_code");
+                session->cancelSession();
+                return;
+            }
+            session->packupStructure();
+        }
+    private:
+        ManagedReference<PackupStructureSession*> session;
+        unsigned int code;
+    };
+
+    sui->setCallback(new PackupCodeCallback(player->getZoneServer(), _this.getReferenceUnsafeStaticCast(), packupCode));
+
+    player->getPlayerObject()->addSuiBox(sui);
+    player->sendMessage(sui->generateMessage());
 
 	return 0;
 }
 
 int PackupStructureSessionImplementation::packupStructure() {
+	error() << "PackupStructureSession: packupStructure called, about to call SRStructureManager";
+	
 	Locker structureLock(structureObject);
 	Locker creatureLock(creatureObject, structureObject);
 
 	creatureObject->sendSystemMessage("@player_structure:processing_packup");
 
 	if (structureObject == nullptr || structureObject->getZone() == nullptr) {
+		error() << "PackupStructureSession: structureObject is null or zone is null, canceling";
 		return cancelSession();
 	}
 
 	if (!structureObject->isRedeedable()) {
+		error() << "PackupStructureSession: structure is not redeedable, canceling";
 		creatureObject->sendSystemMessage("@player_structure:packup_items_maint");
 		return cancelSession();
 	}
 
+	error() << "PackupStructureSession: calling StructureManager getSRStructureManager()->packupStructure";
 	StructureManager::instance()->getSRStructureManager()->packupStructure(creatureObject);
 	return 0;
 }

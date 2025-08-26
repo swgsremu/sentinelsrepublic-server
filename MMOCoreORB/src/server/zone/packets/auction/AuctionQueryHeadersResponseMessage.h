@@ -2,6 +2,9 @@
 				Copyright <SWGEmu>
 		See file COPYING for copying conditions.*/
 
+// FUTURE CLEANUP: Search for "REMOVE HYBRID FALLBACK" to remove backward compatibility code
+// after all legacy vendor items without cost-per-unit in names have expired (added 2025-08-18)
+
 #ifndef AUCTIONQUERYHEADERSRESPONSEMESSAGE_H_
 #define AUCTIONQUERYHEADERSRESPONSEMESSAGE_H_
 
@@ -9,7 +12,9 @@
 #include "server/zone/objects/auction/AuctionItem.h"
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/building/BuildingObject.h"
+#include "server/zone/objects/tangible/TangibleObject.h"
 #include "server/zone/ZoneServer.h"
+#include "system/lang/Math.h"
 
 class AuctionQueryHeadersResponseMessage : public BaseMessage {
 
@@ -65,6 +70,45 @@ public:
 			AuctionItem* il = itemList.get(i);
 
 	    	UnicodeString name = il->getItemName();
+	    	
+	    	// TODO: REMOVE HYBRID FALLBACK - After all legacy items expire (added 2025-08-18)
+	    	// This fallback can be removed once all pre-existing vendor items without "/cpu" in names have expired.
+	    	// When removed, this method can simply be: insertUnicode(name);
+	    	// For backward compatibility: if item name doesn't already contain cost per unit, add it
+	    	if (name.toString().indexOf("/cpu") == -1) {
+	    		try {
+	    			ManagedReference<SceneObject*> obj = player->getZoneServer()->getObject(il->getAuctionedItemObjectID());
+	    			
+	    			if (obj != nullptr && obj->isTangibleObject()) {
+	    				TangibleObject* tangible = cast<TangibleObject*>(obj.get());
+	    				
+	    				if (tangible != nullptr) {
+	    					int useCount = tangible->getUseCount();
+	    					int actualCount = (useCount > 0) ? useCount : 1;  // Protect against zero and negative values
+	    					int price = il->getPrice();
+	    					
+	    					if (price > 0) {
+	    						float costPerUnit = (float)price / (float)actualCount;
+	    						char cpuBuffer[32];
+	    						snprintf(cpuBuffer, sizeof(cpuBuffer), " - %.2f/cpu", costPerUnit);
+	    						String suffix = String(cpuBuffer);
+	    						// Protect against overly long names (arbitrary limit of 200 chars total)
+	    						if ((name.toString().length() + suffix.length()) <= 200) {
+	    							name = name + suffix;
+	    						}
+	    					}
+	    				}
+	    			}
+	    		} catch (Exception& e) {
+	    			// If there's any error calculating cost per unit, just use the original name
+	    			// Log at debug level to avoid spam, only if debugging is enabled
+	    			#ifdef DEBUG_AUCTION_SEARCH
+	    			player->error("Exception calculating cost per unit for item " + String::valueOf(il->getAuctionedItemObjectID()) + ": " + e.getMessage());
+	    			#endif
+	    		}
+	    	}
+	    	// END TODO: REMOVE HYBRID FALLBACK
+	    	
 	    	insertUnicode(name); //name
 		}
 	}

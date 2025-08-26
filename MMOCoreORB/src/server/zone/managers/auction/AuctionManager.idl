@@ -43,8 +43,8 @@ class AuctionManager extends ManagedService implements Logger {
 	public final static int MAXVENDORPRICE = 99999999;
 	public final static int ITEMSPERPAGE = 100;
 
-	public final static int VENDOREXPIREPERIOD = 2592000; // Seconds
-	public final static int COMMODITYEXPIREPERIOD = 2592000;
+	public final static int VENDOREXPIREPERIOD = 7776000; // Seconds (90 days)
+	public final static int COMMODITYEXPIREPERIOD = 7776000; // 90 days
 
 	// Location Types
 	public final static int LT_GALAXY = 0;

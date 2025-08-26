@@ -112,13 +112,14 @@ float ObjectControllerImplementation::activateCommand(CreatureObject* object, un
 			}
 		}
 	}
-
 	if (queueCommand->requiresAdmin()) {
 		try {
 			if (object->isPlayerCreature()) {
 				Reference<PlayerObject*> ghost = object->getSlottedObject("ghost").castTo<PlayerObject*>();
 
-				if (ghost == nullptr || !ghost->hasGodMode() || !ghost->hasAbility(queueCommand->getQueueCommandName())) {
+				String characterAbility = queueCommand->getCharacterAbility();
+
+				if (ghost == nullptr || !ghost->hasGodMode() || !ghost->hasAbility(characterAbility)) {
 					adminLog.warning() << object->getDisplayedName() << " attempted to use the '/" << queueCommand->getQueueCommandName() << "' command without permissions";
 
 					object->sendSystemMessage("@error_message:insufficient_permissions");

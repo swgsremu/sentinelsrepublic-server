@@ -1499,10 +1499,43 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 						attackerFactionMsg = imperialMsg;
 				}
 
+				String attackerHex = "\r\\#ffffff";
+				String victimHex = "\r\\#ffffff";
+				String vanityText = "";
+					if (attackerCreature->getFaction() == Factions::FACTIONREBEL) {
+							attackerHex = "\r\\#EF5350";
+							victimHex = "\r\\#29B6F6";
+							String vanityTextArr[3] = {
+							"For the Rebellion!",
+							"Resist the Empire!",
+							"The Alliance will prevail.",
+						};
+						vanityText = vanityTextArr[System::random(2)];
+						} else if (attackerCreature->getFaction() == Factions::FACTIONIMPERIAL) {
+							attackerHex = "\r\\#29B6F6";
+							victimHex = "\r\\#EF5350";
+							String vanityTextArr[3] = {
+							"Long live the Empire!",
+							"Crush the Rebellion.",
+							"For the Emperor!"
+						};
+						vanityText = vanityTextArr[System::random(2)];
+						} else if (attackerCreature->getObjectID() != Factions::FACTIONIMPERIAL) {
+							attackerHex = "\r\\#eeeeee";
+							victimHex = "\r\\#cccccc";
+							String vanityTextArr[3] = {
+							"The Cartel Rises!",
+							"The Hutts will be pleased.",
+							"This is The Way!"
+							};
+							vanityText = vanityTextArr[System::random(2)];
+						}
+
+
 				bool attackerIsHunting = attackerCreature->hasBountyMissionFor(player);
 				bool playerIsHunting = player->hasBountyMissionFor(attackerCreature);
 
-				String type = areInDuel ? "in a duel." : "in GCW combat.";
+				String type = areInDuel ? "in a duel." : "in the Galactic Civil War.";
 
 				if (!areInDuel) {
 					if (attackerIsHunting) {
@@ -1513,7 +1546,7 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 				}
 
 				broadcastMsg << attackerFactionMsg << attackerJedi << " " << attackerName << "\r\\#FFFFFF";
-				broadcastMsg << " has bested " << playerFactionMsg << playerJedi << " " << playerName << "\r\\#FFFFFF " << type;
+				broadcastMsg << " has defeated " << playerFactionMsg << playerJedi << " " << playerName << "\r\\#FFFFFF " << type << " " << vanityText;
 
 				UnicodeString message(broadcastMsg.toString());
 				UnicodeString formattedMsg(chatManager->formatMessage(message));

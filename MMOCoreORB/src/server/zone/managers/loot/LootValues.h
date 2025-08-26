@@ -22,7 +22,9 @@ public:
 	enum BonusType : int {
 		LEGENDARY = 9,
 		EXCEPTIONAL = 8,
-		ENHANCED = 2,
+		EPIC = 4,
+		ENHANCED = 3,
+		REFINED = 2,
 		EXPERIMENTAL = 1,
 		STATIC = 0,
 	};

@@ -13,4 +13,7 @@ void SRPreInitialize();
  */
 void SRPostInitialize();
 
+// SR Custom registration hook
+void SRRegisterComponents();
+
 #endif // CUSTOM_INIT_H_

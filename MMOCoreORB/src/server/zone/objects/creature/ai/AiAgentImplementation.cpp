@@ -3423,7 +3423,7 @@ int AiAgentImplementation::setDestination() {
 			break;
 		}
 
-		if (!isPet() && !homeLocation.isInRange(asAiAgent(), AiAgent::MAX_OOS_RANGE) && !checkLineOfSight(followCopy)) {
+		if (!isPet() && !homeLocation.isInRange(asAiAgent(), getLeashRange()) && !checkLineOfSight(followCopy)) {
 			if (++outOfSightCounter > AiAgent::MAX_OOS_COUNT && System::random(100) <= AiAgent::MAX_OOS_PERCENT) {
 				leash();
 				return setDestination();
@@ -4470,6 +4470,22 @@ bool AiAgentImplementation::isEventMob() const {
 		return true;
 
 	return false;
+}
+
+float AiAgentImplementation::getLeashRange() const {
+	// Check if creature is from a lair (has homeObject)
+	AiAgentImplementation* nonConstThis = const_cast<AiAgentImplementation*>(this);
+	SceneObject* home = nonConstThis->getHomeObject().get();
+	if (home == nullptr)
+		return AiAgent::MAX_OOS_RANGE;
+	
+	// Check if the creature is a baby
+	Creature* creature = dynamic_cast<Creature*>(nonConstThis->asAiAgent());
+	if (creature != nullptr && creature->isBaby())
+		return AiAgent::BABY_OOS_RANGE;
+	
+	// Adult creatures from lairs (or non-Creature AiAgents)
+	return AiAgent::ADULT_OOS_RANGE;
 }
 
 void AiAgentImplementation::setCombatState() {

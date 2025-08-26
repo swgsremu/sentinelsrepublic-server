@@ -1813,6 +1813,45 @@ void PlayerObjectImplementation::notifyOnline() {
 	}
 }
 
+class BountyMissionTimeoutTask : public Task {
+	ManagedReference<MissionObject*> object;
+
+	public: 
+	BountyMissionTimeoutTask(MissionObject* obj) : object(obj) {}
+	static constexpr uint64 BOUNTY_OFFLINE_TIMEOUT = 1000 * 60; 
+	void run() override {
+		ManagedReference<MissionObject*> missionRef = object.get();		
+		if(missionRef == nullptr)
+			return;
+
+		ManagedReference<MissionObjective*> objectiveRef = missionRef->getMissionObjective();
+		if (objectiveRef == nullptr)
+			return;
+
+		ManagedReference<CreatureObject*> missionOwner = objectiveRef->getPlayerOwner();
+		if(missionOwner == nullptr)
+			return;
+		
+		auto playerGhost = missionOwner->getPlayerObject();
+		if(playerGhost == nullptr) 
+			return;
+		
+		if(playerGhost->isOnline())
+			return;
+
+		Time* lastLogout = playerGhost->getLastLogout();
+		if (lastLogout == nullptr)
+			return;
+
+		Time currentTime;		
+		if((currentTime.getMiliTime() - lastLogout->getMiliTime()) >= BOUNTY_OFFLINE_TIMEOUT) {
+			missionOwner->sendSystemMessage("Bounty Expired.");
+			Locker locker(missionOwner);
+			objectiveRef->fail();
+		}		
+	}
+};
+
 void PlayerObjectImplementation::notifyOffline() {
 	debug("notifyOffline");
 
@@ -1863,9 +1902,19 @@ void PlayerObjectImplementation::notifyOffline() {
 
 	MissionManager* missionManager = getZoneServer()->getMissionManager();
 
-	if (missionManager != nullptr && playerCreature->hasSkill("force_title_jedi_rank_02")) {
+	if (missionManager != nullptr && (playerCreature->hasSkill("force_title_jedi_rank_02") || getVisibility() > 0)) {
 		missionManager->updatePlayerBountyOnlineStatus(playerCreature->getObjectID(), false);
 	}
+
+	if(playerCreature->hasSkill("combat_bountyhunter_investigation_03")){
+		ManagedReference<MissionObject*> bountyMission = missionManager->getBountyHunterMission(playerCreature);
+		if (bountyMission != nullptr){
+			BountyMissionTimeoutTask* bountyTimeoutTask = new BountyMissionTimeoutTask(bountyMission);
+			int64 checkTime = 1000 * 60 * 10; 
+			bountyTimeoutTask->schedule(checkTime);
+		}
+	}
+
 
 	ManagedReference<SurveySession*> session = playerCreature->getActiveSession(SessionFacadeType::SURVEY).castTo<SurveySession*>();
 
