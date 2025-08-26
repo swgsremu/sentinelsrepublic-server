@@ -152,7 +152,8 @@ void LootValues::setRandomValues() {
 		}
 		return;
 	}
-
+	const bool lockedBonus = (modifier > BonusType::REFINED);
+	// Adding a lockedBonus, so if you get higher than refined, it will never recaculate bonusValue. 
 	float bonusValue = Math::max<float>(1.0f, modifier);
 #ifdef LOOT_DEBUG
 	info(true) << "LootValues::setRandomValues() - Processing enhanced item with " 
@@ -174,8 +175,11 @@ void LootValues::setRandomValues() {
 #endif
 	for (int i = dynamicValues; -1 < --i;) {
 		int key = System::random(attributeIndex.size()-1);
-
 		String attribute = attributeIndex.get(key);
+		#ifdef LOOT_DEBUG
+		info(true) << "LootValues::setRandomValues() - item: " << getLoggingName() << " attribute: " << attribute
+		  	       << ", bonusValue: " << bonusValue;
+		#endif
 
 		float min = getMinValue(attribute);
 		float max = getMaxValue(attribute);
@@ -188,8 +192,15 @@ void LootValues::setRandomValues() {
 			setDynamicValue<float>(attribute, bonusValue);
 		}
 
-		if (fabs(min) > EPSILON && fabs(max) > EPSILON) {
+		if (!lockedBonus && fabs(min) > EPSILON && fabs(max) > EPSILON) {
 			bonusValue = getDistributedValue(1, modifier, level, DISTMIN, DISTMAX);
+			#ifdef LOOT_DEBUG
+			info(true) << "LootValues::setRandomValues() - item: " << getLoggingName() << " attribute: " << attribute
+				<< ", min: " << min
+				<< ", max: " << max
+				<< ", precision: " << precision
+				<< ", bonusValue: " << bonusValue;
+			#endif
 		}
 
 		attributeIndex.remove(key);
