@@ -4,6 +4,8 @@
 
 // FUTURE CLEANUP: Search for "REMOVE HYBRID FALLBACK" to remove backward compatibility code
 // after all legacy vendor items without cost-per-unit in names have expired (added 2025-08-18)
+// Updated 2025-08-28: Changed format from "/cpu" to "CPU", restricted to resource containers only,
+// and added logic to strip CPU info from non-resource items for consistency
 
 #ifndef AUCTIONQUERYHEADERSRESPONSEMESSAGE_H_
 #define AUCTIONQUERYHEADERSRESPONSEMESSAGE_H_
@@ -69,43 +71,102 @@ public:
 		for (int i = 0; i < itemList.size(); i++) {
 			AuctionItem* il = itemList.get(i);
 
-	    	UnicodeString name = il->getItemName();
+	    	UnicodeString name = il->getItemName(); // Start with the original name
 	    	
-	    	// TODO: REMOVE HYBRID FALLBACK - After all legacy items expire (added 2025-08-18)
-	    	// This fallback can be removed once all pre-existing vendor items without "/cpu" in names have expired.
-	    	// When removed, this method can simply be: insertUnicode(name);
-	    	// For backward compatibility: if item name doesn't already contain cost per unit, add it
-	    	if (name.toString().indexOf("/cpu") == -1) {
-	    		try {
-	    			ManagedReference<SceneObject*> obj = player->getZoneServer()->getObject(il->getAuctionedItemObjectID());
+	    	try {
+	    		// Get the object to determine its type
+	    		ManagedReference<SceneObject*> obj = player->getZoneServer()->getObject(il->getAuctionedItemObjectID());
+	    		
+	    		if (obj != nullptr) {
+	    			// Check if this is a resource container
+	    			bool isResource = (obj->getGameObjectType() & SceneObjectType::RESOURCECONTAINER);
 	    			
-	    			if (obj != nullptr && obj->isTangibleObject()) {
+	    			// For brute-force string handling, convert to std::string for more control
+	    			std::string stdName = name.toString().toCharArray();
+	    			std::string cleanName = stdName;
+	    			
+	    			// EXTREME VERSION: Use regex-like manual parsing to find and strip CPU information
+	    			// Pattern: look for " - <numbers>.<numbers>/cpu" or " - <numbers>.<numbers> CPU"
+	    			
+	    			// First pass - find the pattern " - X.XX/cpu"
+	    			size_t cpuPos = stdName.find("/cpu");
+	    			if (cpuPos != std::string::npos) {
+	    				// Look backwards for a dash
+	    				size_t dashPos = stdName.rfind(" - ", cpuPos);
+	    				if (dashPos != std::string::npos) {
+	    					// Make sure there are numbers between dash and /cpu
+	    					bool hasNumbers = false;
+	    					for (size_t i = dashPos + 3; i < cpuPos; ++i) {
+	    						if (isdigit(stdName[i]) || stdName[i] == '.') {
+	    							hasNumbers = true;
+	    							break;
+	    						}
+	    					}
+	    					
+	    					if (hasNumbers) {
+	    						// Cut off everything from dash to the end
+	    						cleanName = stdName.substr(0, dashPos);
+	    					}
+	    				}
+	    			}
+	    			
+	    			// Second pass - find the pattern " - X.XX CPU"
+	    			if (cleanName == stdName) { // Only check if we didn't already modify it
+	    				cpuPos = stdName.find(" CPU");
+	    				if (cpuPos != std::string::npos) {
+	    					size_t dashPos = stdName.rfind(" - ", cpuPos);
+	    					if (dashPos != std::string::npos) {
+	    						// Make sure there are numbers between dash and CPU
+	    						bool hasNumbers = false;
+	    						for (size_t i = dashPos + 3; i < cpuPos; ++i) {
+	    							if (isdigit(stdName[i]) || stdName[i] == '.') {
+	    								hasNumbers = true;
+	    								break;
+	    							}
+	    						}
+	    						
+	    						if (hasNumbers) {
+	    							// Cut off everything from dash to the end
+	    							cleanName = stdName.substr(0, dashPos);
+	    						}
+	    					}
+	    				}
+	    			}
+	    			
+	    			// At this point, cleanName has the base name without any CPU info
+	    			// Set name to this clean version
+	    			name = UnicodeString(cleanName.c_str());
+	    			
+	    			// For resource containers only, add back the CPU information
+	    			if (isResource && obj->isTangibleObject()) {
 	    				TangibleObject* tangible = cast<TangibleObject*>(obj.get());
 	    				
 	    				if (tangible != nullptr) {
 	    					int useCount = tangible->getUseCount();
-	    					int actualCount = (useCount > 0) ? useCount : 1;  // Protect against zero and negative values
+	    					int actualCount = (useCount > 0) ? useCount : 1;
 	    					int price = il->getPrice();
 	    					
 	    					if (price > 0) {
 	    						float costPerUnit = (float)price / (float)actualCount;
 	    						char cpuBuffer[32];
-	    						snprintf(cpuBuffer, sizeof(cpuBuffer), " - %.2f/cpu", costPerUnit);
-	    						String suffix = String(cpuBuffer);
-	    						// Protect against overly long names (arbitrary limit of 200 chars total)
-	    						if ((name.toString().length() + suffix.length()) <= 200) {
-	    							name = name + suffix;
+	    						snprintf(cpuBuffer, sizeof(cpuBuffer), " - %.2f CPU", costPerUnit);
+	    						std::string suffix = cpuBuffer;
+	    						
+	    						// Add the CPU info
+	    						if (cleanName.length() + suffix.length() <= 200) {
+	    							name = UnicodeString((cleanName + suffix).c_str());
 	    						}
 	    					}
 	    				}
 	    			}
-	    		} catch (Exception& e) {
-	    			// If there's any error calculating cost per unit, just use the original name
-	    			// Log at debug level to avoid spam, only if debugging is enabled
-	    			#ifdef DEBUG_AUCTION_SEARCH
-	    			player->error("Exception calculating cost per unit for item " + String::valueOf(il->getAuctionedItemObjectID()) + ": " + e.getMessage());
-	    			#endif
+	    			// For non-resources, name is already the clean version
 	    		}
+	    	} catch (Exception& e) {
+	    		// If there's any error calculating cost per unit or processing the name, just use the original name
+	    		// Log at debug level to avoid spam, only if debugging is enabled
+	    		#ifdef DEBUG_AUCTION_SEARCH
+	    		player->error("Exception processing item name for item " + String::valueOf(il->getAuctionedItemObjectID()) + ": " + e.getMessage());
+	    		#endif
 	    	}
 	    	// END TODO: REMOVE HYBRID FALLBACK
 	    	
