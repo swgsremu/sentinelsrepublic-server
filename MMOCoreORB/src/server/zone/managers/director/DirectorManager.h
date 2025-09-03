@@ -225,6 +225,7 @@ namespace server {
 		static int getQuestTasks(lua_State* L);
 		static int broadcastToGalaxy(lua_State* L);
 		static int getWorldFloor(lua_State* L);
+		static int isInWater(lua_State* L);
 		static int useCovertOvert(lua_State* L);
 		static int drawClientPath(lua_State* L);
 

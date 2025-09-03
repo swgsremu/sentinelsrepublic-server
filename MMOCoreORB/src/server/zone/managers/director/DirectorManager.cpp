@@ -544,6 +544,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	luaEngine->registerFunction("getQuestTasks", getQuestTasks);
 	luaEngine->registerFunction("broadcastToGalaxy", broadcastToGalaxy);
 	luaEngine->registerFunction("getWorldFloor", getWorldFloor);
+	luaEngine->registerFunction("isInWater", isInWater);
 	luaEngine->registerFunction("useCovertOvert", useCovertOvert);
 	luaEngine->registerFunction("drawClientPath", drawClientPath);
 
@@ -5008,6 +5009,38 @@ int DirectorManager::getWorldFloor(lua_State* L) {
 
 	lua_pushnumber(L, z);
 
+	return 1;
+}
+
+int DirectorManager::isInWater(lua_State* L) {
+	if (checkArgumentCount(L, 3) == 1) {
+		String err = "incorrect number of arguments passed to DirectorManager::isInWater";
+		printTraceError(L, err);
+		ERROR_CODE = INCORRECT_ARGUMENTS;
+		return 0;
+	}
+
+	ZoneServer* zoneServer = ServerCore::getZoneServer();
+
+	if (zoneServer == nullptr)
+		return 0;
+
+	float x = lua_tonumber(L, -3);
+	float y = lua_tonumber(L, -2);
+	String zoneName = lua_tostring(L, -1);
+
+	Zone* zone = zoneServer->getZone(zoneName);
+
+	if (zone == nullptr)
+		return 0;
+
+	PlanetManager* pm = zone->getPlanetManager();
+	bool inWater = false;
+	if (pm != nullptr) {
+		inWater = pm->isInWater(x, y);
+	}
+
+	lua_pushboolean(L, inWater);
 	return 1;
 }
 
