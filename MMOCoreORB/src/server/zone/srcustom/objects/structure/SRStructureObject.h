@@ -2,7 +2,23 @@
 #define SRSTRUCTUREOBJECT_H
 
 #include <server/zone/objects/intangible/ControlDevice.h>
+#include <server/zone/objects/tangible/sign/SignObject.h>
 #include "engine/engine.h"
+#include "system/thread/ReadWriteLock.h"
+#include "system/thread/ReadLocker.h"
+
+// Forward declaration
+namespace server {
+    namespace zone {
+        namespace objects {
+            namespace tangible {
+                namespace sign {
+                    class SignObject;
+                }
+            }
+        }
+    }
+}
 
 /**
  * @brief Class representing a structure object in the SR system.
@@ -11,8 +27,21 @@ class SRStructureObject : public Object
 {
     mutable ReadWriteLock lock; /**< Lock for thread-safe access. */
     ControlDevice* controlDevice; /**< Pointer to the control device associated with this structure. */
-    // Transient storage of packed items per cell number
-    std::unordered_map<int, std::vector<uint64>> packedCellItems;
+    
+    // Item position information
+    struct ItemPositionData {
+        uint64 objectID;
+        float posX;
+        float posY;
+        float posZ;
+        float directionAngle; // Store direction as a simple angle instead of Quaternion
+    };
+    
+    // Transient storage of packed items per cell number with position data
+    std::unordered_map<int, std::vector<ItemPositionData>> packedCellItems;
+    
+    // Sign information storage
+    String signTemplatePath; // Store the template path of the sign
 
 private:
     /**
@@ -123,6 +152,13 @@ public:
     void clearPackedItems();
     void collectItems(class BuildingObject* building);
     void restoreItems(class BuildingObject* building, class ZoneServer* zoneServer);
+    
+    // Sign helpers
+    void saveSignInfo(server::zone::objects::tangible::sign::SignObject* sign);
+    String getSignTemplatePath() const { 
+        ReadLocker rlocker(&lock); 
+        return signTemplatePath; 
+    }
 };
 
 #endif // SRSTRUCTUREOBJECT_H

@@ -1,9 +1,12 @@
 #include "SRStructureManager.h"
 
 #include <server/zone/ZoneServer.h>
+#include <server/zone/Zone.h>
 #include <server/zone/objects/building/BuildingObject.h>
+#include <server/zone/objects/cell/CellObject.h>
 #include <server/zone/objects/tangible/sign/SignObject.h>
 #include <server/zone/srcustom/objects/player/sessions/PackupStructureSession.h>
+#include "server/zone/srcustom/objects/intangible/structure/StructureControlDevice.h"
 #include "server/zone/objects/intangible/ControlDevice.h"
 #include "engine/util/u3d/Vector3.h"
 
@@ -95,7 +98,17 @@ int SRStructureManager::packupStructure(CreatureObject* creature) {
                 return session->cancelSession();
             }
 
-            structureObject->getSrStructureObject()->collectItems(building);
+            // Get the control device to collect items
+            ManagedReference<StructureControlDevice*> structureControlDevice = cast<StructureControlDevice*>(controlDevice.get());
+            
+            if (structureControlDevice != nullptr) {
+                System::out << "Collecting items for structure using StructureControlDevice..." << endl;
+                structureControlDevice->collectItems(building, server);
+            } else {
+                // Fallback to old method
+                System::out << "Using fallback method to collect items..." << endl;
+                structureObject->getSrStructureObject()->collectItems(building);
+            }
 
             {
                 Locker buildingLock(building, creature);
@@ -116,11 +129,60 @@ int SRStructureManager::packupStructure(CreatureObject* creature) {
             }
 
             {
+                // First save the main sign's template before removing it
                 SignObject* sign = building->getSignObject();
                 if (sign != nullptr) {
+                    // Save sign template information before destroying it
+                    structureObject->getSrStructureObject()->saveSignInfo(sign);
+                    
                     Locker signLock(sign);
                     sign->destroyObjectFromWorld(true);
                     sign->destroyObjectFromDatabase(true);
+                }
+                
+                // Also search for any other signs that might be around or in the building
+                Vector<ManagedReference<SignObject*>> extraSignsToRemove;
+                
+                // Check cells for any lingering signs
+                // IMPORTANT: Start from cell 1, cell 0 is invalid
+                for (int i = 1; i <= building->getTotalCellNumber(); ++i) {
+                    ManagedReference<CellObject*> cell = building->getCell(i);
+                    if (cell == nullptr) continue;
+                    
+                    for (int j = 0; j < cell->getContainerObjectsSize(); ++j) {
+                        ManagedReference<SceneObject*> obj = cell->getContainerObject(j);
+                        if (obj != nullptr && obj->isSignObject()) {
+                            extraSignsToRemove.add(static_cast<SignObject*>(obj.get()));
+                        }
+                    }
+                }
+                
+                // Check for any external signs near the building too
+                SortedVector<ManagedReference<TreeEntry*>> nearbyObjects;
+                Zone* zone = building->getZone();
+                if (zone != nullptr) {
+                    zone->getInRangeObjects(building->getPositionX(), building->getPositionZ(), 
+                                      building->getPositionY(), 10.0f, &nearbyObjects, true, true);
+                    
+                    for (int i = 0; i < nearbyObjects.size(); i++) {
+                        TreeEntry* treeEntry = nearbyObjects.get(i);
+                        if (treeEntry != nullptr) {
+                            SceneObject* obj = dynamic_cast<SceneObject*>(treeEntry);
+                            if (obj != nullptr && obj != sign && obj->isSignObject()) {
+                                extraSignsToRemove.add(static_cast<SignObject*>(obj));
+                            }
+                        }
+                    }
+                }
+                
+                // Now destroy any extra signs we found
+                for (int i = 0; i < extraSignsToRemove.size(); ++i) {
+                    SignObject* extraSign = extraSignsToRemove.get(i);
+                    if (extraSign != nullptr) {
+                        Locker extraSignLocker(extraSign);
+                        extraSign->destroyObjectFromWorld(true);
+                        extraSign->destroyObjectFromDatabase(true);
+                    }
                 }
             }
 
@@ -129,6 +191,9 @@ int SRStructureManager::packupStructure(CreatureObject* creature) {
             else
                 controlDevice->setCustomObjectName(structureObject->getDisplayedName(), true);
 
+            // Note: We don't store orientation since players can choose their own orientation when unpacking
+            
+            Locker deviceLocker(controlDevice, structureObject);
             controlDevice->setControlledObject(structureObject);
             controlDevice->updateStatus(1);
 

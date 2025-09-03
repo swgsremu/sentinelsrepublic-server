@@ -11,6 +11,8 @@
 #include "server/zone/objects/player/sui/listbox/SuiListBox.h"
 #include "server/zone/objects/player/sui/SuiCallback.h"
 #include "server/zone/objects/structure/StructureObject.h"
+#include "server/zone/objects/building/BuildingObject.h"
+#include "server/zone/objects/cell/CellObject.h"
 #include "server/zone/Zone.h"
 #include "server/zone/srcustom/objects/scene/SRSessionFacadeType.h" 
 
@@ -34,6 +36,43 @@ int PackupStructureSessionImplementation::initializeSession() {
 
 	CreatureObject* player = creatureObject.get();
 	const String redeed = structureObject->isRedeedable() ? "\\#32CD32 @player_structure:can_redeed_yes_suffix \\#." : "\\#FF6347 @player_structure:can_redeed_no_suffix \\#.";
+	
+	// Count items that will be packed up with the structure
+	int itemCount = 0;
+	if (structureObject->isBuildingObject()) {
+		BuildingObject* building = structureObject->asBuildingObject();
+		if (building != nullptr) {
+			error() << "PackupStructureSession: Counting items in building: " << building->getObjectID();
+			int totalCells = building->getTotalCellNumber();
+			for (int i = 1; i <= totalCells; ++i) {
+				CellObject* cell = building->getCell(i);
+				if (cell == nullptr)
+					continue;
+					
+				for (int j = 0; j < cell->getContainerObjectsSize(); ++j) {
+					ManagedReference<SceneObject*> obj = cell->getContainerObject(j);
+					if (obj != nullptr && !obj->isCreatureObject() && !obj->isSignObject()) {
+						// Skip any kind of terminal to be safe
+						if (obj->isTerminal()) {
+							continue;
+						}
+						
+						// Skip default house items that will be automatically recreated
+						String templatePath = obj->getObjectTemplate()->getFullTemplateString();
+						if (templatePath.indexOf("terminal") != -1 || 
+							templatePath.indexOf("structure_storage_") != -1 ||
+							templatePath.indexOf("house_") != -1) {
+							error() << "PackupStructureSession: Skipping default item: " << templatePath;
+							continue;
+						}
+						
+						error() << "PackupStructureSession: Counting item: " << templatePath;
+						itemCount++;
+					}
+				}
+			}
+		}
+	}
 
 	StringBuffer entry;
 	entry << "@player_structure:confirm_packup_d1 "
@@ -53,6 +92,10 @@ int PackupStructureSessionImplementation::initializeSession() {
 		<< (structureObject->isRedeedable() ? "32CD32 " : "FF6347 ")
 		<< structureObject->getSurplusMaintenance() << "/"
 		<< structureObject->getRedeedCost() << "\\#.";
+		
+	// Create string for item count
+	StringBuffer items;
+	items << "Items to pack up: \\#32CD32 " << itemCount << "\\#.";
 
     const ManagedReference<SuiListBox*> sui = new SuiListBox(player);
 	sui->setCancelButton(true, "@no");
@@ -63,6 +106,7 @@ int PackupStructureSessionImplementation::initializeSession() {
 	sui->addMenuItem("@player_structure:can_packup_alert " + redeed);
 	sui->addMenuItem(cond.toString());
 	sui->addMenuItem(maint.toString());
+	sui->addMenuItem(items.toString());
 
     // Attach a small inline callback to handle Yes/No
     class PackupConfirmCallback : public SuiCallback {

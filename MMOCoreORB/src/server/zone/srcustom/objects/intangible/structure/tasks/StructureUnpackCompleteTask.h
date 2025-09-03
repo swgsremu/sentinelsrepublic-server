@@ -37,6 +37,25 @@ public:
 		if (barricadeRef != nullptr) {
 			Locker barricadeLocker(barricadeRef);
 			barricadeRef->destroyObjectFromWorld(true);
+			System::out << "Removed construction barricade" << endl;
+		}
+
+		// Send message to player with proper parameters
+		ManagedReference<TangibleObject*> controlledObject = deviceRef->getControlledObject();
+		if (controlledObject != nullptr && controlledObject->isStructureObject()) {
+			ManagedReference<StructureObject*> structure = cast<StructureObject*>(controlledObject.get());
+			if (structure != nullptr && playerRef->getPlayerObject() != nullptr) {
+				StringIdChatParameter message("@player_structure:construction_complete");
+				message.setTO(structure->getObjectName());
+				message.setDI(playerRef->getPlayerObject()->getLotsRemaining());
+				playerRef->sendSystemMessage(message);
+			} else {
+				// Fallback to simple message if we can't get the structure or player object
+				playerRef->sendSystemMessage("@player_structure:construction_complete");
+			}
+		} else {
+			// Fallback to simple message if we can't get the controlled object
+			playerRef->sendSystemMessage("@player_structure:construction_complete");
 		}
 
 		// Complete the structure placement

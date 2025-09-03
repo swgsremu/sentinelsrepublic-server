@@ -7,13 +7,34 @@ package server.zone.srcustom.objects.intangible.structure.StructureControlDevice
 import server.zone.objects.intangible.ControlDevice;
 import server.zone.objects.creature.CreatureObject;
 import server.zone.objects.structure.StructureObject;
+import server.zone.objects.building.BuildingObject;
 import server.zone.packets.object.ObjectMenuResponse;
 import server.zone.packets.scene.AttributeListMessage;
+import system.util.ArrayList;
+import server.zone.ZoneServer;
 
 class StructureControlDevice extends ControlDevice {
 	private float positionX;
 	private float positionY;
 	private int directionAngle;
+	
+	@dereferenced
+	private ArrayList<unsigned long> packedItemIds; // Store object IDs
+	
+	@dereferenced
+	private ArrayList<int> packedItemCells; // Store cell numbers
+	
+	@dereferenced
+	private ArrayList<float> packedItemPosX; // Store X positions
+	
+	@dereferenced
+	private ArrayList<float> packedItemPosY; // Store Y positions
+	
+	@dereferenced
+	private ArrayList<float> packedItemPosZ; // Store Z positions
+	
+	@dereferenced
+	private ArrayList<float> packedItemDirs; // Store direction angles
 
 	public StructureControlDevice() {
 		Logger.setLoggingName("StructureControlDevice");
@@ -23,6 +44,14 @@ class StructureControlDevice extends ControlDevice {
 		positionX = 0.0;
 		positionY = 0.0;
 		directionAngle = 0;
+		
+		// Initialize all the ArrayLists
+		packedItemIds.removeAll(); 
+		packedItemCells.removeAll();
+		packedItemPosX.removeAll();
+		packedItemPosY.removeAll();
+		packedItemPosZ.removeAll();
+		packedItemDirs.removeAll();
 	}
 
 	/**
@@ -52,6 +81,22 @@ class StructureControlDevice extends ControlDevice {
 	public native int placeStructure(CreatureObject creature, float x, float y, int angle);
 	public native int notifyStructurePlaced(CreatureObject creature, StructureObject structure);
 	public native void completeStructurePlacement(CreatureObject player);
+	
+	/**
+	 * Collects items from a building before pack-up
+	 * @param building The building to collect items from
+	 * @param zoneServer The zone server reference
+	 * @return True if items were collected successfully
+	 */
+	public native boolean collectItems(BuildingObject building, ZoneServer zoneServer);
+	
+	/**
+	 * Restores items to a building after unpack
+	 * @param building The building to restore items to
+	 * @param zoneServer The zone server containing the objects
+	 * @return True if items were restored successfully
+	 */
+	public native boolean restoreItems(BuildingObject building, ZoneServer zoneServer);
 
 	public native void storeObject(CreatureObject player, boolean force = false);
 
@@ -66,6 +111,11 @@ class StructureControlDevice extends ControlDevice {
 	@dirty
 	public native void fillAttributeList(AttributeListMessage msg, CreatureObject object);
 
+	/**
+	 * Clears all packed item data after restoration
+	 */
+	public native void clearPackedItems();
+	
 	@dirty
 	public boolean isStructureControlDevice() {
 		return true;
