@@ -25,7 +25,7 @@ public:
 	};
 	
 	// Constants
-	static constexpr float LOOT_RANGE = 16.0f;
+	static constexpr float LOOT_RANGE = 32.0f;
 
 	LootCommand(const String& name, ZoneProcessServer* server)
 		: QueueCommand(name, server) {
@@ -150,7 +150,36 @@ public:
 	                
 	                Locker locker(agent, creature);
 	                
-	                if (attemptLoot(creature, agent, playerManager, true) == SUCCESS) {
+	                // For loot area, ensure we loot credits even if no items exist
+	                int cashCredits = agent->getCashCredits();
+	                bool hasCredits = (cashCredits > 0);
+	                bool hasItems = (agent->getSlottedObject("inventory") != nullptr && 
+	                                agent->getSlottedObject("inventory")->getContainerObjectsSize() > 0);
+	                
+	                // For corpses with items, standard loot all works fine
+	                if (hasItems) {
+	                    if (attemptLoot(creature, agent, playerManager, true) == SUCCESS) {
+	                        lootsProcessed++;
+	                    }
+	                } else if (hasCredits) {
+	                    // Special case: corpse has credits but no items
+	                    // Extract credits logic from PlayerManagerImplementation::lootAll
+	                    int luck = creature->getSkillMod("force_luck");
+	                    
+	                    if (luck > 0)
+	                        cashCredits += (cashCredits * luck) / 20;
+	                        
+	                    TransactionLog trx(agent, creature, TrxCode::NPCLOOTCLAIM, cashCredits, true);
+	                    creature->addCashCredits(cashCredits, true);
+	                    agent->clearCashCredits();
+	                    
+	                    StringIdChatParameter param("base_player", "prose_coin_loot"); //You loot %DI credits from %TT.
+	                    param.setDI(cashCredits);
+	                    param.setTT(agent->getObjectID());
+	                    creature->sendSystemMessage(param);
+	                    
+	                    // Mark corpse for destruction since there are no items
+	                    playerManager->rescheduleCorpseDestruction(creature, agent);
 	                    lootsProcessed++;
 	                }
 	                
@@ -208,10 +237,37 @@ public:
 
 	    // Allow player to loot the corpse if they own it
 	    if (looterIsOwner) {
+	        // Always check for credits first, regardless of inventory items
+	        int cashCredits = agent->getCashCredits();
+	        
 	        if (lootAll) {
 	            playerManager->lootAll(creature, agent);
-	        } else {
+	        } else if (cashCredits > 0) {
+	            // For regular loot command, also loot credits (fixed /loot not looting credits)
+	            int luck = creature->getSkillMod("force_luck");
+	            
+	            if (luck > 0)
+	                cashCredits += (cashCredits * luck) / 20;
+	                
+	            TransactionLog trx(agent, creature, TrxCode::NPCLOOTCLAIM, cashCredits, true);
+	            creature->addCashCredits(cashCredits, true);
+	            agent->clearCashCredits();
+	            
+	            StringIdChatParameter param("base_player", "prose_coin_loot"); //You loot %DI credits from %TT.
+	            param.setDI(cashCredits);
+	            param.setTT(agent->getObjectID());
+	            creature->sendSystemMessage(param);
+	            
 	            // Check if the corpse's inventory contains any items
+	            if (lootContainer->getContainerObjectsSize() < 1) {
+	                creature->sendSystemMessage("@error_message:corpse_empty"); //"You find nothing else of value on the selected corpse."
+	                playerManager->rescheduleCorpseDestruction(creature, agent);
+	            } else {
+	                agent->notifyObservers(ObserverEventType::LOOTCREATURE, creature, 0);
+	                lootContainer->openContainerTo(creature);
+	            }
+	        } else {
+	            // No credits, check for items
 	            if (lootContainer->getContainerObjectsSize() < 1) {
 	                creature->sendSystemMessage("@error_message:corpse_empty"); //"You find nothing else of value on the selected corpse."
 	                playerManager->rescheduleCorpseDestruction(creature, agent);
