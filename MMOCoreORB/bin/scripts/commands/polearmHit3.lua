@@ -41,9 +41,11 @@
 --which carries forward this exception.
 --true = 1, false = 0
 
+--SR2 Edits - Removed Posture Change
+
 PolearmHit3Command = {
-        name = "polearmhit3",
-	damageMultiplier = 4.0,
+	name = "polearmhit3",
+	damageMultiplier = 4.5,
 	speedMultiplier = 2.5,
 	healthCostMultiplier = 2.0,
 	actionCostMultiplier = 1.5,
@@ -60,15 +62,6 @@ PolearmHit3Command = {
 		0, 
 		45 
 	  ),
-	  StateEffect( 
-		POSTUREDOWN_EFFECT, 
-		{ "postureDownRecovery" }, 
-		{ "posture_change_down_defense" }, 
-		{},
-		100, 
-		0, 
-		0 
-	  )
 	},
 
 	animation = "combo_5a", 
