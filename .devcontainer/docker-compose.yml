@@ -1,0 +1,68 @@
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    container_name: srswgemu-dev
+    volumes:
+      - ..:/workspaces/${localWorkspaceFolderBasename}:cached
+      - ${TRE_FILES_PATH:-../tre}:/tre:ro
+    command: sleep infinity
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+      - CSR_REDIS_HOST=redis
+      - CSR_REDIS_PORT=6379
+      - CSR_REDIS_PASSWORD=srswgemu-redis-pass
+    networks:
+      - srswgemu-devnet
+    ports:
+      - "44455:44455/tcp"   # Status
+      - "44453:44453/udp"   # Login
+      - "44462:44462/udp"   # Ping
+      - "44463:44463/udp"   # Zone
+
+  db:
+    image: mariadb:10.11
+    container_name: srswgemu-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: swgemu
+      MYSQL_USER: swgemu
+      MYSQL_PASSWORD: 123456
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -prootpass || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - srswgemu-devnet
+    ports:
+      - "3306:3306"
+
+  redis:
+    image: redis:7-alpine
+    container_name: srswgemu-redis
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "srswgemu-redis-pass"]
+    environment:
+      - REDIS_PASSWORD=srswgemu-redis-pass
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a srswgemu-redis-pass ping | grep PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      - srswgemu-devnet
+
+volumes:
+  mariadb-data:
+
+networks:
+  srswgemu-devnet:
+    driver: bridge

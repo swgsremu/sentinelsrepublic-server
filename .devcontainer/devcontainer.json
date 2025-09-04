@@ -1,0 +1,32 @@
+{
+  "name": "srswgemu dev",
+  "dockerComposeFile": [
+    "./docker-compose.yml"
+  ],
+  "service": "dev",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "mounts": [
+    "type=bind,source=${localWorkspaceFolder}/.devcontainer/config-local.lua,target=/workspaces/${localWorkspaceFolderBasename}/MMOCoreORB/bin/conf/config-local.lua,consistency=cached"
+  ],
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "cmake.generator": "Ninja",
+        "cmake.cmakePath": "/usr/bin/cmake",
+        "C_Cpp.default.compilerPath": "/usr/bin/clang++",
+        "C_Cpp.clang_format_style": "file"
+      },
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "twxs.cmake",
+        "llvm-vs-code-extensions.vscode-clangd"
+      ]
+    }
+  },
+  "postCreateCommand": "echo 'Devcontainer ready with clang 19'",
+  "updateContentCommand": "true",
+  "remoteUser": "root"
+}
