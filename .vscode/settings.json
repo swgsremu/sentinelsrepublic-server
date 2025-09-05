@@ -1,3 +1,4 @@
 {
-    "cmake.sourceDirectory": "/home/thomas/Documents/github/srswgemu2/MMOCoreORB"
+    "cmake.sourceDirectory": "${workspaceFolder}/MMOCoreORB",
+    "cmake.ignoreCMakeListsMissing": true
 }
