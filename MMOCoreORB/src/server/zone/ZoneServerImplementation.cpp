@@ -351,23 +351,28 @@ void ZoneServerImplementation::startManagers() {
 	frsManager = new FrsManager(_this.getReferenceUnsafeStaticCast());
 	frsManager->initialize();
 	
-	// Initialize plugin system
-	info(true) << "ZoneServerImplementation -- Starting Plugin System...";
-	
-	// Get plugin directory from config, default to plugins (relative to bin directory)
-	String pluginDirectory = ConfigManager::instance()->getString("Core3.PluginDirectory", "plugins");
-	
-	// Load plugins
-	PluginLoader::instance()->loadPlugins(pluginDirectory);
-	
-	info(true) << "ZoneServerImplementation -- Plugin System Started.";
-	
-	// Start CSR Command Processor
-	info(true) << "ZoneServerImplementation -- Starting CSR Command Processor...";
-	CSRCommandProcessor* csrProcessor = CSRCommandProcessor::getInstance(_this.getReferenceUnsafeStaticCast());
-	if (csrProcessor != nullptr) {
-		csrProcessor->start();
-		info(true) << "ZoneServerImplementation -- CSR Command Processor started.";
+	// Initialize CSR plugin system (can be disabled via config)
+	bool enablePlugins = ConfigManager::instance()->getBool("Core3.EnablePlugins", true);
+	if (enablePlugins) {
+		info(true) << "ZoneServerImplementation -- Starting Plugin System...";
+
+		// Get plugin directory from config, default to plugins (relative to bin directory)
+		String pluginDirectory = ConfigManager::instance()->getString("Core3.PluginDirectory", "plugins");
+
+		// Load plugins
+		PluginLoader::instance()->loadPlugins(pluginDirectory);
+
+		info(true) << "ZoneServerImplementation -- Plugin System Started.";
+
+		// Start CSR Command Processor
+		info(true) << "ZoneServerImplementation -- Starting CSR Command Processor...";
+		CSRCommandProcessor* csrProcessor = CSRCommandProcessor::getInstance(_this.getReferenceUnsafeStaticCast());
+		if (csrProcessor != nullptr) {
+			csrProcessor->start();
+			info(true) << "ZoneServerImplementation -- CSR Command Processor started.";
+		}
+	} else {
+		info(true) << "ZoneServerImplementation -- CSR plugins disabled via config (Core3.EnablePlugins = false).";
 	}
 
 	info(true) << "ZoneServerImplementation -- Managers Started.";
