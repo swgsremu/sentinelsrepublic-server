@@ -33,6 +33,9 @@ class CityManager extends ManagedService implements Logger {
 	public static transient Vector<byte> citizensPerRank;
 
 	@dereferenced
+	public static transient Vector<byte> trainersPerRank;
+
+	@dereferenced
 	private transient static CitiesAllowed citiesAllowedPerRank;
 
 	@dereferenced
@@ -50,7 +53,6 @@ class CityManager extends ManagedService implements Logger {
 	public transient static byte cityVotingCycles;
 	public transient static byte cityVotingCyclesUntilLocked;
 	public transient static int decorationsPerRank;
-	public transient static int trainersPerRank;
 	public transient static int missionTerminalsPerRank;
 	public transient static float maintenanceDiscount;
 

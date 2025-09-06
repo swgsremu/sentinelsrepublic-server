@@ -47,6 +47,7 @@ CitiesAllowed CityManagerImplementation::citiesAllowedPerRank;
 CitySpecializationMap CityManagerImplementation::citySpecializations;
 CityTaxMap CityManagerImplementation::cityTaxes;
 Vector<uint8> CityManagerImplementation::citizensPerRank;
+Vector<uint8> CityManagerImplementation::trainersPerRank;
 Vector<uint16> CityManagerImplementation::radiusPerRank;
 int CityManagerImplementation::cityUpdateInterval = 0;
 int CityManagerImplementation::newCityGracePeriod = 0;
@@ -57,7 +58,6 @@ uint64 CityManagerImplementation::treasuryWithdrawalCooldown = 0;
 byte CityManagerImplementation::cityVotingCycles = 0;
 byte CityManagerImplementation::cityVotingCyclesUntilLocked = 0;
 int CityManagerImplementation::decorationsPerRank = 10;
-int CityManagerImplementation::trainersPerRank = 3;
 int CityManagerImplementation::missionTerminalsPerRank = 3;
 float CityManagerImplementation::maintenanceDiscount = 1.0f;
 
@@ -120,7 +120,6 @@ void CityManagerImplementation::loadLuaConfig() {
 	cityVotingCycles = lua->getGlobalByte("CityVotingCycles");
 	cityVotingCyclesUntilLocked = lua->getGlobalByte("CityVotingCyclesUntilLocked");
 	decorationsPerRank = lua->getGlobalInt("DecorationsPerRank");
-	trainersPerRank = lua->getGlobalInt("TrainersPerRank");
 	missionTerminalsPerRank = lua->getGlobalInt("MissionTerminalsPerRank");
 	maintenanceDiscount = lua->getGlobalFloat("maintenanceDiscount");
 
@@ -129,6 +128,15 @@ void CityManagerImplementation::loadLuaConfig() {
 	if (luaObject.isValidTable()) {
 		for (int i = 1; i <= luaObject.getTableSize(); ++i)
 			citizensPerRank.add(luaObject.getIntAt(i));
+	}
+
+	luaObject.pop();
+
+	luaObject = lua->getGlobalObject("TrainersPerRank");
+
+	if (luaObject.isValidTable()) {
+		for (int i = 1; i <= luaObject.getTableSize(); ++i)
+			trainersPerRank.add(luaObject.getIntAt(i));
 	}
 
 	luaObject.pop();
@@ -1307,7 +1315,7 @@ void CityManagerImplementation::contractCity(CityRegion* city) {
 	city->setRadius(radiusPerRank.get(newRank - 1));
 	city->destroyAllStructuresForRank(uint8(newRank + 2), true);
 	city->cleanupDecorations(decorationsPerRank * newRank);
-	city->cleanupTrainers(trainersPerRank * newRank);
+	city->cleanupTrainers(trainersPerRank.get(newRank - 1));
 	city->cleanupMissionTerminals(missionTerminalsPerRank * newRank);
 	city->sendStructureInvalidMails();
 }
@@ -1616,7 +1624,7 @@ void CityManagerImplementation::sendCityAdvancement(CityRegion* city, CreatureOb
 		listbox->addMenuItem("@city/city:pop_req_next_rank @city/city:max_rank_achieved"); // Pop. Req. for Next Rank: Maximum City Rank Achieved
 
 	listbox->addMenuItem("@city/city:max_decorations " + String::valueOf(rank * decorationsPerRank)); // Max Decorations:
-	listbox->addMenuItem("@city/city:max_trainers " + String::valueOf(rank * trainersPerRank)); // Max Skill Trainers:
+	listbox->addMenuItem("@city/city:max_trainers " + String::valueOf(trainersPerRank.get(rank - 1))); // Max Skill Trainers:
 	listbox->addMenuItem("@city/city:max_terminals " + String::valueOf(rank * missionTerminalsPerRank)); // Max Mission Terminals:
 
 	listbox->addMenuItem("@city/city:rank_enabled_structures"); // Rank Enabled Structures
@@ -2333,7 +2341,12 @@ bool CityManagerImplementation::canSupportMoreTrainers(CityRegion* city) {
 	if (city == nullptr)
 		return false;
 
-	return city->getSkillTrainerCount() < (trainersPerRank * city->getCityRank());
+	int rank = city->getCityRank();
+	
+	if (rank - 1 >= trainersPerRank.size())
+		return false;		
+
+	return city->getSkillTrainerCount() < trainersPerRank.get(rank - 1);
 }
 
 bool CityManagerImplementation::canSupportMoreMissionTerminals(CityRegion* city) {

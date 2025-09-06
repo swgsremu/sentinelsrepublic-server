@@ -81,7 +81,10 @@ RadiusPerRank = {450, 450, 450, 450, 450} -- SR Modified --
 
 -- Maximum for each rank.  ex. rank 1 = DecorationsPerRank * 1, rank 5 = DecorationsPerRank * 5
 DecorationsPerRank = 10
-TrainersPerRank = 3
+
+-- Maximum number of skill trainers permitted in a city per city rank
+TrainersPerRank = {3, 6, 9, 12, 25}
+
 MissionTerminalsPerRank = 3
 
 -- Amount to discount city maintenance  float.  1 = 100%, .75 =75%, .5=50% etc
