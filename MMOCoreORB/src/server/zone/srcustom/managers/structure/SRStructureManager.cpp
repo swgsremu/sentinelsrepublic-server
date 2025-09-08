@@ -34,7 +34,7 @@ void SRStructureManager::setStructureManager(StructureManager* manager) {
 }
 
 int SRStructureManager::packupStructure(CreatureObject* creature) {
-    error() << "Packup: packupStructure method called for player: " << creature->getFirstName();
+    info() << "Packup: packupStructure method called for player: " << creature->getFirstName();
     
     const ManagedReference<PackupStructureSession*> session = creature->getActiveSession(SRSessionFacadeType::PACKUPSTRUCTURE).castTo<PackupStructureSession*>();
     const auto server = creature->getZoneServer();
@@ -43,7 +43,7 @@ int SRStructureManager::packupStructure(CreatureObject* creature) {
         return 0;
     }
 
-    error() << "Packup: PackupStructureSession found, proceeding with packup";
+    info() << "Packup: PackupStructureSession found, proceeding with packup";
     ManagedReference<StructureObject*> structureObject = session->getStructureObject();
 
     if (structureObject == nullptr) {
@@ -56,11 +56,11 @@ int SRStructureManager::packupStructure(CreatureObject* creature) {
     const int maint = structureObject->getSurplusMaintenance();
     const int redeedCost = structureObject->getRedeedCost();
 
-    error() << "Packup: Structure maintenance: " << maint << ", redeed cost: " << redeedCost;
-    error() << "Packup: Checking if structure is redeedable...";
+    debug() << "Packup: Structure maintenance: " << maint << ", redeed cost: " << redeedCost;
+    debug() << "Packup: Checking if structure is redeedable...";
     
     if (structureObject->isRedeedable()) {
-        error() << "Packup: Structure IS redeedable, proceeding with control device creation";
+        info() << "Packup: Structure IS redeedable, proceeding with control device creation";
         info() << "Packup: Creating control device with template: " << CONTROL_DEVICE_HASH;
         ManagedReference<ControlDevice*> controlDevice = server->createObject(CONTROL_DEVICE_HASH, 1).castTo<ControlDevice*>();
 
@@ -221,7 +221,7 @@ int SRStructureManager::packupStructure(CreatureObject* creature) {
             return session->cancelSession();
         }
     } else {
-        error() << "Packup: Structure is NOT redeedable - maintenance: " << maint << ", required: " << redeedCost;
+        info() << "Packup: Structure is NOT redeedable - maintenance: " << maint << ", required: " << redeedCost;
         creature->sendSystemMessage("@player_structure:packup_items_maint");
         return session->cancelSession();
     }

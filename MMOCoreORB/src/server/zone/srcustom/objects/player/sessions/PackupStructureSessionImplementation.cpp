@@ -3,6 +3,7 @@
  */
 
 #include <server/zone/managers/structure/StructureManager.h>
+#include <functional>
 
 #include "server/zone/srcustom/objects/player/sessions/PackupStructureSession.h"
 #include "server/zone/objects/creature/CreatureObject.h"
@@ -22,7 +23,7 @@ constexpr int MAX_PACKUP_CODE = 999999;
 }
 
 int PackupStructureSessionImplementation::initializeSession() {
-	error() << "PackupStructureSession: initializeSession called for player: " << creatureObject->getFirstName();
+	info() << "PackupStructureSession: initializeSession called for player: " << creatureObject->getFirstName();
 	
 	if (!creatureObject->isPlayerCreature()) {
 		error() << "PackupStructureSession: Player is not a creature, canceling session";
@@ -30,50 +31,171 @@ int PackupStructureSessionImplementation::initializeSession() {
 	}
 
 	creatureObject->addActiveSession(SRSessionFacadeType::PACKUPSTRUCTURE, _this.getReferenceUnsafeStaticCast());
-	error() << "PackupStructureSession: Active session added successfully";
+	info() << "PackupStructureSession: Active session added successfully";
 	
 	Locker structureLock(structureObject, creatureObject);
 
 	CreatureObject* player = creatureObject.get();
 	const String redeed = structureObject->isRedeedable() ? "\\#32CD32 @player_structure:can_redeed_yes_suffix \\#." : "\\#FF6347 @player_structure:can_redeed_no_suffix \\#.";
 	
-	// Count items that will be packed up with the structure
+	// Initialize variables to track contents
 	int itemCount = 0;
+	int vendorCount = 0;
+	bool hasVendors = false;
+	
 	if (structureObject->isBuildingObject()) {
+		// Structure to track both vendors and items in a single pass
+		struct BuildingContentsInfo {
+			int itemCount = 0;
+			int vendorCount = 0;
+			bool hasVendors = false;
+		};
+		
+		// Initialize our tracking structure
+		BuildingContentsInfo contents;
 		BuildingObject* building = structureObject->asBuildingObject();
 		if (building != nullptr) {
-			error() << "PackupStructureSession: Counting items in building: " << building->getObjectID();
+			info() << "PackupStructureSession: Scanning building: " << building->getObjectID();
 			int totalCells = building->getTotalCellNumber();
+			
+			// Helper function to recursively process objects - handles both vendor detection and item counting
+			std::function<int(SceneObject*)> processObjectRecursive;
+			
+			processObjectRecursive = [&](SceneObject* obj) -> int {
+				if (obj == nullptr)
+					return 0;
+				
+				// Check if this is a vendor first
+				if (obj->isVendor()) {
+					contents.hasVendors = true;
+					contents.vendorCount++;
+					info() << "PackupStructureSession: Found vendor: " << obj->getDisplayedName();
+					return 0; // Vendors aren't counted as items
+				}
+				
+				// Skip creatures and signs
+				if (obj->isCreatureObject() || obj->isSignObject())
+					return 0;
+				
+				// Get the template path once for all checks
+				String templatePath = obj->getObjectTemplate()->getFullTemplateString();
+				
+				// We need this reference for checking child objects
+				ManagedReference<SceneObject*> strongParent = building;
+				
+				// Special handling for terminals - don't skip veteran rewards
+				if (obj->isTerminal()) {
+						// Include veteran reward terminals
+						if (templatePath.indexOf("veteran_reward/data_terminal") != -1) {
+							debug() << "PackupStructureSession: Including veteran reward terminal: " << templatePath;
+						} else {
+							debug() << "PackupStructureSession: Skipping regular terminal: " << templatePath;
+							return 0;
+						}
+					}
+					
+					// Make sure we're counting backpacks themselves
+					if (templatePath.indexOf("backpack") != -1) {
+						debug() << "PackupStructureSession: Found backpack: " << templatePath;
+					}
+					
+					// Skip default house items that will be automatically recreated
+					
+					// Check for deed items - count these as items
+					if (templatePath.indexOf("deed") != -1) {
+						// Structure deeds should be counted as items
+						debug() << "PackupStructureSession: Including deed: " << templatePath;
+						return 1; // Count as 1 item
+					}
+					
+					// Only skip specific terminals that are part of the house structure
+					// Don't skip custom terminals or veteran rewards
+					if ((templatePath.indexOf("terminal") != -1 && 
+						(templatePath.indexOf("structure_terminal") != -1 || 
+						 templatePath.indexOf("house_control_terminal") != -1)) || 
+						templatePath.indexOf("structure_storage_") != -1 ||
+						templatePath.indexOf("house_") != -1) {
+						debug() << "PackupStructureSession: Skipping default item: " << templatePath;
+						return 0;
+					}
+					
+					// Don't skip veteran reward data terminals
+					if (templatePath.indexOf("data_terminal") != -1) {
+						debug() << "PackupStructureSession: Including data terminal: " << templatePath;
+					}
+					
+					if (strongParent->containsChildObject(obj)) {
+						debug() << "PackupStructureSession: Skipping child object: " << templatePath;
+						return 0;
+					}
+					
+					debug() << "PackupStructureSession: Counting item: " << templatePath;
+					
+					// Always count this object as 1 item
+					int count = 1;
+					
+					// If this is a container, count both the container AND its contents separately
+					if (obj->isContainerObject()) {
+						debug() << "PackupStructureSession: Object is a container, counting both container and contents";
+						// Debug log the container
+						debug() << "PackupStructureSession: Container: " << obj->getDisplayedName() << " counts as 1 item";
+						
+						// Count items inside the container separately
+						for (int k = 0; k < obj->getContainerObjectsSize(); ++k) {
+							ManagedReference<SceneObject*> containerItem = obj->getContainerObject(k);
+							int itemCount = processObjectRecursive(containerItem);
+							count += itemCount;
+							debug() << "PackupStructureSession: Container item: " << (containerItem != nullptr ? containerItem->getDisplayedName() : "null") << " adds " << itemCount << " to total";
+						}
+					} else if (obj->isCraftingStation()) {
+						// Special handling for crafting stations (similar to how structure status counts)
+						ManagedReference<SceneObject*> hopper = obj->getSlottedObject("ingredient_hopper");
+						if (hopper != nullptr) {
+							debug() << "PackupStructureSession: Crafting station hopper found";
+							for (int k = 0; k < hopper->getContainerObjectsSize(); ++k) {
+								ManagedReference<SceneObject*> hopperItem = hopper->getContainerObject(k);
+								int itemCount = processObjectRecursive(hopperItem);
+								count += itemCount;
+								debug() << "PackupStructureSession: Hopper item: " << (hopperItem != nullptr ? hopperItem->getDisplayedName() : "null") << " adds " << itemCount << " to total";
+							}
+						}
+					}
+					
+					return count;
+				}; // End of lambda function
+			
+			// Single pass through all cells to detect vendors and count items
 			for (int i = 1; i <= totalCells; ++i) {
 				CellObject* cell = building->getCell(i);
 				if (cell == nullptr)
 					continue;
-					
+				
+				info() << "PackupStructureSession: Processing cell " << i << ", containing " << cell->getContainerObjectsSize() << " objects";
 				for (int j = 0; j < cell->getContainerObjectsSize(); ++j) {
 					ManagedReference<SceneObject*> obj = cell->getContainerObject(j);
-					if (obj != nullptr && !obj->isCreatureObject() && !obj->isSignObject()) {
-						// Skip any kind of terminal to be safe
-						if (obj->isTerminal()) {
-							continue;
-						}
-						
-						// Skip default house items that will be automatically recreated
-						String templatePath = obj->getObjectTemplate()->getFullTemplateString();
-						if (templatePath.indexOf("terminal") != -1 || 
-							templatePath.indexOf("structure_storage_") != -1 ||
-							templatePath.indexOf("house_") != -1) {
-							error() << "PackupStructureSession: Skipping default item: " << templatePath;
-							continue;
-						}
-						
-						error() << "PackupStructureSession: Counting item: " << templatePath;
-						itemCount++;
+					if (obj != nullptr) {
+						debug() << "PackupStructureSession: Processing object: " << obj->getDisplayedName();
+						int objCount = processObjectRecursive(obj);
+						contents.itemCount += objCount;
+						debug() << "PackupStructureSession: Object " << obj->getDisplayedName() << " contributed " << objCount << " to total count";
 					}
 				}
+				info() << "PackupStructureSession: Cell " << i << " total item count so far: " << contents.itemCount << 
+					", vendor count: " << contents.vendorCount;
 			}
+			
+			if (contents.hasVendors) {
+				info() << "PackupStructureSession: Building has " << contents.vendorCount << " vendors";
+			}
+			
+			// Extract the values from our tracking structure before leaving this scope
+			hasVendors = contents.hasVendors;
+			itemCount = contents.itemCount;
+			vendorCount = contents.vendorCount;
 		}
 	}
 
+	// player is already defined at the top of the function, no need to redefine
 	StringBuffer entry;
 	entry << "@player_structure:confirm_packup_d1 "
 		<< "@player_structure:confirm_packup_d2 \n\n"
@@ -96,41 +218,70 @@ int PackupStructureSessionImplementation::initializeSession() {
 	// Create string for item count
 	StringBuffer items;
 	items << "Items to pack up: \\#32CD32 " << itemCount << "\\#.";
+	
+	// Create vendor status string
+	StringBuffer vendorStatus;
+	if (hasVendors) {
+		vendorStatus << "Vendor check: \\#FF0000 " << vendorCount << " vendor" << (vendorCount == 1 ? "" : "s") << " present, MUST BE REMOVED \\#.";
+	} else {
+		vendorStatus << "Vendor check: \\#32CD32 No vendors present \\#.";
+	}
 
-    const ManagedReference<SuiListBox*> sui = new SuiListBox(player);
+	const ManagedReference<SuiListBox*> sui = new SuiListBox(player);
 	sui->setCancelButton(true, "@no");
 	sui->setOkButton(true, "@yes");
+	// Disable OK button if vendors are present
+	if (hasVendors) {
+		sui->addSetting("3", "btnOk", "enabled", "false");
+	}
 	sui->setUsingObject(structureObject);
 	sui->setPromptTitle(structureObject->getDisplayedName());
+	
+	// Add clear message about vendors if present
+	if (hasVendors) {
+		entry << "\n\n\\#FF0000You cannot pack up a structure that contains vendors. Please remove all vendors first.\\#";
+	}
+	
 	sui->setPromptText(entry.toString());
-	sui->addMenuItem("@player_structure:can_packup_alert " + redeed);
+	sui->addMenuItem("@player_structure:can_packup_alert " + (hasVendors ? "\\#FF6347 NO \\#" : redeed));
 	sui->addMenuItem(cond.toString());
 	sui->addMenuItem(maint.toString());
 	sui->addMenuItem(items.toString());
+	sui->addMenuItem(vendorStatus.toString());
 
-    // Attach a small inline callback to handle Yes/No
+	// Attach a small inline callback to handle Yes/No
     class PackupConfirmCallback : public SuiCallback {
     public:
-        PackupConfirmCallback(ZoneServer* server, PackupStructureSession* session) : SuiCallback(server), session(session) {}
+        PackupConfirmCallback(ZoneServer* server, PackupStructureSession* session, bool hasVendors) : SuiCallback(server), session(session), hasVendors(hasVendors) {}
         void run(CreatureObject* creature, SuiBox* suiBox, uint32 eventIndex, Vector<UnicodeString>* args) override {
             const bool cancelPressed = (eventIndex == 1);
             if (cancelPressed) {
                 session->cancelSession();
                 return;
             }
+            
+            // This is a safeguard, as the OK button should be disabled if vendors are present
+            if (hasVendors) {
+                creature->sendSystemMessage("You cannot pack up a structure that contains vendors. Please remove all vendors first.");
+                Logger::console.info("Player attempted to pack up structure with vendors despite disabled button");
+                session->cancelSession();
+                return;
+            }
+            
             session->sendPackupCode();
         }
     private:
         ManagedReference<PackupStructureSession*> session;
+        bool hasVendors;
     };
 
-    sui->setCallback(new PackupConfirmCallback(player->getZoneServer(), _this.getReferenceUnsafeStaticCast()));
+    sui->setCallback(new PackupConfirmCallback(player->getZoneServer(), _this.getReferenceUnsafeStaticCast(), hasVendors));
 
     player->getPlayerObject()->addSuiBox(sui);
     player->sendMessage(sui->generateMessage());
 
 	return 0;
-}
+} // End of initializeSession function
 
 int PackupStructureSessionImplementation::sendPackupCode() {
 	if (!creatureObject->isPlayerCreature()) {
@@ -193,10 +344,10 @@ int PackupStructureSessionImplementation::sendPackupCode() {
     player->sendMessage(sui->generateMessage());
 
 	return 0;
-}
+} // End of sendPackupCode function
 
 int PackupStructureSessionImplementation::packupStructure() {
-	error() << "PackupStructureSession: packupStructure called, about to call SRStructureManager";
+	info() << "PackupStructureSession: packupStructure called, about to call SRStructureManager";
 	
 	Locker structureLock(structureObject);
 	Locker creatureLock(creatureObject, structureObject);
@@ -209,12 +360,12 @@ int PackupStructureSessionImplementation::packupStructure() {
 	}
 
 	if (!structureObject->isRedeedable()) {
-		error() << "PackupStructureSession: structure is not redeedable, canceling";
+		info() << "PackupStructureSession: structure is not redeedable, canceling";
 		creatureObject->sendSystemMessage("@player_structure:packup_items_maint");
 		return cancelSession();
 	}
 
-	error() << "PackupStructureSession: calling StructureManager getSRStructureManager()->packupStructure";
+	info() << "PackupStructureSession: calling StructureManager getSRStructureManager()->packupStructure";
 	StructureManager::instance()->getSRStructureManager()->packupStructure(creatureObject);
 	return 0;
-}
+} // End of packupStructure function
