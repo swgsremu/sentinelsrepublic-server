@@ -17,6 +17,7 @@ class StructureControlDevice extends ControlDevice {
 	private float positionX;
 	private float positionY;
 	private int directionAngle;
+	private boolean isUnpacking; // Flag to track if structure is currently being unpacked
 	
 	@dereferenced
 	private ArrayList<unsigned long> packedItemIds; // Store object IDs
@@ -44,6 +45,7 @@ class StructureControlDevice extends ControlDevice {
 		positionX = 0.0;
 		positionY = 0.0;
 		directionAngle = 0;
+		isUnpacking = false;
 		
 		// Initialize all the ArrayLists
 		packedItemIds.removeAll(); 
@@ -119,5 +121,13 @@ class StructureControlDevice extends ControlDevice {
 	@dirty
 	public boolean isStructureControlDevice() {
 		return true;
+	}
+	
+	/**
+	 * Resets the unpacking flag to false
+	 * Used to handle error cases and ensure the device can be used again
+	 */
+	public void resetUnpackingFlag() {
+		isUnpacking = false;
 	}
 }

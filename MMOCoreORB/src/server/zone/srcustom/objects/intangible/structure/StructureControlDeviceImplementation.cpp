@@ -100,6 +100,11 @@ int StructureControlDeviceImplementation::handleObjectMenuSelect(CreatureObject*
 		}
 
 		case StructureControlDeviceMenuIDs::UNPACK_STRUCTURE: {
+			// Check if the structure is already being unpacked
+			if (isUnpacking) {
+				player->sendSystemMessage("This structure is already being unpacked. Please wait for the process to complete.");
+				return 0;
+			}
 			placeStructureMode(player, structure);
 			break;
 		}
@@ -169,6 +174,15 @@ int StructureControlDeviceImplementation::placeStructure(CreatureObject* player,
 	Zone* zone = player->getZone();
 	if (zone == nullptr)
 		return 1;
+		
+	// Check if structure is already being unpacked
+	if (isUnpacking) {
+		player->sendSystemMessage("This structure is already being unpacked. Please wait for the process to complete.");
+		return 0;
+	}
+	
+	// Set the unpacking flag to prevent multiple concurrent unpack operations
+	isUnpacking = true;
 
 	// Get necessary managers
 	auto structureManager = StructureManager::instance();
@@ -192,6 +206,7 @@ int StructureControlDeviceImplementation::placeStructure(CreatureObject* player,
 		if (ghost != nullptr && !ghost->isPrivileged()) {
 			if (city->isClientRegion() || !city->hasZoningRights(player->getObjectID())) {
 				player->sendSystemMessage("@player_structure:not_permitted"); // Building is not permitted here.
+				isUnpacking = false; // Reset flag on error
 				return 0;
 			}
 		}
@@ -270,6 +285,7 @@ int StructureControlDeviceImplementation::placeStructure(CreatureObject* player,
 			StringIdChatParameter param("@player_structure:not_enough_lots");
 			param.setDI(additionalLotsNeeded);
 			player->sendSystemMessage(param);
+			isUnpacking = false; // Reset flag on error
 			return 0;
 		}
 	}
@@ -883,6 +899,10 @@ void StructureControlDeviceImplementation::completeStructurePlacement(CreatureOb
 				}
 			}
 			
+			// Reset the unpacking flag before destruction
+			isUnpacking = false;
+			System::out << "StructureControlDevice: Resetting unpacking flag after successful placement" << endl;
+			
 			// Add a short delay before destroying the control device
 			// to ensure any pending operations on the structure are complete
 			Core::getTaskManager()->scheduleTask([=] {
@@ -897,6 +917,7 @@ void StructureControlDeviceImplementation::completeStructurePlacement(CreatureOb
 		}
 		
 		// Fallback destruction path if the scheduled approach fails
+		isUnpacking = false; // Make sure to reset the flag even in the fallback path
 		Locker dLocker(_this.getReferenceUnsafeStaticCast());
 		this->destroyObjectFromWorld(true);
 		this->destroyObjectFromDatabase(true);
@@ -952,6 +973,10 @@ void StructureControlDeviceImplementation::clearPackedItems() {
 	packedItemPosY.removeAll();
 	packedItemPosZ.removeAll();
 	packedItemDirs.removeAll();
+	
+	// Reset the unpacking flag to ensure the device can be used again
+	// even if something went wrong in the restoration process
+	isUnpacking = false;
 	
 	System::out << "StructureControlDevice: Packed items cleared after successful restoration" << endl;
 }

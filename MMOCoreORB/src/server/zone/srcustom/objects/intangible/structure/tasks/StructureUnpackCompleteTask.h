@@ -27,8 +27,14 @@ public:
 		ManagedReference<CreatureObject*> playerRef = player.get();
 		ManagedReference<StructureControlDevice*> deviceRef = controlDevice.get();
 
-		if (playerRef == nullptr || deviceRef == nullptr)
+		if (playerRef == nullptr || deviceRef == nullptr) {
+			// Reset the unpacking flag if device still exists
+			if (deviceRef != nullptr) {
+				Locker lock(deviceRef);
+				deviceRef->resetUnpackingFlag();
+			}
 			return;
+		}
 
 		Locker lock(playerRef);
 
