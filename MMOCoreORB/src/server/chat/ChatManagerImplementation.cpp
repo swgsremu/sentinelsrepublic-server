@@ -3011,7 +3011,7 @@ void ChatManagerImplementation::initializeDiscordBot() {
 }
 
 void ChatManagerImplementation::dispatchChatEvent(CreatureObject* sender, const String& channelType, const String& message, const String& recipient) {
-	try {
+    try {
 		server::zone::managers::plugin::ChatEventData eventData;
 		eventData.sender = sender;
 		eventData.senderName = sender->getFirstName();
@@ -3034,8 +3034,7 @@ void ChatManagerImplementation::dispatchChatEvent(CreatureObject* sender, const 
 			eventData.posZ = position.getZ();
 		}
 		
-		info("ChatManager dispatching chat event - channel: " + channelType + " message: " + message, true);
-		server::zone::managers::plugin::EventDispatcher::instance()->dispatchChatEvent(eventData);
+        server::zone::managers::plugin::EventDispatcher::instance()->dispatchChatEvent(eventData);
 		
 	} catch (const Exception& e) {
 		error("Exception in dispatchChatEvent: " + e.getMessage());
@@ -3043,4 +3042,3 @@ void ChatManagerImplementation::dispatchChatEvent(CreatureObject* sender, const 
 		error("Unknown exception in dispatchChatEvent");
 	}
 }
-

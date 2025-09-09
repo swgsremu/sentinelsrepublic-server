@@ -2,6 +2,7 @@
 #define EVENTDISPATCHER_H_
 
 #include "PluginInterface.h"
+#include "conf/ConfigManager.h"
 #include "engine/util/Singleton.h"
 #include "engine/core/ManagedReference.h"
 
@@ -22,11 +23,12 @@ private:
 	mutable Mutex handlerMutex;
 	
 public:
-	EventDispatcher() {
-		setLoggingName("EventDispatcher");
-		setGlobalLogging(true);
-		setLogging(true);
-	}
+    EventDispatcher() {
+        setLoggingName("EventDispatcher");
+        const bool pluginLogging = ConfigManager::instance()->getBool("Core3.PluginEventLogging", false);
+        setGlobalLogging(pluginLogging);
+        setLogging(pluginLogging);
+    }
 	
 	virtual ~EventDispatcher() {
 		clearAllListeners();
@@ -126,17 +128,13 @@ public:
 	/**
 	 * Dispatch a chat event to all listeners
 	 */
-	void dispatchChatEvent(const ChatEventData& data) {
-		Locker locker(&listenerMutex);
-		
-		info("dispatchChatEvent called with message: " + data.message + " channel: " + data.channelType + " listeners: " + String::valueOf(eventListeners.size()), true);
-		
+    void dispatchChatEvent(const ChatEventData& data) {
+        Locker locker(&listenerMutex);
 		for (int i = 0; i < eventListeners.size(); ++i) {
 			IEventListener* listener = eventListeners.get(i);
 			if (listener != nullptr) {
-				try {
-					info("Dispatching chat event to listener: " + listener->getPluginName(), true);
-					listener->onChatEvent(data);
+                try {
+                    listener->onChatEvent(data);
 				} catch (const Exception& e) {
 					error("Exception in chat event listener: " + e.getMessage());
 				} catch (...) {

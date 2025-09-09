@@ -93,7 +93,7 @@ Core3 = {
 	
 	------Plugin System config------
 	PluginDirectory = "plugins",
-	EnablePlugins = true,
+	EnablePlugins = false,
 	
 	------CSR Monitor Plugin config------
 	CSRMonitor_LogChat = true,
