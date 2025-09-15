@@ -1067,7 +1067,7 @@ void LootManagerImplementation::addRandomDots(TangibleObject* object, const Loot
 		int strength = LootValues::getDistributedValue(randomDotStrength.get(0), randomDotStrength.get(1), level) * modifier * strMod;
 		int duration = LootValues::getDistributedValue(randomDotDuration.get(0), randomDotDuration.get(1), level) * modifier * durMod;
 		int potency = LootValues::getDistributedValue(randomDotPotency.get(0), randomDotPotency.get(1), level) * modifier;
-		int uses = LootValues::getDistributedValue(randomDotUses.get(0), randomDotUses.get(1), level) * modifier;
+		int uses = LootValues::getDistributedValue(randomDotUses.get(0), randomDotUses.get(1), level);
 
 		if (strength <= 0 || duration <= 0 || potency <= 0 || uses <= 0) {
 			continue;

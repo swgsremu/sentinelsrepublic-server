@@ -77,7 +77,7 @@ randomDotAttribute = {0, 8} -- See CreatureAttributes.h in src for numbers.
 randomDotStrength = {10, 100} -- poison x1.5, disease x0.5
 randomDotDuration = {30, 120} -- disease x4.0, fire x1.5
 randomDotPotency = {1, 50}
-randomDotUses = {250, 4999}
+randomDotUses = {250, 1000}
 
 -- Modifier applied to min/max junk values found in loot item lua
 junkValueModifier = 5;
