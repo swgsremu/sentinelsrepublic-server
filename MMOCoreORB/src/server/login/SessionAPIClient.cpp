@@ -300,7 +300,7 @@ void SessionAPIClient::validateSession(const String& sessionID, uint32 accountID
 	path << "/v1/core3/account/" << accountID
 		<< "/galaxy/" << galaxyID
 		<< "/session/ip/" << ip
-		<< "/sessionHash/" << Crypto::SHA256Hash(String::valueOf(accountID) + sessionID + ip)
+		<< "/sessionHash/" << sessionID
 		<< "/isvalidsession"
 		;
 
