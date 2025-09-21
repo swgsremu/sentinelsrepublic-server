@@ -18,6 +18,10 @@
 
 #include "ClientPermissionsMessage.h"
 
+#ifdef WITH_SESSION_API
+#include "server/login/SessionAPIClient.h"
+#endif // WITH_SESSION_API
+
 class ClientIdMessageCallback : public MessageCallback {
 	uint32 gameBits{};
 	uint32 dataLen;
@@ -47,6 +51,22 @@ public:
 	}
 
 	void run() {
+#ifdef WITH_SESSION_API
+		SessionAPIClient::instance()->validateSession(sessionID, accountID, client->getSession()->getIPAddress(),
+				[zoneClient = Reference<ZoneClientSession*>(client),
+				zoneServer = server,
+				approved_sessionID = sessionID,
+				approved_accountID = accountID](const SessionApprovalResult& result) {
+
+			if (!result.isActionAllowed()) {
+				zoneClient->sendMessage(new ErrorMessage(result.getTitle(), result.getMessage(), 0x0));
+				zoneClient->info(true) << "Invalid session in ClientIDMessageCallback: " << result.getLogMessage();
+				return;
+			}
+
+			approveSession(zoneClient, zoneServer, approved_sessionID, approved_accountID);
+		});
+#else // WITH_SESSION_API
 		StringBuffer query;
 		query << "SELECT session_id FROM sessions WHERE account_id = " << accountID;
 		query << " AND  ip = '"<< client->getSession()->getIPAddress() <<"' AND expires > NOW();";
@@ -91,6 +111,11 @@ public:
 			return;
 		}
 
+		approveSession(client, server, sessionID, accountID);
+#endif // WITH_SESSION_API
+	}
+
+	static void approveSession(ZoneClientSession* client, ZoneProcessServer* server, String sessionID, uint32 accountID) {
 		auto zoneServer = server->getZoneServer();
 
 		if (zoneServer == nullptr) {

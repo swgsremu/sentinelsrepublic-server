@@ -54,6 +54,7 @@ void AccountManager::loginAccount(LoginClient* client, Message* packet) {
 	String username, password, version;
 	AccountVersionMessage::parse(packet, username, password, version);
 
+#ifndef WITH_SESSION_API
 	Database::escapeString(username);
 	Database::escapeString(password);
 
@@ -67,25 +68,55 @@ void AccountManager::loginAccount(LoginClient* client, Message* packet) {
 	if (account == nullptr)
 		return;
 
-#ifdef WITH_SESSION_API
-	SessionAPIClient::instance()->approveNewSession(client->getIPAddress(), account->getAccountID(),
-			[this,
-			loginClient = Reference<LoginClient*>(client),
-			loginAccount = Reference<Account*>(account)
-			](const SessionApprovalResult& result) {
+#else // WITH_SESSION_API
+	StringBuffer clientEndpoint;
+
+	auto session = client->getSession();
+
+	if (session == nullptr)
+		return;
+
+	auto address = session->getAddress();
+
+	clientEndpoint << address.getIPAddress() << ":" << address.getPort();
+
+	SessionAPIClient::instance()->createSession(username, password, version, clientEndpoint.toString(),
+			[this, username, loginClient = Reference<LoginClient*>(client)](const SessionApprovalResult& result) {
 
 		if (result.isActionTemporaryFailure()) {
-			error()
-			    << "Unexpected failure in approveNewSession for user ["
-				<< (loginAccount == nullptr ? "<unknown user>" : loginAccount->getUsername())
-				<< "]: " << result.getLogMessage();
+			error() << "Unexpected failure in createSession for user [" << username << "]: " << result.getLogMessage();
 		}
 
-		if (loginClient == nullptr || loginAccount == nullptr)
+		if (loginClient == nullptr)
 			return;
 
 		if (!result.isActionAllowed()) {
 			loginClient->sendErrorMessage(result.getTitle(), result.getMessage(true));
+			return;
+		}
+
+		auto sessionId = result.getSessionID();
+
+		if (sessionId.isEmpty()) {
+			loginClient->sendErrorMessage("Login Error", "Your session key was invalid, exit the client and try logging in again, if this continues contact support.");
+
+			error() << "missing sessionId in createSession for user [" << username << "]: " << result.getLogMessage();
+
+			return;
+		}
+
+		Reference<Account*> loginAccount = getAccount(result.getAccountID(), true);
+
+		if (loginAccount == nullptr) {
+			loginClient->sendErrorMessage("Login Error", "Failed to find your account, please contact support.");
+
+			error() << "getAccount(" << result.getAccountID() << ") failed in createSession for user [" << username << "]: " << result.getLogMessage();
+		}
+
+		loginAccount->setSessionId(sessionId);
+		loginAccount->setStationID(result.getStationID());
+
+		if (!loginFinalize(loginClient, loginAccount)) {
 			return;
 		}
 
@@ -117,16 +148,20 @@ void AccountManager::loginApprovedAccount(LoginClient* client, ManagedReference<
 	SessionAPIClient::instance()->notifySessionStart(ip, accountID);
 #endif // WITH_SESSION_API
 
+#ifndef WITH_SESSION_API
 	String sessionDuration = ConfigManager::instance()->getString("Core3.Login.SessionDuration", "00:15");
 	StringBuffer sessionQuery;
 	sessionQuery << "REPLACE INTO sessions (account_id, session_id, ip, expires) VALUES (";
 	sessionQuery << accountID << ", '" << sessionID << "', '" << ip << "' , ADDTIME(NOW(), '" << sessionDuration << "'));";
+#endif // !WITH_SESSION_API
 
 	StringBuffer logQuery;
 	logQuery << "INSERT INTO account_log (account_id, ip_address, timestamp) VALUES (" << accountID << ", '" << ip << "', NOW());";
 
 	try {
+#ifndef WITH_SESSION_API
 		ServerDatabase::instance()->executeStatement(sessionQuery);
+#endif // !WITH_SESSION_API
 		ServerDatabase::instance()->executeStatement(logQuery);
 	} catch (const DatabaseException& e) {
 		client->error() << e.getMessage();
@@ -139,6 +174,7 @@ void AccountManager::loginApprovedAccount(LoginClient* client, ManagedReference<
 	client->sendMessage(eci);
 }
 
+#ifndef WITH_SESSION_API
 Reference<Account*> AccountManager::validateAccountCredentials(LoginClient* client, const String& username, const String& password) {
 	if (client == nullptr) {
 		return nullptr;
@@ -197,18 +233,6 @@ Reference<Account*> AccountManager::validateAccountCredentials(LoginClient* clie
 		}
 	}
 
-	if (!account->isActive()) {
-		const String& inactTitle = ConfigManager::instance()->getInactiveAccountTitle();
-		const String& inactText = ConfigManager::instance()->getInactiveAccountText();
-
-		client->sendErrorMessage(
-			inactTitle.length() == 0 ? "Account Disabled" : inactTitle,
-			inactText.length() == 0 ? "The server administrators have disabled your account." : inactText
-		);
-
-		return nullptr;
-	}
-
 	// Handle username / password login
 	if (!isSessionIdLogin) {
 		// Check hash version
@@ -229,6 +253,27 @@ Reference<Account*> AccountManager::validateAccountCredentials(LoginClient* clie
 		// update hash if unsalted
 		if (account->getSalt() == "")
 			updateHash(username, password);
+	}
+
+	return loginFinalize(client, account) == true ? account : nullptr;
+}
+#endif // !WITH_SESSION_API
+
+bool AccountManager::loginFinalize(LoginClient* client, ManagedReference<Account*> account) {
+	if (client == nullptr || account == nullptr) {
+		return false;
+	}
+
+	if (!account->isActive()) {
+		const String& inactTitle = ConfigManager::instance()->getInactiveAccountTitle();
+		const String& inactText = ConfigManager::instance()->getInactiveAccountText();
+
+		client->sendErrorMessage(
+			inactTitle.length() == 0 ? "Account Disabled" : inactTitle,
+			inactText.length() == 0 ? "The server administrators have disabled your account." : inactText
+		);
+
+		return false;
 	}
 
 	// Check if they are banned
@@ -264,12 +309,13 @@ Reference<Account*> AccountManager::validateAccountCredentials(LoginClient* clie
 
 		client->sendErrorMessage("Account Banned", reason.toString());
 
-		return nullptr;
+		return false;
 	}
 
-	return account;
+	return true;
 }
 
+#ifndef WITH_SESSION_API
 void AccountManager::updateHash(const String& username, const String& password) {
 	String salt = Crypto::randomSalt();
 	String hash = Crypto::SHA256Hash(dbSecret + password + salt);
@@ -308,6 +354,7 @@ Reference<Account*> AccountManager::createAccount(const String& username, const 
 
 	return getAccount(accountID, passwordStored, true);
 }
+#endif // !WITH_SESSION_API
 
 Reference<Account*> AccountManager::getAccount(uint32 accountID, bool forceSqlUpdate) {
 	static Logger logger("AccountManager");
