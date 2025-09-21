@@ -113,6 +113,8 @@ void AccountManager::loginAccount(LoginClient* client, Message* packet) {
 			error() << "getAccount(" << result.getAccountID() << ") failed in createSession for user [" << username << "]: " << result.getLogMessage();
 		}
 
+		Locker locker(loginAccount);
+
 		loginAccount->setSessionId(sessionId);
 		loginAccount->setStationID(result.getStationID());
 
@@ -263,6 +265,8 @@ bool AccountManager::loginFinalize(LoginClient* client, ManagedReference<Account
 	if (client == nullptr || account == nullptr) {
 		return false;
 	}
+
+	Locker lock(account);
 
 	if (!account->isActive()) {
 		const String& inactTitle = ConfigManager::instance()->getInactiveAccountTitle();
