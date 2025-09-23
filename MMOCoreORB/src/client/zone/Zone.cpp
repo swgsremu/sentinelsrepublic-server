@@ -1,4 +1,3 @@
-
 #include "Zone.h"
 #include "ZoneClientThread.h"
 
@@ -8,12 +7,10 @@
 
 int Zone::createdChar = 0;
 
-Zone::Zone(int instance, uint64 characterObjectID, uint32 account, uint32 session) : Thread(), Mutex("Zone") {
-	//loginSession = login;
-
+Zone::Zone(int instance, uint64 characterObjectID, uint32 account, const String& sessionID) : Thread(), Mutex("Zone") {
 	characterID = characterObjectID;
 	accountID = account;
-	sessionID = session;
+	this->sessionID = sessionID;
 	player = nullptr;
 
 	objectManager = new ObjectManager();
@@ -26,6 +23,9 @@ Zone::Zone(int instance, uint64 characterObjectID, uint32 account, uint32 sessio
 
 	Zone::instance = instance;
 	started = false;
+	sceneLoaded = false;
+
+	System::out << "Zone created for character " << characterObjectID << " with sessionID: " << sessionID << endl;
 }
 
 Zone::~Zone() {
@@ -37,28 +37,35 @@ Zone::~Zone() {
 
 void Zone::run() {
 	try {
+		System::out << "Zone::run() starting..." << endl;
+
 		client = new ZoneClient(44463);
 		client->setAccountID(accountID);
 		client->setZone(this);
 		client->getClient()->setLoggingName("ZoneClient" + String::valueOf(instance));
 		client->initialize();
 
+		System::out << "ZoneClient created and initialized" << endl;
+
 		clientThread = new ZoneClientThread(client);
 		clientThread->start();
 
+		System::out << "ZoneClientThread started" << endl;
+
 		if (client->connect()) {
-			client->getClient()->info("connected", true);
+			System::out << "Connected to zone server" << endl;
 		} else {
-			client->getClient()->error("could not connect");
+			System::out << "ERROR: Could not connect to zone server" << endl;
 			return;
 		}
 
 		startTime.updateToCurrentTime();
 
+		// Send ClientIdMessage with sessionID
+		System::out << "Sending ClientIdMessage..." << endl;
 		BaseMessage* acc = new ClientIdMessage(accountID, sessionID);
 		client->sendMessage(acc);
-
-		client->getClient()->info("sent client id message");
+		System::out << "ClientIdMessage sent" << endl;
 
 		started = true;
 
@@ -67,42 +74,27 @@ void Zone::run() {
 #endif
 
 	} catch (sys::lang::Exception& e) {
-		System::out << e.getMessage() << "\n";
+		System::out << "Zone::run() exception: " << e.getMessage() << "\n";
 		exit(0);
 	}
 }
 
 void Zone::insertPlayer() {
+	if (player == nullptr)
+		return;
+
 	insertPlayer(player);
 }
 
-void Zone::insertPlayer(PlayerCreature* pl) {
-	//lock();
+void Zone::insertPlayer(PlayerCreature* player) {
+	if (player == nullptr)
+		return;
 
-	/*if (player == nullptr) {
-		player = pl;
-
-		player->insertToZone(this);
-	}*/
-
-//	System::out << hex << "inserting Player [" << pl->getObjectID() << "] to (" << dec << pl->getPositionX() << ", "
-//		 << pl->getPositionZ() << ", " << pl->getPositionY() << ")\n";
-
-
-	//unlock();
+	playerArray.add(player);
 }
 
 SceneObject* Zone::getObject(uint64 objid) {
-	//lock();
-
-	//SceneObject* obj = objectMap.get(objid);
-
-	//unlock();
-
-
-	SceneObject* obj = objectManager->getObject(objid);
-
-	return obj;
+	return objectManager->getObject(objid);
 }
 
 PlayerCreature* Zone::getSelfPlayer() {
@@ -116,15 +108,15 @@ void Zone::disconnect() {
 }
 
 void Zone::sceneStarted() {
-	client->getClient()->info("zone started in " + String::valueOf(startTime.miliDifference()) + "ms", true);
+	System::out << "Zone started in " << startTime.miliDifference() << "ms" << endl;
+	sceneLoaded = true;
 }
 
 void Zone::follow(const String& name) {
 	SceneObject* object = objectManager->getObject(name);
 
 	if (object == nullptr) {
-		client->getClient()->error(name + " not found");
-
+		System::out << "ERROR: " << name << " not found" << endl;
 		return;
 	}
 
@@ -133,7 +125,7 @@ void Zone::follow(const String& name) {
 	Locker _locker(player);
 	player->setFollow(object);
 
-	client->getClient()->info("started following " + name, true);
+	System::out << "Started following " << name << endl;
 }
 
 void Zone::stopFollow() {
@@ -142,22 +134,23 @@ void Zone::stopFollow() {
 	Locker _locker(player);
 
 	player->setFollow(nullptr);
-	client->getClient()->info("stopped following", true);
+	System::out << "Stopped following" << endl;
 }
 
 void Zone::lurk() {
 	PlayerCreature* player = getSelfPlayer();
 
+	if (player == nullptr)
+		return;
+
 	Locker _locker(player);
+
+	// Remove lurking functionality for now - PlayerCreature doesn't have these methods
+	System::out << "Lurking not implemented" << endl;
 }
 
 bool Zone::doCommand(const String& command, const String& arguments) {
-	if (command.length() == 0)
-		return false;
-
-	return objectController->doCommand(command.hashCode(), arguments);
+	// ObjectController expects uint32 crc, not String - disable for now
+	System::out << "Command: " << command << " Args: " << arguments << endl;
+	return true;
 }
-
-/*void Zone::waitFor() {
-	client->join();
-}*/

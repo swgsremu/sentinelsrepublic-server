@@ -17,8 +17,7 @@ class LoginPacketHandler : public Logger {
 public:
 	LoginPacketHandler(LoginSession* session) : Logger("LoginPacketHandler") {
 		loginSession = session;
-
-		setLogging(true);
+		setLogging(false); // Reduce noise
 	}
 
 	~LoginPacketHandler() {
@@ -27,13 +26,9 @@ public:
 	void handleMessage(Message* pack);
 	void handleEnumerateCharacterId(Message* pack);
 	void handleLoginClientToken(Message* pack);
+	void handleLoginEnumCluster(Message* pack);
+	void handleLoginClusterStatus(Message* pack);
 	void handleErrorMessage(Message* pack);
-
-	/*void handleSceneObjectCreateMessage(Message* pack);
-
-	void handleCharacterCreateSucessMessage(Message* pack);
-
-	void handleUpdateTransformMessage(Message* pack);*/
 };
 
 #endif /* LOGINPACKETHANDLER_H_ */
