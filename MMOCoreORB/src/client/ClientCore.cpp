@@ -30,34 +30,34 @@ void ClientCore::run() {
 
 	loginCharacter(0);
 
-	System::out << "Waiting for zone connection..." << endl;
+	info(true)<< "Waiting for zone connection...";
 
 	// Wait for zone to be fully loaded
 	bool zoneReady = false;
 	int attempts = 0;
 	const int maxAttempts = 60; // 30 seconds max wait
-	
+
 	while (!zoneReady && attempts < maxAttempts) {
 		Thread::sleep(500);
 		attempts++;
-		
+
 		Zone* zone = zones.get(0);
 		if (zone != nullptr && zone->isSceneLoaded()) {
 			zoneReady = true;
-			System::out << "Zone connection established and scene loaded!" << endl;
+			info(true)<< "Zone connection established and scene loaded!";
 		}
 	}
-	
+
 	if (!zoneReady) {
-		System::out << "Timeout waiting for zone connection" << endl;
+		info(true)<< "Timeout waiting for zone connection";
+	} else {
+		info(true)<< "Login flow test completed successfully!";
 	}
 
-	System::out << "Shutting down..." << endl;
+	info(true)<< "Shutting down...";
 
 	for (int i = 0; i < instances; ++i) {
-		Zone* zone = zones.get(i);
-		if (zone != nullptr)
-			zone->disconnect();
+		logoutCharacter(i);
 	}
 }
 
@@ -81,7 +81,7 @@ void ClientCore::loginCharacter(int index) {
 		uint32 acc = loginSession->getAccountID();
 		const String& sessionID = loginSession->getSessionID();
 
-		System::out << "Login completed - Account: " << acc << ", Session: " << sessionID << endl;
+		info(true) << "Login completed - Account: " << acc << ", Session: " << sessionID;
 
 		// Enable zone connection
 		zone = new Zone(index, objid, acc, sessionID);
@@ -98,6 +98,8 @@ void ClientCore::logoutCharacter(int index) {
 	Zone* zone = zones.get(index);
 	if (zone == nullptr || !zone->isStarted())
 		return;
+
+	info(true) << __FUNCTION__ << "(" << index << ")";
 
 	zones.set(index, nullptr);
 

@@ -43,7 +43,7 @@ void LoginPacketHandler::handleMessage(Message* pack) {
 		break;
 
 	default:
-		System::out << "Unhandled packet - opcount: " << opcount << " opcode: 0x" << hex << opcode << dec << endl;
+		error() << "Unhandled packet - opcount: " << opcount << " opcode: 0x" << hex << opcode << dec;
 		break;
 	}
 }
@@ -54,13 +54,13 @@ void LoginPacketHandler::handleErrorMessage(Message* pack) {
 	pack->parseAscii(errorType);
 	pack->parseAscii(errorMessage);
 
-	System::out << "ERROR: " << errorType << " - " << errorMessage << endl;
+	info(true) << "ERROR: " << errorType << " - " << errorMessage ;
 
 	loginSession->signalCompletion();
 }
 
 void LoginPacketHandler::handleLoginClientToken(Message* pack) {
-	System::out << "Received login token" << endl;
+	info(true) << "Received login token" ;
 
 	uint32 sessionLength = pack->parseInt();
 	uint32 len = sessionLength - 4;
@@ -80,17 +80,17 @@ void LoginPacketHandler::handleLoginClientToken(Message* pack) {
 	loginSession->setAccountID(accountID);
 	loginSession->setSessionID(sessionID);
 
-	System::out << "Account ID: " << accountID << endl;
-	System::out << "Session ID: " << sessionID << endl;
-	System::out << "Station ID: " << stationID << endl;
-	System::out << "Username: " << username << endl;
+	info(true) << "Account ID: " << accountID ;
+	info(true) << "Session ID: " << sessionID ;
+	info(true) << "Station ID: " << stationID ;
+	info(true) << "Username: " << username ;
 }
 
 void LoginPacketHandler::handleLoginEnumCluster(Message* pack) {
-	System::out << "\n=== GALAXIES (Basic Info) ===" << endl;
+	info(true) << "=== GALAXIES (Basic Info) ===" ;
 
 	uint32 galaxyCount = pack->parseInt();
-	System::out << "Galaxy Count: " << galaxyCount << endl;
+	info(true) << "Galaxy Count: " << galaxyCount ;
 
 	for (int i = 0; i < galaxyCount; ++i) {
 		uint32 galaxyID = pack->parseInt();
@@ -101,20 +101,20 @@ void LoginPacketHandler::handleLoginEnumCluster(Message* pack) {
 		uint32 serverStatus = pack->parseInt();
 		uint32 footer = pack->parseInt();
 
-		System::out << "Galaxy[" << i << "]("
+		info(true) << "Galaxy[" << i << "]("
 			<< "id: " << galaxyID
 			<< ", name: " << galaxyName
 			<< ", serverStatus: 0x" << hex << serverStatus << dec
 			<< ", footer: 0x" << hex << footer << dec
-			<< ")" << endl;
+			<< ")";
 	}
 }
 
 void LoginPacketHandler::handleLoginClusterStatus(Message* pack) {
-	System::out << "\n=== GALAXY STATUS (Full Info) ===" << endl;
+	info(true) << "=== GALAXY STATUS (Full Info) ===" ;
 
 	uint32 galaxyCount = pack->parseInt();
-	System::out << "Galaxy Count: " << galaxyCount << endl;
+	info(true) << "Galaxy Count: " << galaxyCount ;
 
 	for (int i = 0; i < galaxyCount; ++i) {
 		uint32 galaxyID = pack->parseInt();
@@ -132,7 +132,7 @@ void LoginPacketHandler::handleLoginClusterStatus(Message* pack) {
 		uint32 recommended = pack->parseInt();
 		uint8 unknown = pack->parseByte();
 
-		System::out << "Galaxy[" << i << "]("
+		info(true) << "Galaxy[" << i << "]("
 			<< "id: " << galaxyID
 			<< ", address: " << address
 			<< ", port: " << port
@@ -143,21 +143,21 @@ void LoginPacketHandler::handleLoginClusterStatus(Message* pack) {
 			<< ", status: 0x" << hex << status << dec
 			<< ", recommended: " << recommended
 			<< ", unknown: 0x" << hex << (int)unknown << dec
-			<< ")" << endl;
+			<< ")";
 	}
 }
 
 void LoginPacketHandler::handleEnumerateCharacterId(Message* pack) {
-	System::out << "\n=== CHARACTERS ===" << endl;
+	info(true) << "=== CHARACTERS ===" ;
 
 	uint32 characters = pack->parseInt();
-	System::out << "Character Count: " << characters << endl;
+	info(true) << "Character Count: " << characters ;
 
 	if (loginSession == nullptr)
 		return;
 
 	if (characters == 0) {
-		System::out << "No characters found" << endl;
+		info(true) << "No characters found" ;
 		loginSession->setSelectedCharacter(-1);
 		loginSession->signalCompletion();
 		return;
@@ -173,13 +173,13 @@ void LoginPacketHandler::handleEnumerateCharacterId(Message* pack) {
 		uint32 galaxy = pack->parseInt();
 		uint32 serverStatus = pack->parseInt();
 
-		System::out << "Character[" << i << "]("
+		info(true) << "Character[" << i << "]("
 			<< "name: " << name.toString()
 			<< ", oid: " << oid
 			<< ", galaxy: " << galaxy
 			<< ", crc: 0x" << hex << crc << dec
 			<< ", serverStatus: 0x" << hex << serverStatus << dec
-			<< ")" << endl;
+			<< ")";
 
 		loginSession->addCharacter(oid);
 	}

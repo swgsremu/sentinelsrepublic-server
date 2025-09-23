@@ -11,7 +11,7 @@ class ClientIdMessage : public BaseMessage {
 public:
 	ClientIdMessage(uint32 accountID, const String& sessionID) : BaseMessage() {
 		insertShort(0x03);
-		insertInt(STRING_HASHCODE("ClientIdMessage"));
+		insertInt(STRING_HASHCODE("ClientIdMsg"));
 
 		insertInt(0x00); // gameBits
 		insertInt(sessionID.length() + 4); // dataLen (sessionID length + 4 for accountID)

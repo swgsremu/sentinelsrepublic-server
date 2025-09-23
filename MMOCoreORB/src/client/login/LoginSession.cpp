@@ -31,23 +31,23 @@ LoginSession::~LoginSession() {
 int accountSuffix = 0;
 
 void LoginSession::run() {
-	System::out << "Creating login client..." << endl;
+	info(true) << "Creating login client...";
 	login = new LoginClient(44453, "LoginClient" + String::valueOf(instance));
 	login->setLoginSession(this);
 	login->initialize();
 
-	System::out << "Starting login thread..." << endl;
+	info(true) << "Starting login thread...";
 	loginThread = new LoginClientThread(login);
 	loginThread->start();
 
-	System::out << "Attempting to connect to 127.0.0.1:44453..." << endl;
+	info(true) << "Attempting to connect to 127.0.0.1:44453...";
 	if (!login->connect()) {
-		System::out << "ERROR: Could not connect to login server at 127.0.0.1:44453" << endl;
-		System::out << "Make sure the login server is running on port 44453" << endl;
+		info(true) << "ERROR: Could not connect to login server at 127.0.0.1:44453";
+		info(true) << "Make sure the login server is running on port 44453";
 		return;
 	}
 
-	System::out << "Connected to login server" << endl;
+	info(true) << "Connected to login server";
 
 	String user, password;
 
@@ -58,19 +58,19 @@ void LoginSession::run() {
 	if (envUser && envPass) {
 		user = envUser;
 		password = envPass;
-		System::out << "Logging in as: " << user << endl;
+		info(true) << "Logging in as: " << user;
 	} else {
-		System::out << "ERROR: Please set CORE3_CLIENT_USERNAME and CORE3_CLIENT_PASSWORD environment variables" << endl;
+		info(true) << "ERROR: Please set CORE3_CLIENT_USERNAME and CORE3_CLIENT_PASSWORD environment variables";
 		return;
 	}
 
-	System::out << "Creating AccountVersionMessage..." << endl;
+	info(true) << "Creating AccountVersionMessage...";
 	BaseMessage* acc = new AccountVersionMessage(user, password, "20050408-18:00");
 
-	System::out << "Sending login request..." << endl;
+	info(true) << "Sending login request...";
 	login->sendMessage(acc);
 
-	System::out << "Waiting for response..." << endl;
+	info(true) << "Waiting for response...";
 
 	// Wait for packets to be processed by the packet handler
 	lock();
@@ -79,5 +79,5 @@ void LoginSession::run() {
 	bool timedOut = !sessionFinalized.timedWait(this, &timeout);
 	unlock();
 
-	System::out << "\nLogin process completed." << endl;
+	info(true) << "\nLogin process completed.";
 }

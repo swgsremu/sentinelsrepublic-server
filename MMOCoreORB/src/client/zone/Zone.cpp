@@ -7,7 +7,7 @@
 
 int Zone::createdChar = 0;
 
-Zone::Zone(int instance, uint64 characterObjectID, uint32 account, const String& sessionID) : Thread(), Mutex("Zone") {
+Zone::Zone(int instance, uint64 characterObjectID, uint32 account, const String& sessionID) : Thread(), Mutex("Zone"), Logger("Zone") {
 	characterID = characterObjectID;
 	accountID = account;
 	this->sessionID = sessionID;
@@ -25,19 +25,17 @@ Zone::Zone(int instance, uint64 characterObjectID, uint32 account, const String&
 	started = false;
 	sceneLoaded = false;
 
-	System::out << "Zone created for character " << characterObjectID << " with sessionID: " << sessionID << endl;
+	info(true) << "Zone created for character " << characterObjectID << " with sessionID: " << sessionID;
 }
 
 Zone::~Zone() {
 	delete objectManager;
 	objectManager = nullptr;
-
-	clientThread->stop();
 }
 
 void Zone::run() {
 	try {
-		System::out << "Zone::run() starting..." << endl;
+		info(true) << "Zone::run() starting...";
 
 		client = new ZoneClient(44463);
 		client->setAccountID(accountID);
@@ -45,27 +43,27 @@ void Zone::run() {
 		client->getClient()->setLoggingName("ZoneClient" + String::valueOf(instance));
 		client->initialize();
 
-		System::out << "ZoneClient created and initialized" << endl;
+		info(true) << "ZoneClient created and initialized";
 
 		clientThread = new ZoneClientThread(client);
 		clientThread->start();
 
-		System::out << "ZoneClientThread started" << endl;
+		info(true) << "ZoneClientThread started";
 
 		if (client->connect()) {
-			System::out << "Connected to zone server" << endl;
+			info(true) << "Connected to zone server";
 		} else {
-			System::out << "ERROR: Could not connect to zone server" << endl;
+			error() << "ERROR: Could not connect to zone server";
 			return;
 		}
 
 		startTime.updateToCurrentTime();
 
 		// Send ClientIdMessage with sessionID
-		System::out << "Sending ClientIdMessage..." << endl;
+		info(true) << "Sending ClientIdMessage...";
 		BaseMessage* acc = new ClientIdMessage(accountID, sessionID);
 		client->sendMessage(acc);
-		System::out << "ClientIdMessage sent" << endl;
+		info(true) << "ClientIdMessage sent";
 
 		started = true;
 
@@ -74,7 +72,7 @@ void Zone::run() {
 #endif
 
 	} catch (sys::lang::Exception& e) {
-		System::out << "Zone::run() exception: " << e.getMessage() << "\n";
+		error() << "Zone::run() exception: " << e.getMessage() << "\n";
 		exit(0);
 	}
 }
@@ -94,6 +92,9 @@ void Zone::insertPlayer(PlayerCreature* player) {
 }
 
 SceneObject* Zone::getObject(uint64 objid) {
+	if (objectManager == nullptr)
+		return nullptr;
+		
 	return objectManager->getObject(objid);
 }
 
@@ -104,11 +105,13 @@ PlayerCreature* Zone::getSelfPlayer() {
 void Zone::disconnect() {
 	if (client != nullptr) {
 		client->disconnect();
+		// Don't call clientThread->stop() - disconnect() already stops the client
+		// and the thread will exit naturally when the client stops
 	}
 }
 
 void Zone::sceneStarted() {
-	System::out << "Zone started in " << startTime.miliDifference() << "ms" << endl;
+	info(true) << "Zone started in " << startTime.miliDifference() << "ms";
 	sceneLoaded = true;
 }
 
@@ -116,7 +119,7 @@ void Zone::follow(const String& name) {
 	SceneObject* object = objectManager->getObject(name);
 
 	if (object == nullptr) {
-		System::out << "ERROR: " << name << " not found" << endl;
+		info(true) << "ERROR: " << name << " not found";
 		return;
 	}
 
@@ -125,7 +128,7 @@ void Zone::follow(const String& name) {
 	Locker _locker(player);
 	player->setFollow(object);
 
-	System::out << "Started following " << name << endl;
+	info(true) << "Started following " << name;
 }
 
 void Zone::stopFollow() {
@@ -134,7 +137,7 @@ void Zone::stopFollow() {
 	Locker _locker(player);
 
 	player->setFollow(nullptr);
-	System::out << "Stopped following" << endl;
+	info(true) << "Stopped following";
 }
 
 void Zone::lurk() {
@@ -146,11 +149,11 @@ void Zone::lurk() {
 	Locker _locker(player);
 
 	// Remove lurking functionality for now - PlayerCreature doesn't have these methods
-	System::out << "Lurking not implemented" << endl;
+	info(true) << "Lurking not implemented";
 }
 
 bool Zone::doCommand(const String& command, const String& arguments) {
 	// ObjectController expects uint32 crc, not String - disable for now
-	System::out << "Command: " << command << " Args: " << arguments << endl;
+	info(true) << "Command: " << command << " Args: " << arguments;
 	return true;
 }
