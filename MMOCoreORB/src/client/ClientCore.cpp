@@ -28,19 +28,37 @@ void ClientCore::run() {
 
 	info("initialized", true);
 
-	int rounds = 0;
-
 	loginCharacter(0);
 
-	handleCommands();
+	System::out << "Waiting for zone connection..." << endl;
+
+	// Wait for zone to be fully loaded
+	bool zoneReady = false;
+	int attempts = 0;
+	const int maxAttempts = 60; // 30 seconds max wait
+	
+	while (!zoneReady && attempts < maxAttempts) {
+		Thread::sleep(500);
+		attempts++;
+		
+		Zone* zone = zones.get(0);
+		if (zone != nullptr && zone->isSceneLoaded()) {
+			zoneReady = true;
+			System::out << "Zone connection established and scene loaded!" << endl;
+		}
+	}
+	
+	if (!zoneReady) {
+		System::out << "Timeout waiting for zone connection" << endl;
+	}
+
+	System::out << "Shutting down..." << endl;
 
 	for (int i = 0; i < instances; ++i) {
 		Zone* zone = zones.get(i);
 		if (zone != nullptr)
 			zone->disconnect();
 	}
-
-	Thread::sleep(10000);
 }
 
 void ClientCore::loginCharacter(int index) {
@@ -57,16 +75,17 @@ void ClientCore::loginCharacter(int index) {
 
 		if (selectedCharacter != -1) {
 			objid = loginSession->getCharacterObjectID(selectedCharacter);
-
 			info("trying to login " + String::valueOf(objid));
 		}
 
 		uint32 acc = loginSession->getAccountID();
-		uint32 session = loginSession->getSessionID();
+		const String& sessionID = loginSession->getSessionID();
 
-		zone = new Zone(index, objid, acc, session);
+		System::out << "Login completed - Account: " << acc << ", Session: " << sessionID << endl;
+
+		// Enable zone connection
+		zone = new Zone(index, objid, acc, sessionID);
 		zone->start();
-
 		zones.set(index, zone);
 
 		connectCount++;
@@ -90,80 +109,7 @@ void ClientCore::logoutCharacter(int index) {
 }
 
 void ClientCore::handleCommands() {
-	while (true) {
-		try {
-			String command;
-
-			Thread::sleep(500);
-
-			continue;
-
-			System::out << "> ";
-
-			char line[256];
-			auto res = fgets(line, sizeof(line), stdin);
-
-			if (!res)
-				continue;
-
-			command = line;
-			command = command.replaceFirst("\n", "");
-
-			StringTokenizer tokenizer(command);
-			String firstToken;
-			tokenizer.getStringToken(firstToken);
-
-			if (firstToken == "exit") {
-				for (int i = 0; i < zones.size(); ++i)
-					zones.get(i)->disconnect();
-
-				return;
-			} else if (firstToken == "follow") {
-				String name;
-				tokenizer.finalToken(name);
-
-				for (int i = 0; i < zones.size(); ++i)
-					zones.get(i)->follow(name);
-
-			} else if (firstToken == "stopFollow") {
-				for (int i = 0; i < zones.size(); ++i)
-					zones.get(i)->stopFollow();
-			} else if (firstToken == "lurk") {
-				for (int i = 0; i < zones.size(); ++i)
-					zones.get(i)->lurk();
-			} else if (firstToken == "info") {
-				for (int i = 0; i < zones.size(); ++i) {
-					uint32 size = zones.get(i)->getObjectManager()->getObjectMapSize();
-					StringBuffer msg;
-					msg << "[ObjectManager" << i << "] size: " << size;
-
-					info(msg.toString(), true);
-				}
-
-			} else {
-				String args;
-				if (tokenizer.hasMoreTokens())
-					tokenizer.finalToken(args);
-
-				for (int i = 0; i < zones.size(); ++i)
-					if (!zones.get(i)->doCommand(firstToken, args))
-						Logger::console.error("unknown command");
-			}
-		} catch (SocketException& e) {
-			System::out << "[ClientCore] " << e.getMessage();
-		} catch (ArrayIndexOutOfBoundsException& e) {
-			System::out << "[ClientCore] " << e.getMessage() << "\n";
-			e.printStackTrace();
-
-		} catch (Exception& e) {
-			StringBuffer msg;
-			msg << "[ClientCore] Exception caught";
-			error(msg.toString());
-			error(e.getMessage());
-			e.printStackTrace();
-
-		}
-	}
+	// Disabled for now
 }
 
 int main(int argc, char* argv[]) {
