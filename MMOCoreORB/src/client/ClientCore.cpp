@@ -16,7 +16,7 @@ ClientCore::ClientCore(int instances) : Core("log/core3client.log", "client3"), 
 }
 
 void ClientCore::initialize() {
-	info("starting up client..");
+	info(true) << __PRETTY_FUNCTION__ << " start";
 }
 
 int connectCount = 0, disconnectCount = 0;
@@ -26,11 +26,11 @@ void ClientCore::run() {
 		zones.add(nullptr);
 	}
 
-	info("initialized", true);
+	info(true) << "initialized";
 
 	loginCharacter(0);
 
-	info(true)<< "Waiting for zone connection...";
+	info(true) << "Waiting for zone connection...";
 
 	// Wait for zone to be fully loaded
 	bool zoneReady = false;
@@ -44,17 +44,17 @@ void ClientCore::run() {
 		Zone* zone = zones.get(0);
 		if (zone != nullptr && zone->isSceneLoaded()) {
 			zoneReady = true;
-			info(true)<< "Zone connection established and scene loaded!";
+			info(true) << "Zone connection established and scene loaded!";
 		}
 	}
 
 	if (!zoneReady) {
-		info(true)<< "Timeout waiting for zone connection";
+		info(true) << "Timeout waiting for zone connection";
 	} else {
-		info(true)<< "Login flow test completed successfully!";
+		info(true) << "Login flow test completed successfully!";
 	}
 
-	info(true)<< "Shutting down...";
+	info(true) << "Shutting down...";
 
 	for (int i = 0; i < instances; ++i) {
 		logoutCharacter(i);
@@ -127,6 +127,12 @@ int main(int argc, char* argv[]) {
 
 		if (argc > 1)
 			instances = Integer::valueOf(arguments.get(0));
+
+		// Configure engine3
+		Core::setProperty("TaskManager.defaultSchedulerThreads", "2");
+		Core::setProperty("TaskManager.defaultIOSchedulers", "2");
+		Core::setProperty("TaskManager.defaultWorkerQueues", "1");
+		Core::setProperty("TaskManager.defaultWorkerThreadsPerQueue", "2");
 
 		ClientCore core(instances);
 
