@@ -30,7 +30,7 @@ class ZoneClient : public ServiceHandler {
 	MessageQueue messageQueue;
 
 public:
-	ZoneClient(int port);
+	ZoneClient(const String& address, int port);
 
 	~ZoneClient();
 

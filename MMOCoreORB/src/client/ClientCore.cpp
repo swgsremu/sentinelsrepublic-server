@@ -12,7 +12,10 @@
 ClientCore::ClientCore(int instances) : Core("log/core3client.log", "client3"), Logger("CoreClient") {
 	ClientCore::instances = instances;
 
-	setInfoLogLevel();
+	// Load config and set log level
+	Core::initializeProperties("Client3");
+	int logLevel = Core::getIntProperty("Client3.LogLevel", 1);
+	setLogLevel(static_cast<LogLevel>(logLevel));
 }
 
 void ClientCore::initialize() {
@@ -72,10 +75,21 @@ void ClientCore::loginCharacter(int index) {
 
 		uint32 selectedCharacter = loginSession->getSelectedCharacter();
 		uint64 objid = 0;
+		Galaxy* galaxy = nullptr;
 
 		if (selectedCharacter != -1) {
-			objid = loginSession->getCharacterObjectID(selectedCharacter);
-			info("trying to login " + String::valueOf(objid));
+			const CharacterListEntry& character = loginSession->getCharacter(selectedCharacter);
+			objid = character.getObjectID();
+			uint32 galaxyId = character.getGalaxyID();
+
+			info(true) << "Login " << character;
+
+			galaxy = loginSession->getGalaxyInfo(galaxyId);
+			if (galaxy != nullptr) {
+				info(true) << "Character galaxy info: " << *galaxy;
+			} else {
+				info(true) << "WARNING: No galaxy info found for galaxy ID " << galaxyId;
+			}
 		}
 
 		uint32 acc = loginSession->getAccountID();
@@ -84,7 +98,12 @@ void ClientCore::loginCharacter(int index) {
 		info(true) << "Login completed - Account: " << acc << ", Session: " << sessionID;
 
 		// Enable zone connection
-		zone = new Zone(index, objid, acc, sessionID);
+		if (galaxy != nullptr) {
+			zone = new Zone(index, objid, acc, sessionID, galaxy->getAddress(), galaxy->getPort());
+		} else {
+			error("Cannot create zone connection - no galaxy information available");
+			return;
+		}
 		zone->start();
 		zones.set(index, zone);
 

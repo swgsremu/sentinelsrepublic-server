@@ -6,8 +6,8 @@
 #include "ZonePacketHandler.h"
 #include "ZoneMessageProcessorTask.h"
 
-ZoneClient::ZoneClient(int port) {
-	client = new BaseClient("localhost", port);
+ZoneClient::ZoneClient(const String& address, int port) {
+	client = new BaseClient(address, port);
 	client->setHandler(this);
 
 	client->setLogging(true);

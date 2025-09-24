@@ -7,10 +7,12 @@
 
 int Zone::createdChar = 0;
 
-Zone::Zone(int instance, uint64 characterObjectID, uint32 account, const String& sessionID) : Thread(), Mutex("Zone"), Logger("Zone") {
+Zone::Zone(int instance, uint64 characterObjectID, uint32 account, const String& sessionID, const String& galaxyAddress, uint32 galaxyPort) : Thread(), Mutex("Zone"), Logger("Zone") {
 	characterID = characterObjectID;
 	accountID = account;
 	this->sessionID = sessionID;
+	this->galaxyAddress = galaxyAddress;
+	this->galaxyPort = galaxyPort;
 	player = nullptr;
 
 	objectManager = new ObjectManager();
@@ -37,7 +39,7 @@ void Zone::run() {
 	try {
 		info(true) << "Zone::run() starting...";
 
-		client = new ZoneClient(44463);
+		client = new ZoneClient(galaxyAddress, galaxyPort);
 		client->setAccountID(accountID);
 		client->setZone(this);
 		client->getClient()->setLoggingName("ZoneClient" + String::valueOf(instance));
@@ -72,7 +74,7 @@ void Zone::run() {
 #endif
 
 	} catch (sys::lang::Exception& e) {
-		error() << "Zone::run() exception: " << e.getMessage() << "\n";
+		error() << "Zone::run() exception: " << e.getMessage();
 		exit(0);
 	}
 }
@@ -94,7 +96,7 @@ void Zone::insertPlayer(PlayerCreature* player) {
 SceneObject* Zone::getObject(uint64 objid) {
 	if (objectManager == nullptr)
 		return nullptr;
-		
+
 	return objectManager->getObject(objid);
 }
 

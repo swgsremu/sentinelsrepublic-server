@@ -101,12 +101,11 @@ void LoginPacketHandler::handleLoginEnumCluster(Message* pack) {
 		uint32 serverStatus = pack->parseInt();
 		uint32 footer = pack->parseInt();
 
-		info(true) << "Galaxy[" << i << "]("
-			<< "id: " << galaxyID
-			<< ", name: " << galaxyName
-			<< ", serverStatus: 0x" << hex << serverStatus << dec
-			<< ", footer: 0x" << hex << footer << dec
-			<< ")";
+		// Create Galaxy with ID and name
+		Galaxy galaxy(galaxyID, galaxyName);
+		loginSession->addGalaxy(galaxy);
+
+		info(true) << "Galaxy[" << i << "]: " << galaxy;
 	}
 }
 
@@ -132,18 +131,14 @@ void LoginPacketHandler::handleLoginClusterStatus(Message* pack) {
 		uint32 recommended = pack->parseInt();
 		uint8 unknown = pack->parseByte();
 
-		info(true) << "Galaxy[" << i << "]("
-			<< "id: " << galaxyID
-			<< ", address: " << address
-			<< ", port: " << port
-			<< ", pingPort: " << pingPort
-			<< ", population: " << population
-			<< ", maxCapacity: 0x" << hex << maxCapacity << dec
-			<< ", distance: " << distance
-			<< ", status: 0x" << hex << status << dec
-			<< ", recommended: " << recommended
-			<< ", unknown: 0x" << hex << (int)unknown << dec
-			<< ")";
+		// Update existing galaxy with connection details
+		Galaxy* galaxy = loginSession->getGalaxyInfo(galaxyID);
+		if (galaxy != nullptr) {
+			galaxy->updateClusterStatus(address, port, pingPort, population);
+			info(true) << "Galaxy[" << i << "]: " << *galaxy;
+		} else {
+			info(true) << "WARNING: Galaxy " << galaxyID << " not found for cluster status update";
+		}
 	}
 }
 
@@ -173,15 +168,14 @@ void LoginPacketHandler::handleEnumerateCharacterId(Message* pack) {
 		uint32 galaxy = pack->parseInt();
 		uint32 serverStatus = pack->parseInt();
 
-		info(true) << "Character[" << i << "]("
-			<< "name: " << name.toString()
-			<< ", oid: " << oid
-			<< ", galaxy: " << galaxy
-			<< ", crc: 0x" << hex << crc << dec
-			<< ", serverStatus: 0x" << hex << serverStatus << dec
-			<< ")";
+		CharacterListEntry entry;
+		entry.setObjectID(oid);
+		entry.setGalaxyID(galaxy);
+		entry.setFirstName(name.toString());
 
-		loginSession->addCharacter(oid);
+		loginSession->addCharacter(entry);
+
+		info(true) << "Character[" << i << "]: " << entry;
 	}
 
 	// Now that all characters are added, select the first one and signal completion

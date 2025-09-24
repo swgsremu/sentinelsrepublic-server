@@ -31,8 +31,14 @@ LoginSession::~LoginSession() {
 int accountSuffix = 0;
 
 void LoginSession::run() {
+	// Load config properties
+	Core::initializeProperties("Client3");
+
+	String loginHost = Core::getProperty("Client3.LoginHost", "127.0.0.1");
+	int loginPort = Core::getIntProperty("Client3.LoginPort", 44453);
+
 	info(true) << "Creating login client...";
-	login = new LoginClient(44453, "LoginClient" + String::valueOf(instance));
+	login = new LoginClient(loginPort, "LoginClient" + String::valueOf(instance));
 	login->setLoginSession(this);
 	login->initialize();
 
@@ -40,10 +46,10 @@ void LoginSession::run() {
 	loginThread = new LoginClientThread(login);
 	loginThread->start();
 
-	info(true) << "Attempting to connect to 127.0.0.1:44453...";
+	info(true) << "Attempting to connect to " << loginHost << ":" << loginPort << "...";
 	if (!login->connect()) {
-		info(true) << "ERROR: Could not connect to login server at 127.0.0.1:44453";
-		info(true) << "Make sure the login server is running on port 44453";
+		info(true) << "ERROR: Could not connect to login server at " << loginHost << ":" << loginPort;
+		info(true) << "Make sure the login server is running on port " << loginPort;
 		return;
 	}
 
@@ -65,7 +71,8 @@ void LoginSession::run() {
 	}
 
 	info(true) << "Creating AccountVersionMessage...";
-	BaseMessage* acc = new AccountVersionMessage(user, password, "20050408-18:00");
+	String clientVersion = Core::getProperty("Client3.ClientVersion", "20050408-18:00");
+	BaseMessage* acc = new AccountVersionMessage(user, password, clientVersion);
 
 	info(true) << "Sending login request...";
 	login->sendMessage(acc);
@@ -79,5 +86,5 @@ void LoginSession::run() {
 	bool timedOut = !sessionFinalized.timedWait(this, &timeout);
 	unlock();
 
-	info(true) << "\nLogin process completed.";
+	info(true) << "Login process completed.";
 }
