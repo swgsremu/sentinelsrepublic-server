@@ -11,6 +11,7 @@ ZonePacketHandler::ZonePacketHandler(const String& s, Zone * z) : Logger(s) {
 
 	setLogging(true);
 	setGlobalLogging(true);
+	setInfoLogLevel();
 }
 
 void ZonePacketHandler::handleMessage(Message* pack) {

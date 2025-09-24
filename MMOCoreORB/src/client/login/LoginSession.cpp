@@ -19,8 +19,8 @@ LoginSession::LoginSession(int instance) : Logger("LoginSession" + String::value
 	loginThread = nullptr;
 
 	accountID = 0;
-	sessionID = 0;
-	setLogging(true);
+	sessionID = "";
+	setLogging(false); // Reduce noise
 }
 
 LoginSession::~LoginSession() {
@@ -31,59 +31,53 @@ LoginSession::~LoginSession() {
 int accountSuffix = 0;
 
 void LoginSession::run() {
+	info(true) << "Creating login client...";
 	login = new LoginClient(44453, "LoginClient" + String::valueOf(instance));
 	login->setLoginSession(this);
 	login->initialize();
 
+	info(true) << "Starting login thread...";
 	loginThread = new LoginClientThread(login);
 	loginThread->start();
 
+	info(true) << "Attempting to connect to 127.0.0.1:44453...";
 	if (!login->connect()) {
-		error("could not connect to login server");
+		info(true) << "ERROR: Could not connect to login server at 127.0.0.1:44453";
+		info(true) << "Make sure the login server is running on port 44453";
 		return;
 	}
 
-	info("connected to login server");
-
-#ifdef WITH_STM
-	//TransactionalMemoryManager::commitPureTransaction();
-#endif
-
-	char userinput[32];
-	char passwordinput[32];
-
-	info("insert user");
-	auto res = fgets(userinput, sizeof(userinput), stdin);
-
-	if (!res)
-		return;
-
-	info("insert password", true);
-	res = fgets(passwordinput, sizeof(passwordinput), stdin);
-
-	if (!res)
-		return;
+	info(true) << "Connected to login server";
 
 	String user, password;
-	user = userinput;
-	user = user.replaceFirst("\n", "");
 
-	password = passwordinput;
-	password = password.replaceFirst("\n", "");
+	// Get credentials from environment variables
+	const char* envUser = getenv("CORE3_CLIENT_USERNAME");
+	const char* envPass = getenv("CORE3_CLIENT_PASSWORD");
 
+	if (envUser && envPass) {
+		user = envUser;
+		password = envPass;
+		info(true) << "Logging in as: " << user;
+	} else {
+		info(true) << "ERROR: Please set CORE3_CLIENT_USERNAME and CORE3_CLIENT_PASSWORD environment variables";
+		return;
+	}
+
+	info(true) << "Creating AccountVersionMessage...";
 	BaseMessage* acc = new AccountVersionMessage(user, password, "20050408-18:00");
+
+	info(true) << "Sending login request...";
 	login->sendMessage(acc);
 
-	info("sent account version message");
+	info(true) << "Waiting for response...";
 
+	// Wait for packets to be processed by the packet handler
 	lock();
-
 	Time timeout;
-	timeout.addMiliTime(2000);
-
-	sessionFinalized.wait(this); //timedWait(this, &timeout);
-
+	timeout.addMiliTime(10000); // 10 second timeout
+	bool timedOut = !sessionFinalized.timedWait(this, &timeout);
 	unlock();
 
-	//login->disconnect();
+	info(true) << "\nLogin process completed.";
 }

@@ -16,7 +16,7 @@ ClientCore::ClientCore(int instances) : Core("log/core3client.log", "client3"), 
 }
 
 void ClientCore::initialize() {
-	info("starting up client..");
+	info(true) << __PRETTY_FUNCTION__ << " start";
 }
 
 int connectCount = 0, disconnectCount = 0;
@@ -26,21 +26,39 @@ void ClientCore::run() {
 		zones.add(nullptr);
 	}
 
-	info("initialized", true);
-
-	int rounds = 0;
+	info(true) << "initialized";
 
 	loginCharacter(0);
 
-	handleCommands();
+	info(true) << "Waiting for zone connection...";
 
-	for (int i = 0; i < instances; ++i) {
-		Zone* zone = zones.get(i);
-		if (zone != nullptr)
-			zone->disconnect();
+	// Wait for zone to be fully loaded
+	bool zoneReady = false;
+	int attempts = 0;
+	const int maxAttempts = 60; // 30 seconds max wait
+
+	while (!zoneReady && attempts < maxAttempts) {
+		Thread::sleep(500);
+		attempts++;
+
+		Zone* zone = zones.get(0);
+		if (zone != nullptr && zone->isSceneLoaded()) {
+			zoneReady = true;
+			info(true) << "Zone connection established and scene loaded!";
+		}
 	}
 
-	Thread::sleep(10000);
+	if (!zoneReady) {
+		info(true) << "Timeout waiting for zone connection";
+	} else {
+		info(true) << "Login flow test completed successfully!";
+	}
+
+	info(true) << "Shutting down...";
+
+	for (int i = 0; i < instances; ++i) {
+		logoutCharacter(i);
+	}
 }
 
 void ClientCore::loginCharacter(int index) {
@@ -57,16 +75,17 @@ void ClientCore::loginCharacter(int index) {
 
 		if (selectedCharacter != -1) {
 			objid = loginSession->getCharacterObjectID(selectedCharacter);
-
 			info("trying to login " + String::valueOf(objid));
 		}
 
 		uint32 acc = loginSession->getAccountID();
-		uint32 session = loginSession->getSessionID();
+		const String& sessionID = loginSession->getSessionID();
 
-		zone = new Zone(index, objid, acc, session);
+		info(true) << "Login completed - Account: " << acc << ", Session: " << sessionID;
+
+		// Enable zone connection
+		zone = new Zone(index, objid, acc, sessionID);
 		zone->start();
-
 		zones.set(index, zone);
 
 		connectCount++;
@@ -80,6 +99,8 @@ void ClientCore::logoutCharacter(int index) {
 	if (zone == nullptr || !zone->isStarted())
 		return;
 
+	info(true) << __FUNCTION__ << "(" << index << ")";
+
 	zones.set(index, nullptr);
 
 	zone->disconnect();
@@ -90,80 +111,7 @@ void ClientCore::logoutCharacter(int index) {
 }
 
 void ClientCore::handleCommands() {
-	while (true) {
-		try {
-			String command;
-
-			Thread::sleep(500);
-
-			continue;
-
-			System::out << "> ";
-
-			char line[256];
-			auto res = fgets(line, sizeof(line), stdin);
-
-			if (!res)
-				continue;
-
-			command = line;
-			command = command.replaceFirst("\n", "");
-
-			StringTokenizer tokenizer(command);
-			String firstToken;
-			tokenizer.getStringToken(firstToken);
-
-			if (firstToken == "exit") {
-				for (int i = 0; i < zones.size(); ++i)
-					zones.get(i)->disconnect();
-
-				return;
-			} else if (firstToken == "follow") {
-				String name;
-				tokenizer.finalToken(name);
-
-				for (int i = 0; i < zones.size(); ++i)
-					zones.get(i)->follow(name);
-
-			} else if (firstToken == "stopFollow") {
-				for (int i = 0; i < zones.size(); ++i)
-					zones.get(i)->stopFollow();
-			} else if (firstToken == "lurk") {
-				for (int i = 0; i < zones.size(); ++i)
-					zones.get(i)->lurk();
-			} else if (firstToken == "info") {
-				for (int i = 0; i < zones.size(); ++i) {
-					uint32 size = zones.get(i)->getObjectManager()->getObjectMapSize();
-					StringBuffer msg;
-					msg << "[ObjectManager" << i << "] size: " << size;
-
-					info(msg.toString(), true);
-				}
-
-			} else {
-				String args;
-				if (tokenizer.hasMoreTokens())
-					tokenizer.finalToken(args);
-
-				for (int i = 0; i < zones.size(); ++i)
-					if (!zones.get(i)->doCommand(firstToken, args))
-						Logger::console.error("unknown command");
-			}
-		} catch (SocketException& e) {
-			System::out << "[ClientCore] " << e.getMessage();
-		} catch (ArrayIndexOutOfBoundsException& e) {
-			System::out << "[ClientCore] " << e.getMessage() << "\n";
-			e.printStackTrace();
-
-		} catch (Exception& e) {
-			StringBuffer msg;
-			msg << "[ClientCore] Exception caught";
-			error(msg.toString());
-			error(e.getMessage());
-			e.printStackTrace();
-
-		}
-	}
+	// Disabled for now
 }
 
 int main(int argc, char* argv[]) {
@@ -179,6 +127,12 @@ int main(int argc, char* argv[]) {
 
 		if (argc > 1)
 			instances = Integer::valueOf(arguments.get(0));
+
+		// Configure engine3
+		Core::setProperty("TaskManager.defaultSchedulerThreads", "2");
+		Core::setProperty("TaskManager.defaultIOSchedulers", "2");
+		Core::setProperty("TaskManager.defaultWorkerQueues", "1");
+		Core::setProperty("TaskManager.defaultWorkerThreadsPerQueue", "2");
 
 		ClientCore core(instances);
 

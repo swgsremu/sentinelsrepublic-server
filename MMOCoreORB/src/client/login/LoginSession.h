@@ -17,7 +17,7 @@ class LoginSession : public Mutex, public Runnable, public Logger, public Object
 	Condition sessionFinalized;
 
 	uint32 accountID;
-	uint32 sessionID;
+	String sessionID;
 
 	Vector<uint64> characterObjectIds;
 	int selectedCharacter;
@@ -41,11 +41,14 @@ public:
 
 	void setSelectedCharacter(int id) {
 		lock();
-
 		selectedCharacter = id;
-
 		sessionFinalized.signal(this);
+		unlock();
+	}
 
+	void signalCompletion() {
+		lock();
+		sessionFinalized.signal(this);
 		unlock();
 	}
 
@@ -53,15 +56,15 @@ public:
 		accountID = id;
 	}
 
-	void setSessionID(uint32 id) {
-		sessionID = id;
+	void setSessionID(const String& sessionID) {
+		this->sessionID = sessionID;
 	}
 
 	uint32 getAccountID() {
 		return accountID;
 	}
 
-	uint32 getSessionID() {
+	const String& getSessionID() {
 		return sessionID;
 	}
 

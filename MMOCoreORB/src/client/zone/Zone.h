@@ -19,7 +19,7 @@ class Zone : public Thread, public Mutex, public Logger {
 
 	uint64 characterID;
 	uint32 accountID;
-	uint32 sessionID;
+	String sessionID;
 
 	Reference<ZoneClient*> client;
 	ZoneClientThread* clientThread;
@@ -38,9 +38,10 @@ class Zone : public Thread, public Mutex, public Logger {
 
 	Time startTime;
 	bool started;
+	bool sceneLoaded;
 
 public:
-	Zone(int instance, uint64 characterObjectID, uint32 account, uint32 session);
+	Zone(int instance, uint64 characterObjectID, uint32 account, const String& sessionID);
 	~Zone();
 
 	static int createdChar;
@@ -116,6 +117,10 @@ public:
 
 	bool isStarted() {
 		return started;
+	}
+
+	bool isSceneLoaded() {
+		return sceneLoaded;
 	}
 };
 

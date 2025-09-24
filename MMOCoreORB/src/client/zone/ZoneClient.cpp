@@ -12,6 +12,7 @@ ZoneClient::ZoneClient(int port) {
 
 	client->setLogging(true);
 	client->setLoggingName("ZoneClient");
+	client->setInfoLogLevel();
 
 	player = nullptr;
 
