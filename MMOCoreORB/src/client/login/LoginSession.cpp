@@ -12,9 +12,10 @@
 
 #include "LoginSession.h"
 
-LoginSession::LoginSession(int instance) : Logger("LoginSession" + String::valueOf(instance)) {
-	selectedCharacter = -1;
+LoginSession::LoginSession(int instance, const String& username, const String& password) : Logger("LoginSession" + String::valueOf(instance)) {
 	LoginSession::instance = instance;
+	LoginSession::username = username;
+	LoginSession::password = password;
 
 	loginThread = nullptr;
 
@@ -27,8 +28,6 @@ LoginSession::~LoginSession() {
 	if (loginThread != nullptr)
 		loginThread->stop();
 }
-
-int accountSuffix = 0;
 
 void LoginSession::run() {
 	// Load config properties
@@ -55,24 +54,9 @@ void LoginSession::run() {
 
 	info(true) << "Connected to login server";
 
-	String user, password;
-
-	// Get credentials from environment variables
-	const char* envUser = getenv("CORE3_CLIENT_USERNAME");
-	const char* envPass = getenv("CORE3_CLIENT_PASSWORD");
-
-	if (envUser && envPass) {
-		user = envUser;
-		password = envPass;
-		info(true) << "Logging in as: " << user;
-	} else {
-		info(true) << "ERROR: Please set CORE3_CLIENT_USERNAME and CORE3_CLIENT_PASSWORD environment variables";
-		return;
-	}
-
 	info(true) << "Creating AccountVersionMessage...";
 	String clientVersion = Core::getProperty("Client3.ClientVersion", "20050408-18:00");
-	BaseMessage* acc = new AccountVersionMessage(user, password, clientVersion);
+	BaseMessage* acc = new AccountVersionMessage(username, password, clientVersion);
 
 	info(true) << "Sending login request...";
 	login->sendMessage(acc);

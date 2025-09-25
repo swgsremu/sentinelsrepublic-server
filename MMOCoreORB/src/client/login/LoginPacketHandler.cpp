@@ -9,9 +9,21 @@
 
 #include "LoginPacketHandler.h"
 
+#define ORDER_CHECK(n) \
+	info(true) << __FUNCTION__;	\
+					\
+	if (packetCount.get() != n) {	\
+		warning() << __FUNCTION__ << " out of order packet, got " << packetCount.get() << " expected " << n; \
+	}
+
 void LoginPacketHandler::handleMessage(Message* pack) {
+	Locker lock(this);
+
+	packetCount.increment();
 	sys::uint16 opcount = pack->parseShort();
 	sys::uint32 opcode = pack->parseInt();
+
+	info(true) << packetCount.get() << ": -------------------- (0x" << hex << opcode << ") --------------------";
 
 	switch (opcount) {
 	case 02:
@@ -19,6 +31,7 @@ void LoginPacketHandler::handleMessage(Message* pack) {
 		case STRING_HASHCODE("EnumerateCharacterId"): // 0x65EA4574 char create success
 			handleEnumerateCharacterId(pack);
 			break;
+
 		case STRING_HASHCODE("LoginEnumCluster"): // 0xC11C63B9 galaxy list
 			handleLoginEnumCluster(pack);
 			break;
@@ -29,6 +42,7 @@ void LoginPacketHandler::handleMessage(Message* pack) {
 		case STRING_HASHCODE("ErrorMessage"):
 			handleErrorMessage(pack);
 			break;
+
 		case STRING_HASHCODE("LoginClusterStatus"): // 0x3436AEB6 galaxy status with address/port
 			handleLoginClusterStatus(pack);
 			break;
@@ -60,7 +74,7 @@ void LoginPacketHandler::handleErrorMessage(Message* pack) {
 }
 
 void LoginPacketHandler::handleLoginClientToken(Message* pack) {
-	info(true) << "Received login token" ;
+	ORDER_CHECK(1);
 
 	uint32 sessionLength = pack->parseInt();
 	uint32 len = sessionLength - 4;
@@ -80,17 +94,16 @@ void LoginPacketHandler::handleLoginClientToken(Message* pack) {
 	loginSession->setAccountID(accountID);
 	loginSession->setSessionID(sessionID);
 
-	info(true) << "Account ID: " << accountID ;
-	info(true) << "Session ID: " << sessionID ;
-	info(true) << "Station ID: " << stationID ;
-	info(true) << "Username: " << username ;
+	info(true) << "    Username: " << username ;
+	info(true) << "    Account ID: " << accountID ;
+	info(true) << "    Session ID: " << sessionID ;
+	info(true) << "    Station ID: " << stationID ;
 }
 
 void LoginPacketHandler::handleLoginEnumCluster(Message* pack) {
-	info(true) << "=== GALAXIES (Basic Info) ===" ;
+	ORDER_CHECK(2);
 
 	uint32 galaxyCount = pack->parseInt();
-	info(true) << "Galaxy Count: " << galaxyCount ;
 
 	for (int i = 0; i < galaxyCount; ++i) {
 		uint32 galaxyID = pack->parseInt();
@@ -102,18 +115,17 @@ void LoginPacketHandler::handleLoginEnumCluster(Message* pack) {
 		uint32 footer = pack->parseInt();
 
 		// Create Galaxy with ID and name
-		Galaxy galaxy(galaxyID, galaxyName);
-		loginSession->addGalaxy(galaxy);
+		auto& galaxy = loginSession->getGalaxy(galaxyID);
+		galaxy.setName(galaxyName);
 
-		info(true) << "Galaxy[" << i << "]: " << galaxy;
+		info(true) << "    Galaxy[" << i << "]: " << galaxy;
 	}
 }
 
 void LoginPacketHandler::handleLoginClusterStatus(Message* pack) {
-	info(true) << "=== GALAXY STATUS (Full Info) ===" ;
+	ORDER_CHECK(3);
 
 	uint32 galaxyCount = pack->parseInt();
-	info(true) << "Galaxy Count: " << galaxyCount ;
 
 	for (int i = 0; i < galaxyCount; ++i) {
 		uint32 galaxyID = pack->parseInt();
@@ -131,34 +143,31 @@ void LoginPacketHandler::handleLoginClusterStatus(Message* pack) {
 		uint32 recommended = pack->parseInt();
 		uint8 unknown = pack->parseByte();
 
-		// Update existing galaxy with connection details
-		Galaxy* galaxy = loginSession->getGalaxyInfo(galaxyID);
-		if (galaxy != nullptr) {
-			galaxy->updateClusterStatus(address, port, pingPort, population);
-			info(true) << "Galaxy[" << i << "]: " << *galaxy;
-		} else {
-			info(true) << "WARNING: Galaxy " << galaxyID << " not found for cluster status update";
-		}
+		auto& galaxy = loginSession->getGalaxy(galaxyID);
+
+		galaxy.setAddress(address);
+		galaxy.setPort(port);
+		galaxy.setPingPort(pingPort);
+		galaxy.setPopulation(population);
+
+		info(true) << "    Galaxy[" << i << "]: " << galaxy;
 	}
 }
 
 void LoginPacketHandler::handleEnumerateCharacterId(Message* pack) {
-	info(true) << "=== CHARACTERS ===" ;
+	ORDER_CHECK(4);
 
 	uint32 characters = pack->parseInt();
-	info(true) << "Character Count: " << characters ;
 
 	if (loginSession == nullptr)
 		return;
 
 	if (characters == 0) {
-		info(true) << "No characters found" ;
-		loginSession->setSelectedCharacter(-1);
-		loginSession->signalCompletion();
+		info(true) << "** No characters found **" ;
+		loginComplete();
 		return;
 	}
 
-	// First, add all characters to the vector
 	for (int i = 0; i < characters; ++i) {
 		UnicodeString name;
 		pack->parseUnicode(name);
@@ -175,9 +184,8 @@ void LoginPacketHandler::handleEnumerateCharacterId(Message* pack) {
 
 		loginSession->addCharacter(entry);
 
-		info(true) << "Character[" << i << "]: " << entry;
+		info(true) << "    Character[" << i << "]: " << entry;
 	}
 
-	// Now that all characters are added, select the first one and signal completion
-	loginSession->setSelectedCharacter(0);
+	loginComplete();
 }

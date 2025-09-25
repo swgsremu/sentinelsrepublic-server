@@ -37,7 +37,7 @@ Zone::~Zone() {
 
 void Zone::run() {
 	try {
-		info(true) << "Zone::run() starting...";
+		info(true) << "Zone::run() connecting to " << galaxyAddress << ":" << galaxyPort;
 
 		client = new ZoneClient(galaxyAddress, galaxyPort);
 		client->setAccountID(accountID);

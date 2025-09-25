@@ -31,7 +31,10 @@ void ClientCore::run() {
 
 	info(true) << "initialized";
 
-	loginCharacter(0);
+	if (!loginCharacter(0)) {
+		info(true) << "Failed to login character.";
+		return;
+	}
 
 	info(true) << "Waiting for zone connection...";
 
@@ -64,53 +67,69 @@ void ClientCore::run() {
 	}
 }
 
-void ClientCore::loginCharacter(int index) {
+bool ClientCore::loginCharacter(int index) {
 	try {
+		String username, password;
+
+		// Get credentials from environment variables
+		const char* envUser = getenv("CORE3_CLIENT_USERNAME");
+		const char* envPass = getenv("CORE3_CLIENT_PASSWORD");
+
+		if (envUser && envPass) {
+			username = envUser;
+			password = envPass;
+			info(true) << "Logging in as: " << username;
+		} else {
+			info(true) << "ERROR: Please set CORE3_CLIENT_USERNAME and CORE3_CLIENT_PASSWORD environment variables";
+			return false;
+		}
+
 		Zone* zone = zones.get(index);
 		if (zone != nullptr)
-			return;
+			return false;
 
-		Reference<LoginSession*> loginSession = new LoginSession(index);
+		Reference<LoginSession*> loginSession = new LoginSession(index, username, password);
 		loginSession->run();
 
-		uint32 selectedCharacter = loginSession->getSelectedCharacter();
-		uint64 objid = 0;
-		Galaxy* galaxy = nullptr;
+		auto numCharacters = loginSession->getCharacterListSize();
 
-		if (selectedCharacter != -1) {
-			const CharacterListEntry& character = loginSession->getCharacter(selectedCharacter);
-			objid = character.getObjectID();
-			uint32 galaxyId = character.getGalaxyID();
-
-			info(true) << "Login " << character;
-
-			galaxy = loginSession->getGalaxyInfo(galaxyId);
-			if (galaxy != nullptr) {
-				info(true) << "Character galaxy info: " << *galaxy;
-			} else {
-				info(true) << "WARNING: No galaxy info found for galaxy ID " << galaxyId;
-			}
+		if (numCharacters == 0) {
+			info(true) << __FUNCTION__ << ": No characters found to login?";
+			return false;
 		}
+
+		uint32 selectedCharacter = System::random(numCharacters - 1);
+
+		const CharacterListEntry& character = loginSession->getCharacterByIndex(selectedCharacter);
+		auto objid = character.getObjectID();
+		auto galaxyId = character.getGalaxyID();
+
+		info(true) << "Login[" << selectedCharacter << "]: " << character;
 
 		uint32 acc = loginSession->getAccountID();
 		const String& sessionID = loginSession->getSessionID();
 
 		info(true) << "Login completed - Account: " << acc << ", Session: " << sessionID;
 
-		// Enable zone connection
-		if (galaxy != nullptr) {
-			zone = new Zone(index, objid, acc, sessionID, galaxy->getAddress(), galaxy->getPort());
-		} else {
-			error("Cannot create zone connection - no galaxy information available");
-			return;
+		auto& galaxy = loginSession->getGalaxy(galaxyId);
+
+		info(true) << "Zone into " << galaxy;
+
+		if (galaxy.getAddress().isEmpty()) {
+			throw Exception("Invalid galaxy, missing IP address.");
 		}
+
+		zone = new Zone(index, objid, acc, sessionID, galaxy.getAddress(), galaxy.getPort());
 		zone->start();
 		zones.set(index, zone);
 
 		connectCount++;
 	} catch (Exception& e) {
 		e.printMessage();
+		return false;
 	}
+
+	return true;
 }
 
 void ClientCore::logoutCharacter(int index) {
