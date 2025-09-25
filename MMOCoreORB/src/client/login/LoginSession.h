@@ -10,6 +10,8 @@
 
 #include "system/lang.h"
 #include "engine/log/Logger.h"
+#include "server/login/objects/GalaxyList.h"
+#include "server/login/objects/CharacterListEntry.h"
 
 class LoginClient;
 
@@ -19,7 +21,7 @@ class LoginSession : public Mutex, public Runnable, public Logger, public Object
 	uint32 accountID;
 	String sessionID;
 
-	Vector<uint64> characterObjectIds;
+	Vector<CharacterListEntry> characters;
 	int selectedCharacter;
 
 	int instance;
@@ -27,6 +29,8 @@ class LoginSession : public Mutex, public Runnable, public Logger, public Object
 	class LoginClientThread* loginThread;
 
 	Reference<LoginClient*> login;
+
+	VectorMap<uint32, Galaxy> galaxies;
 
 public:
 	LoginSession(int instance);
@@ -36,7 +40,20 @@ public:
 	void run();
 
 	void addCharacter(uint64 objectID) {
-		characterObjectIds.add(objectID);
+		CharacterListEntry entry;
+		entry.setObjectID(objectID);
+		characters.add(entry);
+	}
+
+	void addCharacter(uint64 objectID, uint32 galaxyID) {
+		CharacterListEntry entry;
+		entry.setObjectID(objectID);
+		entry.setGalaxyID(galaxyID);
+		characters.add(entry);
+	}
+
+	void addCharacter(const CharacterListEntry& entry) {
+		characters.add(entry);
 	}
 
 	void setSelectedCharacter(int id) {
@@ -72,8 +89,19 @@ public:
 		return selectedCharacter;
 	}
 
-	uint64 getCharacterObjectID(uint32 id) {
-		return characterObjectIds.get(id);
+	const CharacterListEntry& getCharacter(uint32 id) {
+		return characters.get(id);
+	}
+
+	void addGalaxy(const Galaxy& galaxy) {
+		galaxies.put(galaxy.getID(), galaxy);
+	}
+
+	Galaxy* getGalaxyInfo(uint32 galaxyId) {
+		if (galaxies.contains(galaxyId)) {
+			return &galaxies.get(galaxyId);
+		}
+		return nullptr;
 	}
 };
 

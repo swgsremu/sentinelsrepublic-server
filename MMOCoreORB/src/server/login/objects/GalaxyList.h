@@ -57,6 +57,17 @@ public:
 #endif // USE_RANDOM_EXTRA_PORTS
 	}
 
+	// core3client support
+	Galaxy(uint32 id, const String& name) : id(id), name(name) {
+	}
+
+	void updateClusterStatus(const String& address, uint32 port, uint32 pingPort, uint32 population) {
+		this->address = address;
+		this->port = port;
+		this->pingPort = pingPort;
+		this->population = population;
+	}
+
 	uint32 getID() const {
 		return id;
 	}
@@ -126,6 +137,10 @@ public:
 		buf << ")";
 
 		return buf.toString();
+	}
+
+	String toStringData() const {
+		return toString();
 	}
 };
 
