@@ -57,14 +57,27 @@ public:
 #endif // USE_RANDOM_EXTRA_PORTS
 	}
 
-	// core3client support
-	Galaxy(uint32 id, const String& name) : id(id), name(name) {
+	Galaxy(uint32 id) {
+		this->id = id;
 	}
 
-	void updateClusterStatus(const String& address, uint32 port, uint32 pingPort, uint32 population) {
+	void setName(const String& name) {
+		this->name = name;
+	}
+
+	void setAddress(const String& address) {
 		this->address = address;
+	}
+
+	void setPort(uint32 port) {
 		this->port = port;
+	}
+
+	void setPingPort(uint32 pingPort) {
 		this->pingPort = pingPort;
+	}
+
+	void setPopulation(uint32 population) {
 		this->population = population;
 	}
 

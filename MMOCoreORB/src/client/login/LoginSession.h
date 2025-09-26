@@ -20,9 +20,10 @@ class LoginSession : public Mutex, public Runnable, public Logger, public Object
 
 	uint32 accountID;
 	String sessionID;
+	String username;
+	String password;
 
 	Vector<CharacterListEntry> characters;
-	int selectedCharacter;
 
 	int instance;
 
@@ -33,34 +34,14 @@ class LoginSession : public Mutex, public Runnable, public Logger, public Object
 	VectorMap<uint32, Galaxy> galaxies;
 
 public:
-	LoginSession(int instance);
+	LoginSession(int instance, const String& username, const String& password);
 
 	~LoginSession();
 
 	void run();
 
-	void addCharacter(uint64 objectID) {
-		CharacterListEntry entry;
-		entry.setObjectID(objectID);
-		characters.add(entry);
-	}
-
-	void addCharacter(uint64 objectID, uint32 galaxyID) {
-		CharacterListEntry entry;
-		entry.setObjectID(objectID);
-		entry.setGalaxyID(galaxyID);
-		characters.add(entry);
-	}
-
 	void addCharacter(const CharacterListEntry& entry) {
 		characters.add(entry);
-	}
-
-	void setSelectedCharacter(int id) {
-		lock();
-		selectedCharacter = id;
-		sessionFinalized.signal(this);
-		unlock();
 	}
 
 	void signalCompletion() {
@@ -85,23 +66,24 @@ public:
 		return sessionID;
 	}
 
-	int getSelectedCharacter() {
-		return selectedCharacter;
-	}
-
-	const CharacterListEntry& getCharacter(uint32 id) {
+	const CharacterListEntry& getCharacterByOID(uint32 id) {
 		return characters.get(id);
 	}
 
-	void addGalaxy(const Galaxy& galaxy) {
-		galaxies.put(galaxy.getID(), galaxy);
+	const CharacterListEntry& getCharacterByIndex(int index) {
+		return characters.get(index);
 	}
 
-	Galaxy* getGalaxyInfo(uint32 galaxyId) {
-		if (galaxies.contains(galaxyId)) {
-			return &galaxies.get(galaxyId);
+	uint32 getCharacterListSize() {
+		return characters.size();
+	}
+
+	Galaxy& getGalaxy(uint32 galaxyId) {
+		if (!galaxies.contains(galaxyId)) {
+			galaxies.put(galaxyId, Galaxy(galaxyId));
 		}
-		return nullptr;
+
+		return galaxies.get(galaxyId);
 	}
 };
 

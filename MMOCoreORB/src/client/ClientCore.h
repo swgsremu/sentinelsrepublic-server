@@ -21,7 +21,7 @@ public:
 
 	void run();
 
-	void loginCharacter(int index);
+	bool loginCharacter(int index);
 	void logoutCharacter(int index);
 
 	void handleCommands();

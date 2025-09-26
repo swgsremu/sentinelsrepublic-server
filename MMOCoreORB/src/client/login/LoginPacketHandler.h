@@ -11,16 +11,24 @@
 #include "engine/engine.h"
 #include "LoginSession.h"
 
-class LoginPacketHandler : public Logger {
+class LoginPacketHandler : public Mutex, public Logger {
 	Reference<LoginSession*> loginSession;
+	AtomicInteger packetCount;
 
 public:
 	LoginPacketHandler(LoginSession* session) : Logger("LoginPacketHandler") {
 		loginSession = session;
-		setLogging(false); // Reduce noise
+		setLogging(false);
+		packetCount.set(0);
 	}
 
 	~LoginPacketHandler() {
+	}
+
+	void loginComplete() {
+		info(true) << __FUNCTION__ << ": processed " << packetCount.get() << " packet(s).";
+		packetCount.set(0);
+		loginSession->signalCompletion();
 	}
 
 	void handleMessage(Message* pack);
