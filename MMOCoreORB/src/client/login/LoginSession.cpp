@@ -12,6 +12,8 @@
 
 #include "LoginSession.h"
 
+#include "ClientCore.h"
+
 LoginSession::LoginSession(const String& username, const String& password) : Logger("LoginSession") {
 	LoginSession::username = username;
 	LoginSession::password = password;
@@ -20,7 +22,7 @@ LoginSession::LoginSession(const String& username, const String& password) : Log
 
 	accountID = 0;
 	sessionID = "";
-	setLogging(false); // Reduce noise
+	setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 }
 
 LoginSession::~LoginSession() {
@@ -33,8 +35,8 @@ void LoginSession::run() {
 	// Load config properties
 	Core::initializeProperties("Client3");
 
-	String loginHost = Core::getProperty("Client3.LoginHost", "127.0.0.1");
-	int loginPort = Core::getIntProperty("Client3.LoginPort", 44453);
+	String loginHost = ClientCore::getLoginHost();
+	int loginPort = ClientCore::getLoginPort();
 
 	info(true) << "Creating login client...";
 	login = new LoginClient(loginHost, loginPort);
@@ -55,7 +57,7 @@ void LoginSession::run() {
 	info(true) << "Connected to login server";
 
 	info(true) << "Creating AccountVersionMessage...";
-	String clientVersion = Core::getProperty("Client3.ClientVersion", "20050408-18:00");
+	String clientVersion = ClientCore::getClientVersion();
 	BaseMessage* acc = new AccountVersionMessage(username, password, clientVersion);
 
 	info(true) << "Sending login request...";
@@ -66,7 +68,7 @@ void LoginSession::run() {
 	// Wait for packets to be processed by the packet handler
 	lock();
 	Time timeout;
-	timeout.addMiliTime(Core::getIntProperty("Client3.LoginTimeout", 10) * 1000);
+	timeout.addMiliTime(ClientCore::getLoginTimeout() * 1000);
 	bool timedOut = !sessionFinalized.timedWait(this, &timeout);
 	unlock();
 

@@ -7,6 +7,7 @@
 #include "LoginPacketHandler.h"
 
 #include "LoginClient.h"
+#include "ClientCore.h"
 
 LoginClient::LoginClient(const String& host, int port) {
 	packetCount.set(0);
@@ -15,6 +16,7 @@ LoginClient::LoginClient(const String& host, int port) {
 
 	client->setLogging(true);
 	client->setLoggingName("LoginClient");
+	client->setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 
 	loginSession = nullptr;
 

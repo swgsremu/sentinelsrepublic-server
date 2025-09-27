@@ -9,6 +9,7 @@
 #define LOGINPACKETHANDLER_H_
 
 #include "engine/engine.h"
+#include "ClientCore.h"
 #include "LoginSession.h"
 
 class LoginPacketHandler : public Mutex, public Logger {
@@ -19,7 +20,7 @@ public:
 	LoginPacketHandler(LoginSession* session) : Logger("LoginPacketHandler") {
 		pending_packets = 0xF;
 		loginSession = session;
-		setLogging(false);
+		setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 	}
 
 	~LoginPacketHandler() {

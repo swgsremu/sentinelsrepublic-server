@@ -3,6 +3,7 @@
 		See file COPYING for copying conditions.*/
 
 #include "ZoneClient.h"
+#include "ClientCore.h"
 #include "ZonePacketHandler.h"
 #include "ZoneMessageProcessorTask.h"
 
@@ -12,7 +13,7 @@ ZoneClient::ZoneClient(const String& address, int port) {
 
 	client->setLogging(true);
 	client->setLoggingName("ZoneClient");
-	client->setInfoLogLevel();
+	client->setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 
 	player = nullptr;
 
