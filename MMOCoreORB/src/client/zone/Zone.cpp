@@ -5,7 +5,7 @@
 #include "client/zone/managers/objectcontroller/ObjectController.h"
 #include "client/zone/managers/object/ObjectManager.h"
 
-Zone::Zone(int instance, uint64 characterObjectID, uint32 account, const String& sessionID, const String& galaxyAddress, uint32 galaxyPort) : Thread(), Mutex("Zone"), Logger("Zone") {
+Zone::Zone(uint64 characterObjectID, uint32 account, const String& sessionID, const String& galaxyAddress, uint32 galaxyPort) : Thread(), Mutex("Zone"), Logger("Zone") {
 	characterID = characterObjectID;
 	accountID = account;
 	this->sessionID = sessionID;
@@ -21,7 +21,6 @@ Zone::Zone(int instance, uint64 characterObjectID, uint32 account, const String&
 	client = nullptr;
 	clientThread = nullptr;
 
-	Zone::instance = instance;
 	started = false;
 	sceneReady = false;
 
@@ -40,7 +39,7 @@ void Zone::run() {
 		client = new ZoneClient(galaxyAddress, galaxyPort);
 		client->setAccountID(accountID);
 		client->setZone(this);
-		client->getClient()->setLoggingName("ZoneClient" + String::valueOf(instance));
+		client->getClient()->setLoggingName("ZoneClient");
 		client->initialize();
 
 		info(true) << "ZoneClient created and initialized";

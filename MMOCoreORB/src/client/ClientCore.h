@@ -10,21 +10,19 @@
 class Zone;
 
 class ClientCore : public Core, public Logger {
-	int instances;
-
-	Vector<Zone*> zones;
+	String username;
+	String password;
+	Zone* zone;
 
 public:
-	ClientCore(int instances);
+	ClientCore(const String& username, const String& password);
 
 	void initialize();
 
 	void run();
 
-	bool loginCharacter(int index);
-	void logoutCharacter(int index);
-
-	void handleCommands();
+	bool loginCharacter();
+	void logoutCharacter();
 };
 
 #endif /*CLIENTCORE_H_*/

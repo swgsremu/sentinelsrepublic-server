@@ -12,8 +12,7 @@
 
 #include "LoginSession.h"
 
-LoginSession::LoginSession(int instance, const String& username, const String& password) : Logger("LoginSession" + String::valueOf(instance)) {
-	LoginSession::instance = instance;
+LoginSession::LoginSession(const String& username, const String& password) : Logger("LoginSession") {
 	LoginSession::username = username;
 	LoginSession::password = password;
 
@@ -25,8 +24,9 @@ LoginSession::LoginSession(int instance, const String& username, const String& p
 }
 
 LoginSession::~LoginSession() {
-	if (loginThread != nullptr)
-		loginThread->stop();
+	if (login != nullptr) {
+		login->disconnect();
+	}
 }
 
 void LoginSession::run() {
@@ -37,7 +37,7 @@ void LoginSession::run() {
 	int loginPort = Core::getIntProperty("Client3.LoginPort", 44453);
 
 	info(true) << "Creating login client...";
-	login = new LoginClient(loginPort, "LoginClient" + String::valueOf(instance));
+	login = new LoginClient(loginHost, loginPort);
 	login->setLoginSession(this);
 	login->initialize();
 
@@ -66,9 +66,22 @@ void LoginSession::run() {
 	// Wait for packets to be processed by the packet handler
 	lock();
 	Time timeout;
-	timeout.addMiliTime(10000); // 10 second timeout
+	timeout.addMiliTime(Core::getIntProperty("Client3.LoginTimeout", 10) * 1000);
 	bool timedOut = !sessionFinalized.timedWait(this, &timeout);
 	unlock();
+
+	login->disconnect();
+
+	loginThread->stop();
+
+	// DatagramServiceClient doesn't do this for us so we'll do it directly
+	Socket* socket = login->getClient()->getSocket();
+	if (socket != nullptr) {
+		socket->shutdown(SHUT_RDWR);
+		socket->close();
+	}
+
+	loginThread = nullptr;
 
 	info(true) << "Login process completed.";
 }

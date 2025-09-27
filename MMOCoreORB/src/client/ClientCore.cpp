@@ -9,13 +9,14 @@
 
 #include "client/login/LoginSession.h"
 
-ClientCore::ClientCore(int instances) : Core("log/core3client.log", "client3"), Logger("CoreClient") {
-	ClientCore::instances = instances;
+int exit_result = 1;
 
-	// Load config and set log level
+ClientCore::ClientCore(const String& username, const String& password) : Core("log/core3client.log", "client3"), Logger("CoreClient") {
+	ClientCore::username = username;
+	ClientCore::password = password;
+
 	Core::initializeProperties("Client3");
-	int logLevel = Core::getIntProperty("Client3.LogLevel", 1);
-	setLogLevel(static_cast<LogLevel>(logLevel));
+	setLogLevel(static_cast<LogLevel>(Core::getIntProperty("Client3.LogLevel", 1)));
 }
 
 void ClientCore::initialize() {
@@ -23,56 +24,36 @@ void ClientCore::initialize() {
 }
 
 void ClientCore::run() {
-	for (int i = 0; i < instances; ++i) {
-		zones.add(nullptr);
-	}
-
 	info(true) << "initialized";
 
-	if (!loginCharacter(0)) {
+	if (!loginCharacter()) {
 		info(true) << "Failed to login character.";
+		exit_result = 101;
 		return;
 	}
 
 	info(true) << "Waiting for zone connection...";
 
-	Zone* zone = zones.get(0);
-	if (zone != nullptr && zone->waitForSceneReady()) {
+	if (zone != nullptr && zone->waitForSceneReady(Core::getIntProperty("Client3.ZoneTimeout", 30) * 1000)) {
 		info(true) << "Zone connection established and scene loaded!";
 		info(true) << "Login flow test completed successfully!";
 	} else {
-		info(true) << "Timeout waiting for zone connection";
+		error() << "Timeout waiting for zone connection";
+		exit_result = 102;
 	}
 
 	info(true) << "Shutting down...";
 
-	for (int i = 0; i < instances; ++i) {
-		logoutCharacter(i);
-	}
+	logoutCharacter();
+
+	exit_result = 0;
 }
 
-bool ClientCore::loginCharacter(int index) {
+bool ClientCore::loginCharacter() {
 	try {
-		String username, password;
+		info(true) << "Logging in as: " << username;
 
-		// Get credentials from environment variables
-		const char* envUser = getenv("CORE3_CLIENT_USERNAME");
-		const char* envPass = getenv("CORE3_CLIENT_PASSWORD");
-
-		if (envUser && envPass) {
-			username = envUser;
-			password = envPass;
-			info(true) << "Logging in as: " << username;
-		} else {
-			info(true) << "ERROR: Please set CORE3_CLIENT_USERNAME and CORE3_CLIENT_PASSWORD environment variables";
-			return false;
-		}
-
-		Zone* zone = zones.get(index);
-		if (zone != nullptr)
-			return false;
-
-		Reference<LoginSession*> loginSession = new LoginSession(index, username, password);
+		Reference<LoginSession*> loginSession = new LoginSession(username, password);
 		loginSession->run();
 
 		auto numCharacters = loginSession->getCharacterListSize();
@@ -95,7 +76,7 @@ bool ClientCore::loginCharacter(int index) {
 
 		info(true) << "Login completed - Account: " << acc << ", Session: " << sessionID;
 
-		auto& galaxy = loginSession->getGalaxy(galaxyId);
+		auto galaxy = loginSession->getGalaxy(galaxyId);
 
 		info(true) << "Zone into " << galaxy;
 
@@ -103,9 +84,10 @@ bool ClientCore::loginCharacter(int index) {
 			throw Exception("Invalid galaxy, missing IP address.");
 		}
 
-		zone = new Zone(index, objid, acc, sessionID, galaxy.getAddress(), galaxy.getPort());
+		loginSession = nullptr;
+
+		zone = new Zone(objid, acc, sessionID, galaxy.getAddress(), galaxy.getPort());
 		zone->start();
-		zones.set(index, zone);
 	} catch (Exception& e) {
 		e.printMessage();
 		return false;
@@ -114,37 +96,33 @@ bool ClientCore::loginCharacter(int index) {
 	return true;
 }
 
-void ClientCore::logoutCharacter(int index) {
-	Zone* zone = zones.get(index);
+void ClientCore::logoutCharacter() {
 	if (zone == nullptr || !zone->isStarted())
 		return;
 
 	info(true) << __FUNCTION__ << "(" << index << ")";
-
-	zones.set(index, nullptr);
 
 	zone->disconnect();
 
 	delete zone;
 }
 
-void ClientCore::handleCommands() {
-	// Disabled for now
-}
-
 int main(int argc, char* argv[]) {
 	try {
-		Vector<String> arguments;
-		for (int i = 1; i < argc; ++i) {
-			arguments.add(argv[i]);
+		String username, password;
+
+		// Get credentials from environment variables
+		const char* envUser = getenv("CORE3_CLIENT_USERNAME");
+		const char* envPass = getenv("CORE3_CLIENT_PASSWORD");
+
+		if (envUser && envPass) {
+			username = envUser;
+			password = envPass;
+		} else {
+			throw Exception("ERROR: Please set CORE3_CLIENT_USERNAME and CORE3_CLIENT_PASSWORD environment variables");
 		}
 
 		StackTrace::setBinaryName("core3client");
-
-		int instances = 1;
-
-		if (argc > 1)
-			instances = Integer::valueOf(arguments.get(0));
 
 		// Configure engine3
 		Core::setProperty("TaskManager.defaultSchedulerThreads", "2");
@@ -152,13 +130,16 @@ int main(int argc, char* argv[]) {
 		Core::setProperty("TaskManager.defaultWorkerQueues", "1");
 		Core::setProperty("TaskManager.defaultWorkerThreadsPerQueue", "2");
 
-		ClientCore core(instances);
-
+		ClientCore core(username, password);
 		core.start();
+		System::out << "core.start() returned" << endl;
 	} catch (Exception& e) {
 		System::out << e.getMessage() << "\n";
 		e.printStackTrace();
+		exit_result = 100;
 	}
 
-	return 0;
+	System::out << "exit(" << exit_result << ")" << endl;
+
+	return exit_result;
 }

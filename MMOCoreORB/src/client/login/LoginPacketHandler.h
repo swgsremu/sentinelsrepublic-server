@@ -13,21 +13,19 @@
 
 class LoginPacketHandler : public Mutex, public Logger {
 	Reference<LoginSession*> loginSession;
-	AtomicInteger packetCount;
+	uint8_t pending_packets;
 
 public:
 	LoginPacketHandler(LoginSession* session) : Logger("LoginPacketHandler") {
+		pending_packets = 0xF;
 		loginSession = session;
 		setLogging(false);
-		packetCount.set(0);
 	}
 
 	~LoginPacketHandler() {
 	}
 
 	void loginComplete() {
-		info(true) << __FUNCTION__ << ": processed " << packetCount.get() << " packet(s).";
-		packetCount.set(0);
 		loginSession->signalCompletion();
 	}
 

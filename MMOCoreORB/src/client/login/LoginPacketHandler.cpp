@@ -9,31 +9,27 @@
 
 #include "LoginPacketHandler.h"
 
-#define ORDER_CHECK(n) \
-	info(true) << __FUNCTION__;	\
-					\
-	if (packetCount.get() != n) {	\
-		warning() << __FUNCTION__ << " out of order packet, got " << packetCount.get() << " expected " << n; \
-	}
+#include <bitset>
 
 void LoginPacketHandler::handleMessage(Message* pack) {
 	Locker lock(this);
 
-	packetCount.increment();
 	sys::uint16 opcount = pack->parseShort();
 	sys::uint32 opcode = pack->parseInt();
 
-	info(true) << packetCount.get() << ": -------------------- (0x" << hex << opcode << ") --------------------";
+	info(true) << "-------------------- (0x" << hex << opcode << ") --------------------";
 
 	switch (opcount) {
 	case 02:
 		switch (opcode) {
 		case STRING_HASHCODE("EnumerateCharacterId"): // 0x65EA4574 char create success
 			handleEnumerateCharacterId(pack);
+			pending_packets &= ~0x01;
 			break;
 
 		case STRING_HASHCODE("LoginEnumCluster"): // 0xC11C63B9 galaxy list
 			handleLoginEnumCluster(pack);
+			pending_packets &= ~0x02;
 			break;
 		}
 		break;
@@ -41,10 +37,12 @@ void LoginPacketHandler::handleMessage(Message* pack) {
 		switch (opcode) {
 		case STRING_HASHCODE("ErrorMessage"):
 			handleErrorMessage(pack);
+			pending_packets = 0;
 			break;
 
 		case STRING_HASHCODE("LoginClusterStatus"): // 0x3436AEB6 galaxy status with address/port
 			handleLoginClusterStatus(pack);
+			pending_packets &= ~0x04;
 			break;
 		}
 		break;
@@ -52,13 +50,20 @@ void LoginPacketHandler::handleMessage(Message* pack) {
 		switch (opcode) {
 		case STRING_HASHCODE("LoginClientToken"): // 0xAAB296C6 client token
 			handleLoginClientToken(pack);
+			pending_packets &= ~0x08;
 			break;
 		}
 		break;
 
 	default:
 		error() << "Unhandled packet - opcount: " << opcount << " opcode: 0x" << hex << opcode << dec;
+		pending_packets = 0;
 		break;
+	}
+
+	// If we've seen all the packets or errored out signal complete
+	if (pending_packets == 0) {
+		loginComplete();
 	}
 }
 
@@ -74,7 +79,7 @@ void LoginPacketHandler::handleErrorMessage(Message* pack) {
 }
 
 void LoginPacketHandler::handleLoginClientToken(Message* pack) {
-	ORDER_CHECK(1);
+	info(true) << __FUNCTION__;
 
 	uint32 sessionLength = pack->parseInt();
 	uint32 len = sessionLength - 4;
@@ -101,7 +106,7 @@ void LoginPacketHandler::handleLoginClientToken(Message* pack) {
 }
 
 void LoginPacketHandler::handleLoginEnumCluster(Message* pack) {
-	ORDER_CHECK(2);
+	info(true) << __FUNCTION__;
 
 	uint32 galaxyCount = pack->parseInt();
 
@@ -112,7 +117,6 @@ void LoginPacketHandler::handleLoginEnumCluster(Message* pack) {
 		pack->parseAscii(galaxyName);
 
 		uint32 serverStatus = pack->parseInt();
-		uint32 footer = pack->parseInt();
 
 		// Create Galaxy with ID and name
 		auto& galaxy = loginSession->getGalaxy(galaxyID);
@@ -120,10 +124,12 @@ void LoginPacketHandler::handleLoginEnumCluster(Message* pack) {
 
 		info(true) << "    Galaxy[" << i << "]: " << galaxy;
 	}
+
+	uint32 footer = pack->parseInt();
 }
 
 void LoginPacketHandler::handleLoginClusterStatus(Message* pack) {
-	ORDER_CHECK(3);
+	info(true) << __FUNCTION__;
 
 	uint32 galaxyCount = pack->parseInt();
 
@@ -155,7 +161,7 @@ void LoginPacketHandler::handleLoginClusterStatus(Message* pack) {
 }
 
 void LoginPacketHandler::handleEnumerateCharacterId(Message* pack) {
-	ORDER_CHECK(4);
+	info(true) << __FUNCTION__;
 
 	uint32 characters = pack->parseInt();
 
@@ -186,6 +192,4 @@ void LoginPacketHandler::handleEnumerateCharacterId(Message* pack) {
 
 		info(true) << "    Character[" << i << "]: " << entry;
 	}
-
-	loginComplete();
 }

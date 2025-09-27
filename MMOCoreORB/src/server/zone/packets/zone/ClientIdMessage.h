@@ -13,7 +13,7 @@ public:
 		insertShort(0x03);
 		insertInt(STRING_HASHCODE("ClientIdMsg"));
 
-		insertInt(0x00); // gameBits
+		insertInt(0xFE); // gameBits
 		insertInt(sessionID.length() + 4); // dataLen (sessionID length + 4 for accountID)
 
 		// Insert sessionID as bytes
