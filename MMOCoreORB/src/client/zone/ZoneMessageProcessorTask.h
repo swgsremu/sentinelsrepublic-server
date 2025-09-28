@@ -6,7 +6,7 @@
 #define ZONEMESSAGEPROCESSORTASK_H_
 
 #include "ZonePacketHandler.h"
-
+#include "ClientCore.h"
 
 class ZoneMessageProcessorTask : public Task, public Logger {
 	Message* message;
@@ -18,6 +18,7 @@ public:
 		message = msg;
 
 		packetHandler = handler;
+		setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 	}
 
 	~ZoneMessageProcessorTask() {

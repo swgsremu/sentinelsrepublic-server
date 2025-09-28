@@ -1,5 +1,6 @@
 #include "Zone.h"
 #include "ZonePacketHandler.h"
+#include "ClientCore.h"
 #include "server/zone/packets/zone/SelectCharacter.h"
 #include "server/zone/packets/zone/CmdSceneReady.h"
 #include "client/zone/managers/object/ObjectManager.h"
@@ -12,7 +13,7 @@ ZonePacketHandler::ZonePacketHandler(const String& s, Zone * z) : Logger(s) {
 	packetCount.set(0);
 	setLogging(true);
 	setGlobalLogging(true);
-	setInfoLogLevel();
+	setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 }
 
 void ZonePacketHandler::handleMessage(Message* pack) {

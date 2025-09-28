@@ -9,25 +9,24 @@
 #define LOGINPACKETHANDLER_H_
 
 #include "engine/engine.h"
+#include "ClientCore.h"
 #include "LoginSession.h"
 
 class LoginPacketHandler : public Mutex, public Logger {
 	Reference<LoginSession*> loginSession;
-	AtomicInteger packetCount;
+	uint8_t pending_packets;
 
 public:
 	LoginPacketHandler(LoginSession* session) : Logger("LoginPacketHandler") {
+		pending_packets = 0xF;
 		loginSession = session;
-		setLogging(false);
-		packetCount.set(0);
+		setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 	}
 
 	~LoginPacketHandler() {
 	}
 
 	void loginComplete() {
-		info(true) << __FUNCTION__ << ": processed " << packetCount.get() << " packet(s).";
-		packetCount.set(0);
 		loginSession->signalCompletion();
 	}
 

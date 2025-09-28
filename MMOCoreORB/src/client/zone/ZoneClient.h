@@ -43,6 +43,13 @@ public:
 
 		client->disconnect();
 
+		Socket* socket = client->getSocket();
+
+		if (socket != nullptr) {
+			socket->shutdown(SHUT_RDWR);
+			socket->close();
+		}
+
 		client->info(true) << "disconnected";
 	}
 

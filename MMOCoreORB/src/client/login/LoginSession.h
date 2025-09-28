@@ -25,8 +25,6 @@ class LoginSession : public Mutex, public Runnable, public Logger, public Object
 
 	Vector<CharacterListEntry> characters;
 
-	int instance;
-
 	class LoginClientThread* loginThread;
 
 	Reference<LoginClient*> login;
@@ -34,7 +32,7 @@ class LoginSession : public Mutex, public Runnable, public Logger, public Object
 	VectorMap<uint32, Galaxy> galaxies;
 
 public:
-	LoginSession(int instance, const String& username, const String& password);
+	LoginSession(const String& username, const String& password);
 
 	~LoginSession();
 

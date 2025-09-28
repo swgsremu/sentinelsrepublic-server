@@ -7,8 +7,8 @@
 
 #include "ZoneClient.h"
 #include "client/zone/objects/player/PlayerCreature.h"
+#include "client/zone/ZoneClientThread.h"
 
-class ZoneClientThread;
 class ObjectController;
 class ObjectManager;
 
@@ -31,14 +31,12 @@ class Zone : public Thread, public Mutex, public Logger {
 
 	ObjectManager* objectManager;
 
-	int instance;
-
 	Time startTime;
 	bool started;
 	bool sceneReady;
 
 public:
-	Zone(int instance, uint64 characterObjectID, uint32 account, const String& sessionID, const String& galaxyAddress, uint32 galaxyPort);
+	Zone(uint64 characterObjectID, uint32 account, const String& sessionID, const String& galaxyAddress, uint32 galaxyPort);
 	~Zone();
 
 	void run();
@@ -46,6 +44,7 @@ public:
 	void disconnect() {
 		if (client != nullptr) {
 			client->disconnect();
+			clientThread = nullptr;
 		}
 	}
 
@@ -62,7 +61,7 @@ public:
 		sceneReadyCondition.signal(this);
 	}
 
-	bool waitForSceneReady(int timeoutMs = 30000) {
+	bool waitForSceneReady(int timeoutMs) {
 		Locker locker(this);
 		
 		if (sceneReady) {

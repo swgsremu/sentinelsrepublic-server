@@ -6,6 +6,7 @@
 #define LOGINMESSAGEPROCESSORTASK_H_
 
 #include "LoginPacketHandler.h"
+#include "ClientCore.h"
 
 class LoginMessageProcessorTask : public Task, public Logger {
 	Message* message;
@@ -17,6 +18,7 @@ public:
 		message = msg;
 
 		packetHandler = handler;
+		setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 	}
 
 	~LoginMessageProcessorTask() {
