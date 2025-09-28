@@ -5,7 +5,7 @@
 #ifndef ZONECLIENT_H_
 #define ZONECLIENT_H_
 
-#include "client/zone/objects/player/PlayerCreature.h"
+#include "engine/engine.h"
 #include "client/zone/ZonePacketHandler.h"
 
 class Zone;
@@ -17,8 +17,6 @@ class ZoneClient : public ServiceHandler {
 	Reference<BaseClient*> client;
 
 	Zone* zone;
-
-	Reference<PlayerCreature*> player;
 
 	uint32 accountID;
 
@@ -97,16 +95,8 @@ public:
 		accountID = id;
 	}
 
-	void setPlayer(PlayerCreature* p) {
-		player = p;
-	}
-
 	BaseClient* getClient() {
 		return client;
-	}
-
-	PlayerCreature* getPlayer() {
-		return player;
 	}
 
 	Zone* getZone() {

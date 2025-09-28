@@ -1,6 +1,7 @@
 #include "Zone.h"
 #include "ZonePacketHandler.h"
 #include "ClientCore.h"
+#include "client/zone/objects/scene/SceneObject.h"
 #include "server/zone/packets/zone/SelectCharacter.h"
 #include "server/zone/packets/zone/CmdSceneReady.h"
 #include "client/zone/managers/object/ObjectManager.h"
@@ -30,21 +31,10 @@ void ZonePacketHandler::handleMessage(Message* pack) {
 		}
 	case 02:
 		switch (opcode) {
-		case 0x1DB575CC: // char create success
-			handleCharacterCreateSucessMessage(pack);
-			break;
 		}
 		break;
 	case 03:
 		switch (opcode) {
-
-		case 0xDF333C6E: // char create failure
-			handleCharacterCreateFailureMessage(pack);
-			break;
-
-		case 0x4D45D504:
-			handleSceneObejctDestroyMessage(pack);
-			break;
 
 		}
 		break;
@@ -86,9 +76,6 @@ void ZonePacketHandler::handleMessage(Message* pack) {
 		break;
 	case 8:
 		switch (opcode) {
-		case 0x1B24F808: // update transform message
-			handleUpdateTransformMessage(pack);
-			break;
 		}
 		break;
 	case 9:
@@ -176,16 +163,7 @@ void ZonePacketHandler::handleSceneObjectCreateMessage(Message* pack) {
 		return;
 	}
 
-	if (zone->isSelfPlayer(object)) {
-		object->setClient(zone->getZoneClient());
-	}
-}
-
-void ZonePacketHandler::handleSceneObejctDestroyMessage(Message* pack) {
-	uint64 oid = pack->parseLong();
-
-	ObjectManager* objectManager = zone->getObjectManager();
-	objectManager->destroyObject(oid);
+	object->setClient(zone->getZoneClient());
 }
 
 void ZonePacketHandler::handleBaselineMessage(Message* pack) {
@@ -218,65 +196,6 @@ void ZonePacketHandler::handleBaselineMessage(Message* pack) {
 	default:
 		break;
 	}
-}
-
-void ZonePacketHandler::handleCharacterCreateSucessMessage(Message* pack) {
-	BaseClient* client = (BaseClient*) pack->getClient();
-
-	uint64 charid = pack->parseLong();
-
-	StringBuffer msg;
-	msg << "Character succesfully created - ID = 0x" << hex << charid;
-	client->info(msg.toString());
-
-	zone->setCharacterID(charid);
-
-	BaseMessage* selectChar = new SelectCharacter(charid);
-	client->sendPacket(selectChar);
-}
-
-void ZonePacketHandler::handleUpdateTransformMessage(Message* pack) {
-	BaseClient* client = (BaseClient*) pack->getClient();
-
-	uint64 objid = pack->parseLong();
-
-	float x = pack->parseSignedShort() / 4.f;
-	float z = pack->parseSignedShort() / 4.f;
-	float y = pack->parseSignedShort() / 4.f;
-
-	uint32 counter = pack->parseInt();
-
-	SceneObject* scno = zone->getObject(objid);
-
-	if (scno != nullptr) {
-		Locker _locker(scno);
-		scno->setPosition(x, z, y);
-		//scno->info("updating position");
-
-		_locker.release();
-
-		PlayerCreature* player = zone->getSelfPlayer();
-
-		Locker _playerLocker(player);
-
-		if (player->getFollowObject() == scno) {
-			player->updatePosition(x, z, y);
-		}
-	}
-}
-
-void ZonePacketHandler::handleCharacterCreateFailureMessage(Message* pack) {
-	BaseClient* client = (BaseClient*) pack->getClient();
-	uint32 int1 = pack->parseInt();
-	String ui;
-	pack->parseAscii(ui);
-
-	uint32 int2 = pack->parseInt();
-
-	String error;
-	pack->parseAscii(error);
-
-	client->error(error);
 }
 
 void ZonePacketHandler::handleChatInstantMessageToClient(Message* pack) {
@@ -327,8 +246,9 @@ void ZonePacketHandler::handleObjectControllerMessage(Message* pack) {
 
 	SceneObject* object = zone->getObject(objectID);
 
-	if (object != nullptr)
-		zone->getObjectController()->handleObjectController(object, header1, header2, pack);
+	if (object != nullptr) {
+		// No object controller handling needed
+	}
 }
 
 void ZonePacketHandler::handleUpdateContainmentMessage(Message* pack) {
@@ -348,7 +268,7 @@ void ZonePacketHandler::handleUpdateContainmentMessage(Message* pack) {
 		parent = object->getParent();
 
 		if (parent != nullptr) {
-			parent->removeObject(object);
+			// No container removal needed
 		} else {
 			object->setParent(nullptr);
 		}
@@ -358,7 +278,7 @@ void ZonePacketHandler::handleUpdateContainmentMessage(Message* pack) {
 		return;
 	}
 
-	parent->transferObject(object, type);
+	// No container transfer needed
 }
 
 void ZonePacketHandler::handleCmdSceneReady(Message* pack) {

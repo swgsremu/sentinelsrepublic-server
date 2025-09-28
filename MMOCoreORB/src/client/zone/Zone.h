@@ -6,12 +6,12 @@
 #define ZONE_H_
 
 #include "ZoneClient.h"
-#include "client/zone/objects/player/PlayerCreature.h"
 #include "client/zone/ZoneClientThread.h"
 #include "engine/util/JSONSerializationType.h"
 
 class ObjectController;
 class ObjectManager;
+class SceneObject;
 
 class Zone : public Thread, public Mutex, public Logger {
 	uint64 characterID;
@@ -22,8 +22,6 @@ class Zone : public Thread, public Mutex, public Logger {
 
 	Reference<ZoneClient*> client;
 	ZoneClientThread* clientThread;
-
-	Reference<PlayerCreature*> player;
 
 	ObjectController* objectController;
 
@@ -74,15 +72,6 @@ public:
 		bool success = !sceneReadyCondition.timedWait(this, &timeout);
 
 		return success && sceneReady;
-	}
-
-	PlayerCreature* getSelfPlayer();
-
-	bool isSelfPlayer(SceneObject* pl) {
-		if (characterID == 0)
-			return false;
-
-		return pl->getObjectID() == characterID;
 	}
 
 	bool hasSelfPlayer() {

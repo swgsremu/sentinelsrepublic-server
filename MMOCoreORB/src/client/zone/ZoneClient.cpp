@@ -17,8 +17,6 @@ ZoneClient::ZoneClient(const String& address, int port) {
 	client->setLoggingName("ZoneClient");
 	client->setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 
-	player = nullptr;
-
 	accountID = 0;
 
 	zone = nullptr;
@@ -28,10 +26,6 @@ ZoneClient::ZoneClient(const String& address, int port) {
 }
 
 ZoneClient::~ZoneClient() {
-	if (player != nullptr)
-		delete player;
-
-	player = nullptr;
 
 	delete basePacketHandler,
 	basePacketHandler = nullptr;
