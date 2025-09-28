@@ -89,3 +89,12 @@ SceneObject* Zone::getObject(uint64 objid) {
 PlayerCreature* Zone::getSelfPlayer() {
 	return (PlayerCreature*)objectManager->getObject(characterID);
 }
+
+JSONSerializationType Zone::collectStats() {
+	JSONSerializationType stats;
+	stats["elapsedMs"] = startTime.miliDifference();
+	stats["packetCount"] = client != nullptr ? client->getPacketCount() : 0;
+	stats["sceneReady"] = sceneReady;
+	stats["characterId"] = characterID;
+	return stats;
+}

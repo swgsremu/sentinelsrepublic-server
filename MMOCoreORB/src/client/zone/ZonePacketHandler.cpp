@@ -10,7 +10,6 @@
 ZonePacketHandler::ZonePacketHandler(const String& s, Zone * z) : Logger(s) {
 	zone = z;
 
-	packetCount.set(0);
 	setLogging(true);
 	setGlobalLogging(true);
 	setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
@@ -19,11 +18,8 @@ ZonePacketHandler::ZonePacketHandler(const String& s, Zone * z) : Logger(s) {
 void ZonePacketHandler::handleMessage(Message* pack) {
 	Locker lock(this);
 
-	packetCount.increment();
 	sys::uint16 opcount = pack->parseShort();
 	sys::uint32 opcode = pack->parseInt();
-
-	// info(true) << packetCount.get() << ": -------------------- (" << opcount << "; 0x" << hex << opcode << ") --------------------";
 
 	switch (opcount) {
 	case 01:
@@ -109,7 +105,7 @@ void ZonePacketHandler::handleMessage(Message* pack) {
 }
 
 void ZonePacketHandler::handleClientPermissionsMessage(Message* pack) {
-	info(true) << __FUNCTION__ << " packet#" << packetCount.get();
+	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
 
 	info(true) << "    canLogin = " << pack->parseByte();
 	info(true) << "    canCreateRegularCharacter = " << pack->parseByte();
@@ -130,7 +126,7 @@ void ZonePacketHandler::handleClientPermissionsMessage(Message* pack) {
 }
 
 void ZonePacketHandler::handleCmdStartScene(Message* pack) {
-	info(true) << __FUNCTION__ << " packet#" << packetCount.get();
+	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
 
 	BaseClient* client = (BaseClient*) pack->getClient();
 
@@ -300,7 +296,7 @@ void ZonePacketHandler::handleChatInstantMessageToClient(Message* pack) {
 }
 
 void ZonePacketHandler::handleChatSystemMessage(Message* pack) {
-	info(true) << __FUNCTION__ << " packet#" << packetCount.get();
+	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
 
 	BaseClient* client = (BaseClient*) pack->getClient();
 
@@ -366,7 +362,7 @@ void ZonePacketHandler::handleUpdateContainmentMessage(Message* pack) {
 }
 
 void ZonePacketHandler::handleCmdSceneReady(Message* pack) {
-	info(true) << __FUNCTION__ << " packet#" << packetCount.get();
+	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
 
 	zone->setSceneReady();
 }

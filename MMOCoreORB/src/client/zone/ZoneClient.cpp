@@ -8,6 +8,8 @@
 #include "ZoneMessageProcessorTask.h"
 
 ZoneClient::ZoneClient(const String& address, int port) {
+	packetCount.set(0);
+
 	client = new BaseClient(address, port);
 	client->setHandler(this);
 
@@ -46,6 +48,8 @@ void ZoneClient::initialize() {
 }
 
 void ZoneClient::processMessage(Message* message) {
+	packetCount.increment();
+
 	ZoneMessageProcessorTask* task = new ZoneMessageProcessorTask(message, zonePacketHandler);
 	Core::getTaskManager()->executeTask(task);
 }

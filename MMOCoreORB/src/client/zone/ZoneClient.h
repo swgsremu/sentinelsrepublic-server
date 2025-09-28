@@ -12,6 +12,8 @@ class Zone;
 class ZonePacketHandler;
 
 class ZoneClient : public ServiceHandler {
+	AtomicInteger packetCount;
+
 	Reference<BaseClient*> client;
 
 	Zone* zone;
@@ -37,9 +39,7 @@ public:
 	}
 
 	void disconnect() {
-		if (zonePacketHandler != nullptr) {
-			client->info(true) << "disconnecting after " << zonePacketHandler->getPacketCount() << " packets.";
-		}
+		client->info(true) << "disconnecting after " << packetCount.get() << " packets.";
 
 		client->disconnect();
 
@@ -115,6 +115,14 @@ public:
 
 	uint32 getAccountID() {
 		return accountID;
+	}
+
+	ZonePacketHandler* getZonePacketHandler() {
+		return zonePacketHandler;
+	}
+
+	int getPacketCount() {
+		return packetCount.get();
 	}
 };
 

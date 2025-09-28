@@ -88,6 +88,10 @@ public:
 	BaseClient* getClient() {
 		return client;
 	}
+
+	int getPacketCount() {
+		return packetCount.get();
+	}
 };
 
 #endif /* LOGINCLIENT_H_ */

@@ -16,6 +16,9 @@ int exit_result = 1;
 
 ClientCore::ClientCore(const ClientCoreOptions& opts) : Core("log/core3client.log", "client3"), Logger("CoreClient") {
 	options = opts;
+	zone = nullptr;
+
+	overallStartTime.updateToCurrentTime();
 
 	Core::initializeProperties("Client3");
 
@@ -38,9 +41,27 @@ void ClientCore::initialize() {
 void ClientCore::run() {
 	info(true) << "initialized";
 
-	if (!loginCharacter()) {
+	Reference<LoginSession*> loginSession;
+	bool loginSuccess = loginCharacter(loginSession);
+
+	if (!loginSuccess) {
 		info(true) << "Failed to login character.";
 		exit_result = 101;
+
+		if (!options.saveState.isEmpty()) {
+			saveStateToFile(options.saveState, loginSession);
+		}
+		return;
+	}
+
+	if (options.loginOnly) {
+		info(true) << "Login-only mode: skipping zone connection";
+
+		if (!options.saveState.isEmpty()) {
+			saveStateToFile(options.saveState, loginSession);
+		}
+
+		exit_result = 0;
 		return;
 	}
 
@@ -54,6 +75,10 @@ void ClientCore::run() {
 		exit_result = 102;
 	}
 
+	if (!options.saveState.isEmpty()) {
+		saveStateToFile(options.saveState, loginSession);
+	}
+
 	info(true) << "Shutting down...";
 
 	logoutCharacter();
@@ -61,11 +86,11 @@ void ClientCore::run() {
 	exit_result = 0;
 }
 
-bool ClientCore::loginCharacter() {
+bool ClientCore::loginCharacter(Reference<LoginSession*>& loginSession) {
 	try {
 		info(true) << "Logging in as: " << options.username;
 
-		Reference<LoginSession*> loginSession = new LoginSession(options.username, options.password);
+		loginSession = new LoginSession(options.username, options.password);
 		loginSession->run();
 
 		auto numCharacters = loginSession->getCharacterListSize();
@@ -75,13 +100,33 @@ bool ClientCore::loginCharacter() {
 			return false;
 		}
 
-		uint32 selectedCharacter = System::random(numCharacters - 1);
+		Optional<const CharacterListEntry&> character;
 
-		const CharacterListEntry& character = loginSession->getCharacterByIndex(selectedCharacter);
-		auto objid = character.getObjectID();
-		auto galaxyId = character.getGalaxyID();
+		if (options.characterOid != 0) {
+			character = loginSession->selectCharacterByOID(options.characterOid);
+			if (!character) {
+				info(true) << "ERROR: Character with OID " << options.characterOid << " not found";
+				return false;
+			}
+		} else if (!options.characterFirstname.isEmpty()) {
+			character = loginSession->selectCharacterByFirstname(options.characterFirstname);
+			if (!character) {
+				info(true) << "ERROR: Character with firstname '" << options.characterFirstname << "' not found";
+				return false;
+			}
+		} else {
+			character = loginSession->selectRandomCharacter();
+		}
 
-		info(true) << "Login[" << selectedCharacter << "]: " << character;
+		if (!character) {
+			info(true) << __FUNCTION__ << ": Failed to select any character";
+			return false;
+		}
+
+		auto objid = character->getObjectID();
+		auto galaxyId = character->getGalaxyID();
+
+		info(true) << "Selected character: " << *character;
 
 		uint32 acc = loginSession->getAccountID();
 		const String& sessionID = loginSession->getSessionID();
@@ -90,16 +135,19 @@ bool ClientCore::loginCharacter() {
 
 		auto galaxy = loginSession->getGalaxy(galaxyId);
 
+		// Store selected galaxy for JSON output
+		selectedGalaxy = galaxy;
+
 		info(true) << "Zone into " << galaxy;
 
 		if (galaxy.getAddress().isEmpty()) {
 			throw Exception("Invalid galaxy, missing IP address.");
 		}
 
-		loginSession = nullptr;
-
-		zone = new Zone(objid, acc, sessionID, galaxy.getAddress(), galaxy.getPort());
-		zone->start();
+		if (!options.loginOnly) {
+			zone = new Zone(objid, acc, sessionID, galaxy.getAddress(), galaxy.getPort());
+			zone->start();
+		}
 	} catch (Exception& e) {
 		e.printMessage();
 		return false;
@@ -117,6 +165,107 @@ void ClientCore::logoutCharacter() {
 	zone->disconnect();
 
 	delete zone;
+}
+
+void ClientCore::saveStateToFile(const String& filename, LoginSession* loginSession) {
+	try {
+		JSONSerializationType jsonData;
+
+		// Overall timing
+		jsonData["totalElapsedMs"] = overallStartTime.miliDifference();
+
+		// Timestamp
+		Time now;
+		now.updateToCurrentTime();
+		jsonData["@timestamp"] = now.getFormattedTimeFull().toCharArray();
+		jsonData["time_msecs"] = now.getMiliTime();
+
+		// Login stats
+		if (loginSession != nullptr) {
+			jsonData["loginStats"] = loginSession->collectStats();
+
+			// Account info
+			JSONSerializationType account;
+			account["id"] = loginSession->getAccountID();
+			account["username"] = loginSession->getSessionID().isEmpty() ? "" : loginSession->collectStats()["username"];
+			account["sessionId"] = loginSession->getSessionID().toCharArray();
+			jsonData["account"] = account;
+
+			// Galaxies - iterate through all galaxies in the map
+			JSONSerializationType galaxiesArray = JSONSerializationType::array();
+			auto& galaxyMap = loginSession->getGalaxies();
+			for (int i = 0; i < galaxyMap.size(); ++i) {
+				auto& galaxy = galaxyMap.get(i);
+				if (!galaxy.getName().isEmpty()) {
+					JSONSerializationType galaxyObj;
+					galaxyObj["id"] = galaxy.getID();
+					galaxyObj["name"] = galaxy.getName().toCharArray();
+					galaxyObj["address"] = galaxy.getAddress().toCharArray();
+					galaxyObj["port"] = galaxy.getPort();
+					galaxyObj["population"] = galaxy.getPopulation();
+					galaxiesArray.push_back(galaxyObj);
+				}
+			}
+			jsonData["galaxies"] = galaxiesArray;
+
+			// Characters
+			JSONSerializationType charactersArray = JSONSerializationType::array();
+			for (int i = 0; i < loginSession->getCharacterListSize(); ++i) {
+				const auto& character = loginSession->getCharacterByIndex(i);
+				JSONSerializationType charObj;
+				charObj["name"] = character.getFirstName().toCharArray();
+				charObj["oid"] = character.getObjectID();
+				charObj["galaxyId"] = character.getGalaxyID();
+				charactersArray.push_back(charObj);
+			}
+			jsonData["characters"] = charactersArray;
+		}
+
+		// Zone stats
+		if (zone != nullptr) {
+			jsonData["zoneStats"] = zone->collectStats();
+			jsonData["zoneConnected"] = true;
+
+			// Selected zone info
+			JSONSerializationType selectedZone;
+			selectedZone["characterId"] = zone->getCharacterID();
+			selectedZone["address"] = zone->getGalaxyAddress().toCharArray();
+			selectedZone["port"] = zone->getGalaxyPort();
+			jsonData["selectedZone"] = selectedZone;
+		} else {
+			jsonData["zoneConnected"] = false;
+		}
+
+		// Success flags
+		jsonData["loginSuccess"] = (loginSession != nullptr && loginSession->getAccountID() != 0);
+
+		// Selected galaxy (if we got that far)
+		if (selectedGalaxy) {
+			JSONSerializationType selectedGalaxyJson;
+			selectedGalaxyJson["id"] = selectedGalaxy->getID();
+			selectedGalaxyJson["name"] = selectedGalaxy->getName().toCharArray();
+			selectedGalaxyJson["address"] = selectedGalaxy->getAddress().toCharArray();
+			selectedGalaxyJson["port"] = selectedGalaxy->getPort();
+			selectedGalaxyJson["population"] = selectedGalaxy->getPopulation();
+			jsonData["selectedGalaxy"] = selectedGalaxyJson;
+		}
+
+		// Runtime options
+		jsonData["runtimeOptions"] = options.getAsJSON();
+
+		// Write to file
+		std::ofstream file(filename.toCharArray());
+		if (file.is_open()) {
+			file << jsonData.dump(2);  // Pretty print with 2-space indent
+			file.close();
+			info(true) << "State saved to: " << filename;
+		} else {
+			error() << "Failed to open file for writing: " << filename;
+		}
+
+	} catch (Exception& e) {
+		error() << "Error saving state: " << e.getMessage();
+	}
 }
 
 void ClientCoreOptions::loadEnvFile(const String& filename) {
@@ -177,6 +326,8 @@ void ClientCoreOptions::parse(int argc, char* argv[]) {
 		("log-level", po::value<std::string>(), "Log level (0-5 or fatal/error/warning/log/info/debug)")
 		("character-oid", po::value<uint64>(), "Character object ID to select")
 		("character-firstname", po::value<std::string>(), "Character first name to select")
+		("save-state", po::value<std::string>(), "Save login state to JSON file")
+		("login-only", "Only perform login, skip zone connection")
 		("env", po::value<std::string>(), "Environment file to load");
 
 	po::variables_map vm;
@@ -291,6 +442,16 @@ void ClientCoreOptions::parse(int argc, char* argv[]) {
 			characterFirstname = envName;
 		}
 	}
+
+	// Get save-state filename
+	if (vm.count("save-state")) {
+		saveState = vm["save-state"].as<std::string>().c_str();
+	}
+
+	// Get login-only flag
+	if (vm.count("login-only")) {
+		loginOnly = true;
+	}
 }
 
 void ClientCoreOptions::updateWithProperties() {
@@ -380,6 +541,10 @@ void ClientCoreOptions::saveToProperties() {
 }
 
 String ClientCoreOptions::toString() const {
+	return getAsJSON().dump().c_str();
+}
+
+JSONSerializationType ClientCoreOptions::getAsJSON() const {
 	JSONSerializationType jsonData;
 	jsonData["username"] = username.toCharArray();
 	jsonData["password"] = "***";
@@ -391,7 +556,9 @@ String ClientCoreOptions::toString() const {
 	jsonData["logLevel"] = logLevel;
 	jsonData["characterOid"] = characterOid;
 	jsonData["characterFirstname"] = characterFirstname.toCharArray();
-	return jsonData.dump().c_str();
+	jsonData["saveState"] = saveState.toCharArray();
+	jsonData["loginOnly"] = loginOnly;
+	return jsonData;
 }
 
 String ClientCoreOptions::toStringData() const {

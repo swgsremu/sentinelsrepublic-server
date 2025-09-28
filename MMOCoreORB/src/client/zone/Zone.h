@@ -8,6 +8,7 @@
 #include "ZoneClient.h"
 #include "client/zone/objects/player/PlayerCreature.h"
 #include "client/zone/ZoneClientThread.h"
+#include "engine/util/JSONSerializationType.h"
 
 class ObjectController;
 class ObjectManager;
@@ -54,24 +55,24 @@ public:
 
 	void setSceneReady() {
 		Locker locker(this);
-		
+
 		info(true) << __FUNCTION__ << " in " << startTime.miliDifference() << "ms";
 		sceneReady = true;
-		
+
 		sceneReadyCondition.signal(this);
 	}
 
 	bool waitForSceneReady(int timeoutMs) {
 		Locker locker(this);
-		
+
 		if (sceneReady) {
 			return true;
 		}
-		
+
 		Time timeout;
 		timeout.addMiliTime(timeoutMs);
 		bool success = !sceneReadyCondition.timedWait(this, &timeout);
-		
+
 		return success && sceneReady;
 	}
 
@@ -107,6 +108,14 @@ public:
 		return characterID;
 	}
 
+	inline const String& getGalaxyAddress() {
+		return galaxyAddress;
+	}
+
+	inline uint32 getGalaxyPort() {
+		return galaxyPort;
+	}
+
 	inline ZoneClient* getZoneClient() {
 		return client;
 	}
@@ -126,6 +135,8 @@ public:
 	bool isSceneReady() {
 		return sceneReady;
 	}
+
+	JSONSerializationType collectStats();
 };
 
 #endif /* ZONE_H_ */
