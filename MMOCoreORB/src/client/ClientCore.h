@@ -27,6 +27,7 @@ struct ClientCoreOptions {
 	void parse(int argc, char* argv[]);
 	void updateWithProperties();
 	void saveToProperties();
+	bool loadFromJSON(const String& filename);
 	JSONSerializationType getAsJSON() const;
 	String toString() const;
 	String toStringData() const;

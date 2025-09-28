@@ -292,6 +292,36 @@ void ClientCoreOptions::loadEnvFile(const String& filename) {
 	}
 }
 
+bool ClientCoreOptions::loadFromJSON(const String& filename) {
+	try {
+		std::ifstream file(filename.toCharArray());
+		if (!file.is_open()) {
+			return false;
+		}
+
+		JSONSerializationType json;
+		file >> json;
+
+		// Load all options from JSON
+		if (json.contains("username")) username = json["username"];
+		if (json.contains("password")) password = json["password"];
+		if (json.contains("loginHost")) loginHost = json["loginHost"];
+		if (json.contains("loginPort")) loginPort = json["loginPort"];
+		if (json.contains("loginTimeout")) loginTimeout = json["loginTimeout"];
+		if (json.contains("zoneTimeout")) zoneTimeout = json["zoneTimeout"];
+		if (json.contains("clientVersion")) clientVersion = json["clientVersion"];
+		if (json.contains("logLevel")) logLevel = json["logLevel"];
+		if (json.contains("characterOid")) characterOid = json["characterOid"];
+		if (json.contains("characterFirstname")) characterFirstname = json["characterFirstname"];
+		if (json.contains("saveState")) saveState = json["saveState"];
+		if (json.contains("loginOnly")) loginOnly = json["loginOnly"];
+
+		return true;
+	} catch (const std::exception& e) {
+		return false;
+	}
+}
+
 void ClientCoreOptions::parse(int argc, char* argv[]) {
 	namespace po = boost::program_options;
 
@@ -312,6 +342,15 @@ void ClientCoreOptions::parse(int argc, char* argv[]) {
 		loadEnvFile(".env-core3client");
 	}
 
+	// Load options from JSON file if specified in environment
+	if (env_vm.count("options-json")) {
+		String jsonFile = env_vm["options-json"].as<std::string>().c_str();
+		if (!loadFromJSON(jsonFile)) {
+			System::err << "Error: Failed to load options from JSON file: " << jsonFile << endl;
+			exit(1);
+		}
+	}
+
 	// Full options parsing
 	po::options_description desc("Options");
 	desc.add_options()
@@ -328,14 +367,32 @@ void ClientCoreOptions::parse(int argc, char* argv[]) {
 		("character-firstname", po::value<std::string>(), "Character first name to select")
 		("save-state", po::value<std::string>(), "Save login state to JSON file")
 		("login-only", "Only perform login, skip zone connection")
+		("options-json", po::value<std::string>(), "Load options from JSON file")
+		("generate-options-json", "Generate default options JSON to stdout and exit")
 		("env", po::value<std::string>(), "Environment file to load");
 
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);
 
+	// Load options from JSON file if specified on command line (before processing other options)
+	if (vm.count("options-json")) {
+		String jsonFile = vm["options-json"].as<std::string>().c_str();
+		if (!loadFromJSON(jsonFile)) {
+			System::err << "Error: Failed to load options from JSON file: " << jsonFile << endl;
+			exit(1);
+		}
+	}
+
 	if (vm.count("help")) {
 		std::cout << desc << std::endl;
+		exit(0);
+	}
+
+	// Generate default options JSON and exit
+	if (vm.count("generate-options-json")) {
+		ClientCoreOptions defaults;
+		std::cout << defaults.getAsJSON().dump(2) << std::endl;
 		exit(0);
 	}
 
