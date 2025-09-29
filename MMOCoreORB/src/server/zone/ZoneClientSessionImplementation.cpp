@@ -254,6 +254,15 @@ String ZoneClientSessionImplementation::getIPAddress() const {
 	return ipAddress.isEmpty() ? "0.0.0.0" : ipAddress;
 }
 
+void ZoneClientSessionImplementation::setIPAddress(const String& newIP) {
+	ipAddress = newIP;
+
+	// Also update the underlying session if available
+	if (session != nullptr) {
+		session->setIPAddress(newIP);
+	}
+}
+
 BaseClientProxy* ZoneClientSessionImplementation::getSession() {
 	return session;
 }

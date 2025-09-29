@@ -78,6 +78,8 @@ public:
 				return;
 			}
 
+			SessionAPIClient::updateClientIPAddress(clientObject, result);
+
 			Locker locker(object);
 
 			if (result.isActionDebug() && playerCreature != nullptr) {

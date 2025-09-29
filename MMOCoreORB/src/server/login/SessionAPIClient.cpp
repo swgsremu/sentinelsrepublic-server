@@ -14,6 +14,8 @@
 
 #include "SessionAPIClient.h"
 
+#include "server/zone/ZoneClientSession.h"
+
 #include <cpprest/filestream.h>
 #include <cpprest/http_client.h>
 #include <pplx/threadpool.h>
@@ -548,6 +550,13 @@ SessionApprovalResult::SessionApprovalResult() {
 	resultElapsedTimeMS = 0ull;
 
 	resultDebug.setNullValue("<not set>");
+}
+
+void SessionAPIClient::updateClientIPAddress(ZoneClientSession* client, const SessionApprovalResult& result) {
+	if (client != nullptr && !result.getEncryptedIP().isEmpty()) {
+		auto oldIP = client->getIPAddress();
+		client->setIPAddress(result.getEncryptedIP());
+	}
 }
 
 #endif // WITH_SESSION_API
