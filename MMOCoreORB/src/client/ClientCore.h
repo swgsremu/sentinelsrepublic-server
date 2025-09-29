@@ -6,6 +6,7 @@
 #define CLIENTCORE_H_
 
 #include "system/lang.h"
+#include "server/login/objects/GalaxyList.h"
 
 class Zone;
 
@@ -20,10 +21,14 @@ struct ClientCoreOptions {
 	int logLevel = -1;
 	uint64 characterOid = 0;
 	String characterFirstname;
+	String saveState;
+	bool loginOnly = false;
 
 	void parse(int argc, char* argv[]);
 	void updateWithProperties();
 	void saveToProperties();
+	bool loadFromJSON(const String& filename);
+	JSONSerializationType getAsJSON() const;
 	String toString() const;
 	String toStringData() const;
 
@@ -35,6 +40,8 @@ private:
 class ClientCore : public Core, public Logger {
 	ClientCoreOptions options;
 	Zone* zone;
+	Time overallStartTime;
+	Optional<Galaxy> selectedGalaxy;
 
 public:
 	static int getLogLevel() {
@@ -110,8 +117,11 @@ public:
 
 	void run();
 
-	bool loginCharacter();
+	bool loginCharacter(Reference<class LoginSession*>& loginSession);
 	void logoutCharacter();
+
+private:
+	void saveStateToFile(const String& filename, class LoginSession* loginSession);
 };
 
 #endif /*CLIENTCORE_H_*/

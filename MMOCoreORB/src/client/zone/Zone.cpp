@@ -1,6 +1,7 @@
 #include "Zone.h"
 #include "ZoneClientThread.h"
 #include "ClientCore.h"
+#include "client/zone/objects/scene/SceneObject.h"
 #include "server/zone/packets/zone/ClientIdMessage.h"
 #include "client/zone/managers/objectcontroller/ObjectController.h"
 #include "client/zone/managers/object/ObjectManager.h"
@@ -11,7 +12,6 @@ Zone::Zone(uint64 characterObjectID, uint32 account, const String& sessionID, co
 	this->sessionID = sessionID;
 	this->galaxyAddress = galaxyAddress;
 	this->galaxyPort = galaxyPort;
-	player = nullptr;
 
 	objectManager = new ObjectManager();
 	objectManager->setZone(this);
@@ -86,6 +86,11 @@ SceneObject* Zone::getObject(uint64 objid) {
 	return objectManager->getObject(objid);
 }
 
-PlayerCreature* Zone::getSelfPlayer() {
-	return (PlayerCreature*)objectManager->getObject(characterID);
+JSONSerializationType Zone::collectStats() {
+	JSONSerializationType stats;
+	stats["elapsedMs"] = startTime.miliDifference();
+	stats["packetCount"] = client != nullptr ? client->getPacketCount() : 0;
+	stats["sceneReady"] = sceneReady;
+	stats["characterId"] = characterID;
+	return stats;
 }

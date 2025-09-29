@@ -5,18 +5,18 @@
 #ifndef ZONECLIENT_H_
 #define ZONECLIENT_H_
 
-#include "client/zone/objects/player/PlayerCreature.h"
+#include "engine/engine.h"
 #include "client/zone/ZonePacketHandler.h"
 
 class Zone;
 class ZonePacketHandler;
 
 class ZoneClient : public ServiceHandler {
+	AtomicInteger packetCount;
+
 	Reference<BaseClient*> client;
 
 	Zone* zone;
-
-	Reference<PlayerCreature*> player;
 
 	uint32 accountID;
 
@@ -37,9 +37,7 @@ public:
 	}
 
 	void disconnect() {
-		if (zonePacketHandler != nullptr) {
-			client->info(true) << "disconnecting after " << zonePacketHandler->getPacketCount() << " packets.";
-		}
+		client->info(true) << "disconnecting after " << packetCount.get() << " packets.";
 
 		client->disconnect();
 
@@ -97,16 +95,8 @@ public:
 		accountID = id;
 	}
 
-	void setPlayer(PlayerCreature* p) {
-		player = p;
-	}
-
 	BaseClient* getClient() {
 		return client;
-	}
-
-	PlayerCreature* getPlayer() {
-		return player;
 	}
 
 	Zone* getZone() {
@@ -115,6 +105,14 @@ public:
 
 	uint32 getAccountID() {
 		return accountID;
+	}
+
+	ZonePacketHandler* getZonePacketHandler() {
+		return zonePacketHandler;
+	}
+
+	int getPacketCount() {
+		return packetCount.get();
 	}
 };
 

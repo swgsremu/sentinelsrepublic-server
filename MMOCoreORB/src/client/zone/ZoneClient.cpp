@@ -8,14 +8,14 @@
 #include "ZoneMessageProcessorTask.h"
 
 ZoneClient::ZoneClient(const String& address, int port) {
+	packetCount.set(0);
+
 	client = new BaseClient(address, port);
 	client->setHandler(this);
 
 	client->setLogging(true);
 	client->setLoggingName("ZoneClient");
 	client->setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
-
-	player = nullptr;
 
 	accountID = 0;
 
@@ -26,10 +26,6 @@ ZoneClient::ZoneClient(const String& address, int port) {
 }
 
 ZoneClient::~ZoneClient() {
-	if (player != nullptr)
-		delete player;
-
-	player = nullptr;
 
 	delete basePacketHandler,
 	basePacketHandler = nullptr;
@@ -46,6 +42,8 @@ void ZoneClient::initialize() {
 }
 
 void ZoneClient::processMessage(Message* message) {
+	packetCount.increment();
+
 	ZoneMessageProcessorTask* task = new ZoneMessageProcessorTask(message, zonePacketHandler);
 	Core::getTaskManager()->executeTask(task);
 }

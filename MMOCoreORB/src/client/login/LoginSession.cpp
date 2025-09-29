@@ -22,6 +22,7 @@ LoginSession::LoginSession(const String& username, const String& password) : Log
 
 	accountID = 0;
 	sessionID = "";
+	loginStartTime.updateToCurrentTime();
 	setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 }
 
@@ -86,4 +87,13 @@ void LoginSession::run() {
 	loginThread = nullptr;
 
 	info(true) << "Login process completed.";
+}
+
+JSONSerializationType LoginSession::collectStats() {
+	JSONSerializationType stats;
+	stats["elapsedMs"] = loginStartTime.miliDifference();
+	stats["packetCount"] = login != nullptr ? login->getPacketCount() : 0;
+	stats["success"] = (accountID != 0);
+	stats["username"] = username.toCharArray();
+	return stats;
 }
