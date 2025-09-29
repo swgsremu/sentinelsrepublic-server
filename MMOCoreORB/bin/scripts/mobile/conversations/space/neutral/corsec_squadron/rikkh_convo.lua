@@ -1456,4 +1456,40 @@ get_out = ConvoScreen:new {
 }
 rikkh_convo_template:addScreen(get_out)
 
+final_train_fighters = ConvoScreen:new {
+	id = "final_train_fighters",
+	leftDialog = "@conversation/corellia_privateer_trainer_2:s_44bc6772", -- Fantastic.  Don't forget:  If the enemy is within range, so are you.
+	animation = "",
+	stopConversation = "true",
+	options = {}
+}
+rikkh_convo_template:addScreen(final_train_fighters);
+
+final_train_components = ConvoScreen:new {
+	id = "final_train_components",
+	leftDialog = "@conversation/corellia_privateer_trainer_2:s_44bc6772", -- Fantastic.  Don't forget:  If the enemy is within range, so are you.
+	animation = "",
+	stopConversation = "true",
+	options = {}
+}
+rikkh_convo_template:addScreen(final_train_components)
+
+final_train_techniques = ConvoScreen:new {
+	id = "final_train_techniques",
+	leftDialog = "@conversation/corellia_privateer_trainer_2:s_44bc6772", -- Fantastic.  Don't forget:  If the enemy is within range, so are you.
+	animation = "",
+	stopConversation = "true",
+	options = {}
+}
+rikkh_convo_template:addScreen(final_train_techniques)
+
+final_train_algorithms = ConvoScreen:new {
+	id = "final_train_algorithms",
+		leftDialog = "@conversation/corellia_privateer_trainer_2:s_44bc6772", -- Fantastic.  Don't forget:  If the enemy is within range, so are you.
+	animation = "",
+	stopConversation = "true",
+	options = {}
+}
+rikkh_convo_template:addScreen(final_train_algorithms)
+
 addConversationTemplate("rikkh_convo_template", rikkh_convo_template);

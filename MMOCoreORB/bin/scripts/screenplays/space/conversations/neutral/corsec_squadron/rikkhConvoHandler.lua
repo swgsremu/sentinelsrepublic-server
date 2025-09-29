@@ -103,11 +103,7 @@ function rikkhConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 			return convoTemplate:getScreen("complete_first_mission")
 	-- Pilot is able to train
 	elseif (not completedTier2 and SpaceHelpers:hasExperienceForTraining(pPlayer, 2)) then
-		if (not questFourComplete) then
-			return convoTemplate:getScreen("ready_train_pilot")
-		else
-			return convoTemplate:getScreen("finished_train_pilot")
-		end
+		return convoTemplate:getScreen("ready_train_pilot")
 	elseif (not questFourComplete) then
 		-- Player is able to start fourth mission
 		if (questThreeComplete and not questFourStarted) then
@@ -303,42 +299,4 @@ function rikkhConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selec
 	end
 
 	return pClonedScreen
-end
-
-function rikkhConvoHandler:getNextConversationScreen(pConvTemplate, pPlayer, selectedOption, pNpc)
-	local convSession = CreatureObject(pPlayer):getConversationSession()
-
-	local lastConvScreen = nil
-
-	if (convSession ~= nil) then
-		local session = LuaConversationSession(convSession)
-		lastConvScreen = session:getLastConversationScreen()
-	end
-
-	local conv = LuaConversationTemplate(pConvTemplate)
-
-	local nextConvScreen
-
-	if (lastConvScreen ~= nil) then
-		local luaLastConvScreen = LuaConversationScreen(lastConvScreen)
-
-		--Get the linked screen for the selected option.
-		local optionLink = luaLastConvScreen:getOptionLink(selectedOption)
-
-		-- print("Option link: " .. optionLink)
-
-		if (string.find(optionLink, "final_train")) then
-			return self:getInitialScreen(pPlayer, pNpc, pConvTemplate)
-		end
-
-		nextConvScreen = conv:getScreen(optionLink)
-
-		if nextConvScreen == nil then
-			nextConvScreen = self:getInitialScreen(pPlayer, pNpc, pConvTemplate)
-		end
-	else
-		nextConvScreen = self:getInitialScreen(pPlayer, pNpc, pConvTemplate)
-	end
-
-	return nextConvScreen
 end
