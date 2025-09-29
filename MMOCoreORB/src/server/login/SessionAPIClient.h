@@ -17,6 +17,9 @@
 #include "server/login/LoginClient.h"
 
 namespace server {
+	namespace zone {
+		class ZoneClientSession;
+	}
 	namespace login {
 		class SessionApprovalResult {
 		public:
@@ -290,6 +293,9 @@ namespace server {
 			void apiCall(const String& src, const String& basePath, const SessionAPICallback& resultCallback,
 					const String& method = "GET", const String& body = "");
 			void apiNotify(const String& src, const String& basePath);
+
+			// EIP Helper
+			static void updateClientIPAddress(server::zone::ZoneClientSession* client, const SessionApprovalResult& result);
 
 			// Calls in general order of execution
 			void notifyGalaxyStart(uint32 galaxyID);
