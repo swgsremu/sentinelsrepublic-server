@@ -55,6 +55,42 @@ float SpaceMath::getIntersection(const SpaceTransform& transform, const Vector3&
 	return sqrDifference > sqrRadius ? FLT_MAX : intersection;
 }
 
+float SpaceMath::getIntersection(const AppearanceTemplate* appearance, const Vector3& localStart, const Vector3& localVelocity, float distance, float radius) {
+	if (appearance == nullptr) {
+		return FLT_MAX;
+	}
+
+	auto ray = Ray(localStart, localVelocity);
+	SortedVector<IntersectionResult> results;
+	appearance->intersects(ray, distance + radius, results);
+
+	if (results.size() > 0) {
+		return Math::max(results.getUnsafe(0).getIntersectionDistance() - radius, 0.f);
+	}
+
+	return FLT_MAX;
+}
+
+float SpaceMath::getIntersection(ShipObject* ship, const Vector3& position, const Vector3& velocity, float distance, float radius) {
+	if (ship == nullptr) {
+		return FLT_MAX;
+	}
+
+	auto appearance = ship->getAppearanceTemplate();
+
+	if (appearance == nullptr) {
+		return FLT_MAX;
+	}
+
+	const auto& sMatrix = *ship->getRotationMatrix();
+	const auto& sPosition = ship->getPosition();
+
+	Vector3 localStart = getLocalVector(position - sPosition, sMatrix);
+	Vector3 localVelocity = getLocalVector(velocity, sMatrix);
+
+	return getIntersection(appearance, localStart, localVelocity, distance, radius);
+}
+
 float SpaceMath::getRotationTime(const Vector3& rotationEnd, const Vector3 rotationStart, float maxY, float maxP) {
 	if (maxY <= 0.001f || maxP <= 0.001f) {
 		return 0.f;
@@ -163,6 +199,16 @@ Vector3 SpaceMath::rotateVector(const Vector3 &velocity, const Vector3 &rotation
 	return Vector3(vX, vY, vZ);
 }
 
+Vector3 SpaceMath::getLocalVector(const Vector3& worldPosition, const Matrix4& rotationMatrix) {
+	auto vector = Vector3(worldPosition.getX(), worldPosition.getZ(), worldPosition.getY());
+	return vector * rotationMatrix;
+}
+
+Vector3 SpaceMath::getGlobalVector(const Vector3& localPosition, const Matrix4& conjugateMatrix) {
+	auto vector = localPosition * conjugateMatrix;
+	return Vector3(vector.getX(), vector.getZ(), vector.getY());
+}
+
 Quaternion SpaceMath::rotationToQuaternion(const Vector3& rotation, bool precision) {
 	float radY = getRotationRate(-rotation.getX() + M_PI_2);
 	float radP = getRotationRate(rotation.getY());
@@ -172,15 +218,25 @@ Quaternion SpaceMath::rotationToQuaternion(const Vector3& rotation, bool precisi
 		return RotationLookupTable::instance()->getDirection(radY, radP, radR);
 	}
 
-	int degY = Math::rad2deg(radY);
-	int degP = Math::rad2deg(radP);
-	int degR = Math::rad2deg(radR);
+	float hZ = -radR * 0.5f;
+	float hX = -radP * 0.5f;
+	float hY = radY * 0.5f;
 
-	Quaternion qDirection;
-	qDirection.rotate(Vector3::UNIT_Z, -degR);
-	qDirection.rotate(Vector3::UNIT_X, -degP);
-	qDirection.rotate(Vector3::UNIT_Y, degY);
+	float cZ = cosf(hZ);
+	float sZ = sinf(hZ);
+	float cX = cosf(hX);
+	float sX = sinf(hX);
+	float cY = cosf(hY);
+	float sY = sinf(hY);
+
+	float w = cY * cX * cZ + sY * sX * sZ;
+	float x = cY * sX * cZ + sY * cX * sZ;
+	float y = sY * cX * cZ - cY * sX * sZ;
+	float z = cY * cX * sZ - sY * sX * cZ;
+
+	Quaternion qDirection(w, x, y, z);
 	qNormalize(qDirection);
 
 	return qDirection;
 }
+
