@@ -64,6 +64,8 @@ public:
 				return;
 			}
 
+			SessionAPIClient::updateClientIPAddress(zoneClient, result);
+
 			approveSession(zoneClient, zoneServer, approved_sessionID, approved_accountID);
 		});
 #else // WITH_SESSION_API
