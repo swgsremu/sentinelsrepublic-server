@@ -4,11 +4,11 @@
 
 /**
  * @author      : lordkator (lordkator@swgemu.com)
- * @file        : SessionAPIClient.h
+ * @file        : SWGRealmsAPI.h
  * @created     : Fri Nov 29 10:04:14 UTC 2019
  */
 
-#ifdef WITH_SESSION_API
+#ifdef WITH_SWGREALMS_API
 #pragma once
 
 #include "engine/engine.h"
@@ -251,7 +251,7 @@ namespace server {
 
 		using SessionAPICallback = Function<void(SessionApprovalResult)>;
 
-		class SessionAPIClient : public Logger, public Singleton<SessionAPIClient>, public Object {
+		class SWGRealmsAPI : public Logger, public Singleton<SWGRealmsAPI>, public Object {
 		protected:
 			AtomicInteger trxCount = 0;
 			AtomicInteger errCount = 0;
@@ -264,8 +264,8 @@ namespace server {
 			bool failOpen = false;
 
 		public:
-			SessionAPIClient();
-			~SessionAPIClient();
+			SWGRealmsAPI();
+			~SWGRealmsAPI();
 
 			inline void incrementTrxCount() {
 				trxCount.increment();
@@ -286,7 +286,7 @@ namespace server {
 			String toString() const;
 			String toStringData() const;
 
-			// Hook for console "sessionapi" command
+			// Hook for console "swgrealms" command
 			bool consoleCommand(const String& arguments);
 
 			// API Helpers
@@ -317,4 +317,4 @@ namespace server {
 
 using namespace server::login;
 
-#endif // WITH_SESSION_API
+#endif // WITH_SWGREALMS_API

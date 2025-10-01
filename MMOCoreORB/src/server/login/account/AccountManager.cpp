@@ -9,9 +9,9 @@
 #include "AccountManager.h"
 #include "server/login/LoginClient.h"
 #include "server/login/LoginServer.h"
-#ifdef WITH_SESSION_API
-#include "server/login/SessionAPIClient.h"
-#endif // WITH_SESSION_API
+#ifdef WITH_SWGREALMS_API
+#include "server/login/SWGRealmsAPI.h"
+#endif // WITH_SWGREALMS_API
 #include "server/login/packets/AccountVersionMessage.h"
 #include "server/login/packets/EnumerateCharacterId.h"
 #include "server/login/packets/LoginClientToken.h"
@@ -54,7 +54,7 @@ void AccountManager::loginAccount(LoginClient* client, Message* packet) {
 	String username, password, version;
 	AccountVersionMessage::parse(packet, username, password, version);
 
-#ifndef WITH_SESSION_API
+#ifndef WITH_SWGREALMS_API
 	Database::escapeString(username);
 	Database::escapeString(password);
 
@@ -68,7 +68,7 @@ void AccountManager::loginAccount(LoginClient* client, Message* packet) {
 	if (account == nullptr)
 		return;
 
-#else // WITH_SESSION_API
+#else // WITH_SWGREALMS_API
 	StringBuffer clientEndpoint;
 
 	auto session = client->getSession();
@@ -80,7 +80,7 @@ void AccountManager::loginAccount(LoginClient* client, Message* packet) {
 
 	clientEndpoint << address.getIPAddress() << ":" << address.getPort();
 
-	SessionAPIClient::instance()->createSession(username, password, version, clientEndpoint.toString(),
+	SWGRealmsAPI::instance()->createSession(username, password, version, clientEndpoint.toString(),
 			[this, username, loginClient = Reference<LoginClient*>(client)](const SessionApprovalResult& result) {
 
 		if (result.isActionTemporaryFailure()) {
@@ -127,7 +127,7 @@ void AccountManager::loginAccount(LoginClient* client, Message* packet) {
 };
 
 void AccountManager::loginApprovedAccount(LoginClient* client, ManagedReference<Account*> account) {
-#endif // WITH_SESSION_API
+#endif // WITH_SWGREALMS_API
 	String sessionID = account->getSessionId();
 
 	if (sessionID.isEmpty()) {
@@ -146,24 +146,24 @@ void AccountManager::loginApprovedAccount(LoginClient* client, ManagedReference<
 
 	String ip = client->getSession()->getAddress().getIPAddress();
 
-#ifdef WITH_SESSION_API
-	SessionAPIClient::instance()->notifySessionStart(ip, accountID);
-#endif // WITH_SESSION_API
+#ifdef WITH_SWGREALMS_API
+	SWGRealmsAPI::instance()->notifySessionStart(ip, accountID);
+#endif // WITH_SWGREALMS_API
 
-#ifndef WITH_SESSION_API
+#ifndef WITH_SWGREALMS_API
 	String sessionDuration = ConfigManager::instance()->getString("Core3.Login.SessionDuration", "00:15");
 	StringBuffer sessionQuery;
 	sessionQuery << "REPLACE INTO sessions (account_id, session_id, ip, expires) VALUES (";
 	sessionQuery << accountID << ", '" << sessionID << "', '" << ip << "' , ADDTIME(NOW(), '" << sessionDuration << "'));";
-#endif // !WITH_SESSION_API
+#endif // !WITH_SWGREALMS_API
 
 	StringBuffer logQuery;
 	logQuery << "INSERT INTO account_log (account_id, ip_address, timestamp) VALUES (" << accountID << ", '" << ip << "', NOW());";
 
 	try {
-#ifndef WITH_SESSION_API
+#ifndef WITH_SWGREALMS_API
 		ServerDatabase::instance()->executeStatement(sessionQuery);
-#endif // !WITH_SESSION_API
+#endif // !WITH_SWGREALMS_API
 		ServerDatabase::instance()->executeStatement(logQuery);
 	} catch (const DatabaseException& e) {
 		client->error() << e.getMessage();
@@ -176,7 +176,7 @@ void AccountManager::loginApprovedAccount(LoginClient* client, ManagedReference<
 	client->sendMessage(eci);
 }
 
-#ifndef WITH_SESSION_API
+#ifndef WITH_SWGREALMS_API
 Reference<Account*> AccountManager::validateAccountCredentials(LoginClient* client, const String& username, const String& password) {
 	if (client == nullptr) {
 		return nullptr;
@@ -259,7 +259,7 @@ Reference<Account*> AccountManager::validateAccountCredentials(LoginClient* clie
 
 	return loginFinalize(client, account) == true ? account : nullptr;
 }
-#endif // !WITH_SESSION_API
+#endif // !WITH_SWGREALMS_API
 
 bool AccountManager::loginFinalize(LoginClient* client, ManagedReference<Account*> account) {
 	if (client == nullptr || account == nullptr) {
@@ -319,7 +319,7 @@ bool AccountManager::loginFinalize(LoginClient* client, ManagedReference<Account
 	return true;
 }
 
-#ifndef WITH_SESSION_API
+#ifndef WITH_SWGREALMS_API
 void AccountManager::updateHash(const String& username, const String& password) {
 	String salt = Crypto::randomSalt();
 	String hash = Crypto::SHA256Hash(dbSecret + password + salt);
@@ -358,7 +358,7 @@ Reference<Account*> AccountManager::createAccount(const String& username, const 
 
 	return getAccount(accountID, passwordStored, true);
 }
-#endif // !WITH_SESSION_API
+#endif // !WITH_SWGREALMS_API
 
 Reference<Account*> AccountManager::getAccount(uint32 accountID, bool forceSqlUpdate) {
 	static Logger logger("AccountManager");
