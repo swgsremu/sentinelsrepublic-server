@@ -8,7 +8,9 @@
 #include "server/zone/managers/mission/MissionManager.h"
 #include "server/zone/objects/tangible/terminal/mission/MissionTerminal.h"
 #include "server/zone/objects/creature/CreatureObject.h"
+#include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/creature/ai/AiAgent.h"
+#include "server/zone/managers/mission/CardinalDirection.h"
 #include "server/zone/objects/group/GroupObject.h"
 #include "server/zone/objects/mission/MissionObject.h"
 #include "server/zone/objects/mission/SurveyMissionObjective.h"
@@ -36,6 +38,44 @@
 #include "server/zone/managers/visibility/VisibilityManager.h"
 #include "server/zone/objects/building/BuildingObject.h"
 #include "server/zone/managers/director/DirectorManager.h"
+
+float MissionManagerImplementation::getRandomAngleForDirection(unsigned int direction) {
+	CardinalDirection cardinalDir = (CardinalDirection)direction;
+	float angle;
+	switch (cardinalDir) {
+		case CardinalDirection::RANDOM:
+			return (float)System::random(360); // Random 0-359 degrees
+		case CardinalDirection::NORTH:
+			// 350-359 degrees (wraps to 0-9 degrees)
+			angle = (float)((System::random(10) + 355) % 360);
+			break;
+		case CardinalDirection::NORTHWEST:
+			angle = (float)(System::random(10) + 40);   // 40-49 degrees
+			break;
+		case CardinalDirection::WEST:
+			angle = (float)(System::random(10) + 85);   // 85-94 degrees
+			break;
+		case CardinalDirection::SOUTHWEST:
+			angle = (float)(System::random(10) + 130);  // 130-139 degrees
+			break;
+		case CardinalDirection::SOUTH:
+			angle = (float)(System::random(10) + 175);  // 175-184 degrees
+			break;
+		case CardinalDirection::SOUTHEAST:
+			angle = (float)(System::random(10) + 220);  // 220-229 degrees
+			break;
+		case CardinalDirection::EAST:
+			angle = (float)(System::random(10) + 265);  // 265-274 degrees
+			break;
+		case CardinalDirection::NORTHEAST:
+			angle = (float)(System::random(10) + 310);  // 310-319 degrees
+			break;
+		default:
+			return (float)System::random(360);
+	}
+	
+	return angle;
+}
 
 void MissionManagerImplementation::loadLuaSettings() {
 	try {
@@ -172,6 +212,13 @@ void MissionManagerImplementation::handleMissionListRequest(MissionTerminal* mis
 		stringId.setTT(missionTerminal->getObjectID());
 		stringId.setTO("ui_radial", "terminal_mission_list"); // List Missions
 		player->sendSystemMessage(stringId);
+		
+		// Reset mission direction to random when player moves out of range
+		Reference<PlayerObject*> ghost = player->getSlottedObject("ghost").castTo<PlayerObject*>();
+		if (ghost != nullptr) {
+			ghost->setScreenPlayData("mission", "mission_direction", "0"); // 0 = CardinalDirection::RANDOM
+		}
+		
 		return;
 	}
 
@@ -226,10 +273,19 @@ void MissionManagerImplementation::handleMissionListRequest(MissionTerminal* mis
 		//missionBag->updateToDatabaseWithoutChildren();
 	}
 
+	// Reset mission direction to random for non generic mission terminals
+	if (missionTerminal->getTerminalName() != "@terminal_name:terminal_mission") {
+		Reference<PlayerObject*> ghost = player->getSlottedObject("ghost").castTo<PlayerObject*>();
+		if (ghost != nullptr) {
+			ghost->setScreenPlayData("mission", "mission_direction", "0"); // 0 = CardinalDirection::RANDOM
+		}
+	}
+
 	populateMissionList(missionTerminal, player, counter);
 }
 
 void MissionManagerImplementation::handleMissionAccept(MissionTerminal* missionTerminal, MissionObject* mission, CreatureObject* player) {
+
 	ManagedReference<SceneObject*> missionBag = mission->getParent().get();
 
 	if (missionBag == nullptr)
@@ -871,7 +927,30 @@ void MissionManagerImplementation::randomizeGenericDestroyMission(CreatureObject
 
 		int distance = destroyMissionBaseDistance + destroyMissionDifficultyDistanceFactor * difficultyLevel;
 		distance += System::random(destroyMissionRandomDistance) + System::random(destroyMissionDifficultyRandomDistance * difficultyLevel);
-		startPos = player->getWorldCoordinate((float)distance, (float)System::random(360), false);
+		
+		// Use cardinal direction instead of random 360 degrees
+		CardinalDirection direction = CardinalDirection::RANDOM; // Default to random
+		
+		// Check if player has a stored ranger direction preference
+		Reference<PlayerObject*> ghost = player->getSlottedObject("ghost").castTo<PlayerObject*>();
+		if (ghost != nullptr) {
+			String storedDirection = ghost->getScreenPlayData("mission", "mission_direction");
+			if (!storedDirection.isEmpty()) {
+				int directionValue = Integer::valueOf(storedDirection);
+				if (directionValue >= 0 && directionValue <= 8) {
+					direction = (CardinalDirection)directionValue;
+				}
+			}
+		}
+		
+		float angle = getRandomAngleForDirection(direction);
+		
+		// Adjust angle based on player's current orientation
+		// getWorldCoordinate uses player's facing direction as reference, not true north
+		float playerOrientation = player->getDirection()->getRadians() * 180.0f / Math::PI; // Convert to degrees
+		angle = fmod(angle + playerOrientation, 360.0f); // Add player orientation and wrap to 0-360
+		
+		startPos = player->getWorldCoordinate((float)distance, angle, false);
 
 		if (zone->isWithinBoundaries(startPos)) {
 			float height = zone->getHeight(startPos.getX(), startPos.getY());

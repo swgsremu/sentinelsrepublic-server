@@ -118,6 +118,8 @@ class MissionManager extends Observer implements Logger {
 	private native void randomizeGenericReconMission(CreatureObject player, MissionObject mission, final unsigned int faction);
 	private native void randomizeGenericSurveyMission(CreatureObject player, MissionObject mission, final unsigned int faction);
 
+	private native float getRandomAngleForDirection(final unsigned int direction);
+
 	private native boolean randomGenericDeliverMission(CreatureObject player, MissionObject mission, boolean inTownMission, final unsigned int faction);
 
 	private native void generateRandomFactionalDestroyMissionDescription(CreatureObject player, MissionObject mission, final string faction);

@@ -316,6 +316,10 @@ void PlayerObjectImplementation::unload() {
 	MissionManager* missionManager = creature->getZoneServer()->getMissionManager();
 	missionManager->deactivateMissions(creature);
 
+	// Reset mission direction to random when player unloads (logs out or changes zone)
+	setScreenPlayData("mission", "mission_direction", "0"); // 0 = CardinalDirection::RANDOM
+	
+
 	if (creature->isRidingMount()) {
 		creature->executeObjectControllerAction(STRING_HASHCODE("dismount"));
 	}
