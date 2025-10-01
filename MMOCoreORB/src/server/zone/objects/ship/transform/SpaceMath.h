@@ -28,6 +28,10 @@ public:
 
 	static float getIntersection(const SpaceTransform& transform, const Vector3& position, float distance, float radius = 1.f);
 
+	static float getIntersection(const AppearanceTemplate* appearance, const Vector3& localStart, const Vector3& localVelocity, float distance, float radius = 1.f);
+
+	static float getIntersection(ShipObject* ship, const Vector3& position, const Vector3& velocity, float distance, float radius = 1.f);
+
 	static float getRotationTime(const Vector3& rotationEnd, const Vector3 rotationStart = Vector3::ZERO, float maxY = M_PI, float maxP = M_PI);
 
 	static float getVelocityTime(const Vector3& velocityEnd, const Vector3 velocityStart = Vector3::ZERO, float maxY = M_PI, float maxP = M_PI);
@@ -46,7 +50,11 @@ public:
 
 	static Vector3 predictTransform(const SpaceTransform& transform, float timeSec);
 
-	static Vector3 rotateVector(const Vector3 &velocity, const Vector3 &rotation);
+	static Vector3 rotateVector(const Vector3& velocity, const Vector3& rotation);
+
+	static Vector3 getLocalVector(const Vector3& worldPosition, const Matrix4& rotationMatrix);
+
+	static Vector3 getGlobalVector(const Vector3& localPosition, const Matrix4& conjugateMatrix);
 
 	static Quaternion rotationToQuaternion(const Vector3& rotation, bool precision = true);
 };
