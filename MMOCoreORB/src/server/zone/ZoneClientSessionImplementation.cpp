@@ -247,7 +247,7 @@ void ZoneClientSessionImplementation::error(const String& msg) {
 }
 
 String ZoneClientSessionImplementation::getAddress() const {
-	return session->getAddress();
+	return session->getFullIPAddress();
 }
 
 String ZoneClientSessionImplementation::getIPAddress() const {
