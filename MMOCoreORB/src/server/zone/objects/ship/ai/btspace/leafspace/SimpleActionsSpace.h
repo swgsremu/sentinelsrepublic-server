@@ -208,6 +208,50 @@ private:
 	uint32 val;
 };
 
+class WriteBlackboardFloat : public BehaviorSpace {
+public:
+	WriteBlackboardFloat(const String& className, const uint32 id, const LuaObject& args) : BehaviorSpace(className, id, args) {
+		parseArgs(args);
+	}
+
+	WriteBlackboardFloat(const WriteBlackboardFloat& a) : BehaviorSpace(a), key(a.key), val(a.val) {
+	}
+
+	WriteBlackboardFloat& operator=(const WriteBlackboardFloat& a) {
+		if (this == &a) {
+			return *this;
+		}
+
+		BehaviorSpace::operator=(a);
+		key = a.key;
+		val = a.val;
+
+		return *this;
+	}
+
+	void parseArgs(const LuaObject& args) {
+		key = getArg<String>()(args, "key");
+		val = getArg<float>()(args, "val");
+	}
+
+	BehaviorSpace::Status execute(ShipAiAgent* agent, unsigned int startIdx = 0) const {
+		agent->writeBlackboard(key, val);
+
+		return SUCCESS;
+	}
+
+	String print() const {
+		StringBuffer msg;
+		msg << className << "-" << key << ":" << val;
+
+		return msg.toString();
+	}
+
+private:
+	String key;
+	float val;
+};
+
 class EraseBlackboard : public BehaviorSpace {
 public:
 	EraseBlackboard(const String& className, const uint32 id, const LuaObject& args) : BehaviorSpace(className, id, args), param("") {
