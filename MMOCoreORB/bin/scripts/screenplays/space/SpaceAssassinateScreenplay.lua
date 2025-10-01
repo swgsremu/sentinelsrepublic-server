@@ -68,6 +68,19 @@ function SpaceAssassinateScreenplay:completeQuest(pPlayer, notifyClient)
 
 	-- Remove the vector, it is no longer needed
 	deleteStringVectorSharedMemory(playerID .. self.className .. ":targetShips:")
+
+	if (self.sideQuest and (self.sideQuestSplitType == self.SIDE_QUEST_SPLIT_TYPES.COMPLETION)) then
+		local alertMessage = "@spacequest/" .. self.questType .. "/" .. self.questName .. ":split_quest_alert"
+
+		-- Split Quest Alert
+		createEvent((self.sideQuestDelay * 1000) - 500, "SpaceHelpers", "sendQuestAlert", pPlayer, alertMessage)
+
+		-- Trigger Sidequest
+		createEvent(self.sideQuestDelay * 1000, self.sideQuestType .. "_" .. self.sideQuestName, "startQuest", pPlayer, "")
+
+		-- REMOVE AFTER IMPLEMENTATION
+		createEvent((self.sideQuestDelay * 1000) + 2000, self.sideQuestType .. "_" .. self.sideQuestName, "completeQuest", pPlayer, "true")
+	end
 end
 
 function SpaceAssassinateScreenplay:failQuest(pPlayer, notifyClient)
@@ -110,8 +123,8 @@ function SpaceAssassinateScreenplay:failQuest(pPlayer, notifyClient)
 	end
 
 	-- Fail the side quest
-	if (self.sideQuest and SpaceHelpers:isSpaceQuestActive(pPlayer, self.sideQuestType, self.questName)) then
-		createEvent(200, self.sideQuestType .. "_" .. self.questName, "failQuest", pPlayer, "false")
+	if (self.sideQuest and SpaceHelpers:isSpaceQuestActive(pPlayer, self.sideQuestType, self.sideQuestName)) then
+		createEvent(200, self.sideQuestType .. "_" .. self.sideQuestName, "failQuest", pPlayer, "false")
 	end
 end
 

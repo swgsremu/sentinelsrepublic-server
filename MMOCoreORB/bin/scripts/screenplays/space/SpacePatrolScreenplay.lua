@@ -10,7 +10,10 @@ SpacePatrolScreenplay = SpaceQuestLogic:new {
 
 	sideQuest = false,
 	sideQuestType = "",
-	sideQuestStart = 0, -- Patrol Point Number
+	sideQuestName = "",
+	sideQuestSplitType = 0,
+
+	sideQuestPatrolStart = 0, -- Patrol Point Number
 	sideQuestDelay = 0, -- Time in seconds to wait to trigger side quest
 
 	patrolPoints = {},
@@ -108,8 +111,8 @@ function SpacePatrolScreenplay:failQuest(pPlayer, notifyClient)
 	end
 
 	-- Fail the side quest
-	if (self.sideQuest and SpaceHelpers:isSpaceQuestActive(pPlayer, self.sideQuestType, self.questName)) then
-		createEvent(200, self.sideQuestType .. "_" .. self.questName, "failQuest", pPlayer, "false")
+	if (self.sideQuest and SpaceHelpers:isSpaceQuestActive(pPlayer, self.sideQuestType, self.sideQuestName)) then
+		createEvent(200, self.sideQuestType .. "_" .. self.sideQuestName, "failQuest", pPlayer, "false")
 	end
 end
 
@@ -307,7 +310,7 @@ function SpacePatrolScreenplay:notifyEnteredQuestArea(pActiveArea, pShip)
 	setQuestStatus(playerID .. ":" .. self.className .. ":waypointID", waypointID)
 
 	-- Check for side quest
-	if (self.sideQuest and (self.sideQuestStart == pointNumber)) then
+	if (self.sideQuest and (self.sideQuestSplitType == self.SIDE_QUEST_SPLIT_TYPES.PATROL_POINT) and (self.sideQuestPatrolStart == pointNumber)) then
 		local alertMessage = "@spacequest/" .. self.questType .. "/" .. self.questName .. ":split_quest_alert"
 
 		-- Trigger Completion of this quest
@@ -317,7 +320,7 @@ function SpacePatrolScreenplay:notifyEnteredQuestArea(pActiveArea, pShip)
 		createEvent((self.sideQuestDelay * 1000) - 500, "SpaceHelpers", "sendQuestAlert", pPilot, alertMessage)
 
 		-- Trigger Sidequest
-		createEvent(self.sideQuestDelay * 1000, self.sideQuestType .. "_" .. self.questName, "startQuest", pPilot, "")
+		createEvent(self.sideQuestDelay * 1000, self.sideQuestType .. "_" .. self.sideQuestName, "startQuest", pPilot, "")
 
 		-- Trigger Removal of patrol Point
 		createEvent(self.sideQuestDelay * 1000, "SpaceHelpers", "clearQuestWaypoint", pPilot, self.className)

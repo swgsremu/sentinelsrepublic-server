@@ -1,5 +1,4 @@
 require("screenplays.screenplay")
-local ObjectManager = require("managers.object.object_manager")
 
 SpaceQuestLogic = ScreenPlay:new {
 	className = "SpaceQuestLogic",
@@ -14,13 +13,31 @@ SpaceQuestLogic = ScreenPlay:new {
 		--{species = {}, item = ""},
 	},
 
+	-- Duty Mission Bool
 	dutyMission = false,
 
+	-- Side Quest Split Flag
+	SIDE_QUEST_SPLIT_TYPES = {
+		COMPLETION = 1,
+		PATROL_POINT = 2,
+	},
+
+	-- Side Quest Bool
 	sideQuest = false,
+	-- Side Quest Type String
 	sideQuestType = "",
-	sideQuestStart = 0, -- Patrol Point Number
+	-- Side Quest Name String
+	sideQuestName = "",
+	-- Side Quest Split Type
+	sideQuestSplitType = 0,
+
+	-- Patrol point to start side quest for PATROL_POINT split type
+	sideQuestPatrolStart = 0,
+
+	-- Delay in seconds to trigger side quest when triggered
 	sideQuestDelay = 0, -- Time in seconds to wait to trigger side quest
 
+	-- Flags used to tie side quest to parent quest
 	parentQuest = "",
 	parentQuestType = "", -- Quest type of parent quest, used for completing tasks
 }

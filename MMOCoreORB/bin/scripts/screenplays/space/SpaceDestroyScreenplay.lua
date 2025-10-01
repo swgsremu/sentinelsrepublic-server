@@ -17,7 +17,7 @@ SpaceDestroyScreenplay = SpaceQuestLogic:new {
 
 	sideQuest = false,
 	sideQuestType = "",
-	sideQuestStart = 0, -- Kill Number
+	sideQuestPatrolStart = 0,
 	sideQuestDelay = 0, -- Time in seconds to wait to trigger side quest
 
 	parentQuest = "",
