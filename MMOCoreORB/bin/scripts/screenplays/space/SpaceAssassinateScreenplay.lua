@@ -183,6 +183,8 @@ function SpaceAssassinateScreenplay:deployTargets(pPlayer)
 	-- Set as primary target
 	writeData(primaryID .. ":" .. self.className .. ":PrimaryTarget:", 1)
 
+	local escortSpawnLoc = ShipObject(pPrimaryAgent):getSpawnPointBehindShip(50, 150)
+
 	-- Spawn the Escort ships
 	for i = 1, #escortShips, 1 do
 		local shipName = escortShips[i]
@@ -191,7 +193,7 @@ function SpaceAssassinateScreenplay:deployTargets(pPlayer)
 			print(self.className .. "deployTargets -- spawning target escort ship: " .. shipName)
 		end
 
-		local pShipAgent = spawnShipAgent(shipName, spawnZone, x + (getRandomNumber(25, 400) - getRandomNumber(25, 400)), z, y - getRandomNumber(50, 300))
+		local pShipAgent = spawnShipAgent(shipName, spawnZone, escortSpawnLoc[1], escortSpawnLoc[2], escortSpawnLoc[3], pPrimaryAgent)
 
 		if (pShipAgent ~= nil) then
 			-- Set as a mission-specific ship locked to the mission holder
