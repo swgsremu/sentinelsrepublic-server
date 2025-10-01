@@ -33,8 +33,9 @@ template<> bool CheckProspectInRange::check(ShipAiAgent* agent) const {
 
 	float aggroMod = 0.5f;
 
-	if (agent->peekBlackboard("aggroMod"))
+	if (agent->peekBlackboard("aggroMod")) {
 		aggroMod = agent->readBlackboard("aggroMod").get<float>();
+	}
 
 	float radiusMin = agent->getMaxDistance();
 	float radiusMax = ShipAiAgent::DEFAULTAGGRORADIUS + radiusMin;

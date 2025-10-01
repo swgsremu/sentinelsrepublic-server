@@ -294,6 +294,7 @@ private:
 		_REGISTERSPACELEAF(GeneratePatrol);
 		_REGISTERSPACELEAF(ExitCombat);
 		_REGISTERSPACELEAF(WriteBlackboard);
+		_REGISTERSPACELEAF(WriteBlackboardFloat);
 		_REGISTERSPACELEAF(EraseBlackboard);
 		_REGISTERSPACELEAF(CalculateAggroMod);
 		_REGISTERSPACELEAF(SetMovementState);
