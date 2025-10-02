@@ -43,15 +43,15 @@ namespace server {
 
 				bool loginFinalize(LoginClient* client, ManagedReference<Account*> account);
 
-#ifdef WITH_SESSION_API
+#ifdef WITH_SWGREALMS_API
 				void loginApprovedAccount(LoginClient* client, ManagedReference<Account*> account);
-#else // !WITH_SESSION_API
+#else // !WITH_SWGREALMS_API
 				Reference<Account*> validateAccountCredentials(LoginClient* client, const String& username, const String& password);
 
 				Reference<Account*> createAccount(const String& username, const String& password, String& passwordStored);
 
 				void updateHash(const String& username, const String& password);
-#endif // WITH_SESSION_API
+#endif // WITH_SWGREALMS_API
 
 				//These lookup an account on the mysql database...
 				//Account* lookupAccount(uint32 accountID);
