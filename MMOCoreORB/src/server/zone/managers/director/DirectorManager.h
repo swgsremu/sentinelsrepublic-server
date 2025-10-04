@@ -115,6 +115,7 @@ namespace server {
 		static int registerScreenPlay(lua_State* L);
 		static int includeFile(lua_State* L);
 		static int createEvent(lua_State* L);
+		static int cancelEvent(lua_State* L);
 		static int createEventActualTime(lua_State* L);
 		static int createServerEvent(lua_State* L);
 		static int hasServerEvent(lua_State* L);

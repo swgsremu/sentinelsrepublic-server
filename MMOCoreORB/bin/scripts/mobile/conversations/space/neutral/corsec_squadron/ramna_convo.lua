@@ -1500,7 +1500,7 @@ ramna_convo_template:addScreen(press_advantage2)
 
 failed_fourth_mission = ConvoScreen:new {
 	id = "failed_fourth_mission",
-	leftDialog = "@conversation/corellia_privateer_tier3:s_7d0ca743", -- Absolutely.
+	leftDialog = "@conversation/corellia_privateer_tier3:s_7d0ca743", -- Ready to give it another shot?
 	animation = "",
 	playerAnimation = "",
 	stopConversation = "false",
@@ -1540,7 +1540,7 @@ go_on = ConvoScreen:new {
 	playerAnimation = "shrug_shoulders",
 	stopConversation = "false",
 	options = {
-		{"@conversation/corellia_privateer_tier3:s_2836e6b5", ""}, -- OK.
+		{"@conversation/corellia_privateer_tier3:s_2836e6b5", "see_you_soon"}, -- OK.
 	}
 }
 ramna_convo_template:addScreen(go_on)

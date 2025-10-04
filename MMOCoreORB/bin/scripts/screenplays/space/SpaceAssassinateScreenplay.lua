@@ -64,6 +64,9 @@ function SpaceAssassinateScreenplay:completeQuest(pPlayer, notifyClient)
 	-- Remove the zone entry observer
 	dropObserver(ZONESWITCHED, self.className, "enteredZone", pPlayer)
 
+	-- Cancel the Fail event
+	cancelEvent(self.className, "failAssassination", pPlayer)
+
 	local playerID = SceneObject(pPlayer):getObjectID()
 
 	-- Remove the vector, it is no longer needed
@@ -116,6 +119,9 @@ function SpaceAssassinateScreenplay:failQuest(pPlayer, notifyClient)
 	-- Data to Delete
 	deleteData(playerID .. ":" .. self.className .. ":TotalKills:")
 	deleteData(playerID .. ":" .. self.className .. ":EscortKills:")
+
+	-- Cancel the Fail event
+	cancelEvent(self.className, "failAssassination", pPlayer)
 
 	-- Fail the parent quest
 	if (self.parentQuestType ~= "") then

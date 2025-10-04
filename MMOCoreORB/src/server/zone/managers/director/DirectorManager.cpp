@@ -430,6 +430,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	//luaEngine->registerFunction("includeFile", includeFile);
 	luaEngine->registerFunction("includeFile", includeFile);
 	luaEngine->registerFunction("createEvent", createEvent);
+	luaEngine->registerFunction("cancelEvent", cancelEvent);
 	luaEngine->registerFunction("createEventActualTime", createEventActualTime);
 	luaEngine->registerFunction("createServerEvent", createServerEvent);
 	luaEngine->registerFunction("hasServerEvent", hasServerEvent);
@@ -1714,6 +1715,52 @@ int DirectorManager::createEvent(lua_State* L) {
 		task->schedule(mili);
 	} else {
 		task->schedule(mili);
+	}
+
+	return 0;
+}
+
+int DirectorManager::cancelEvent(lua_State* L) {
+	int numberOfArguments = lua_gettop(L);
+
+	if (numberOfArguments != 3) {
+		String err = "incorrect number of arguments passed to DirectorManager::cancelEvent";
+		printTraceError(L, err);
+		ERROR_CODE = INCORRECT_ARGUMENTS;
+		return 0;
+	}
+
+	SceneObject* sceneO = (SceneObject*) lua_touserdata(L, -1);
+	String screenplayFunction = lua_tostring(L, -2);
+	String screenplayName = lua_tostring(L, -3);
+
+	if (sceneO == nullptr) {
+		return 0;
+	}
+
+	auto eventsList = DirectorManager::instance()->getObjectEvents(sceneO);
+
+	for (int i = 0; i < eventsList.size(); i++) {
+		Reference<ScreenPlayTask*> task = eventsList.get(i);
+
+		if (task == nullptr || task->getSceneObject() != sceneO) {
+			continue;
+		}
+
+		auto taskScreenplay = task->getScreenPlay();
+		auto taskKey = task->getTaskKey();
+
+		// instance()->info(true) << "DirectorManager::cancelEvent -- Checking Screenplay Name: " << screenplayName << " Function: " << screenplayFunction << " Object: " << sceneO->getDisplayedName();
+
+		if (taskScreenplay != screenplayName || taskKey != screenplayFunction) {
+			continue;
+		}
+
+		// Cancel the task
+		task->cancel();
+
+		// Remove it from the list
+		instance()->screenplayTasks.drop(task);
 	}
 
 	return 0;
