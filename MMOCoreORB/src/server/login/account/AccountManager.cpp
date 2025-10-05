@@ -393,6 +393,7 @@ Reference<Account*> AccountManager::getAccount(uint32 accountID, bool forceSqlUp
 	auto swgRealmsAPI = SWGRealmsAPI::instance();
 
 	if (swgRealmsAPI != nullptr && swgRealmsAPI->getAccountDataBlocking(accountID, accObj, errorMessage)) {
+		Locker locker(accObj);
 		accObj->updateFromDatabase();
 
 		return accObj;
