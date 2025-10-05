@@ -339,6 +339,22 @@ namespace server {
 			bool failOpen = false;
 			int apiTimeoutMs = 30000;
 
+			// Blocking call statistics
+			AtomicInteger outstandingBlockingCalls = 0;
+			AtomicInteger peakConcurrentCalls = 0;
+			AtomicInteger totalBlockingCalls = 0;
+
+			// Latency histogram (milliseconds)
+			AtomicInteger latency_0_10ms = 0;
+			AtomicInteger latency_10_50ms = 0;
+			AtomicInteger latency_50_100ms = 0;
+			AtomicInteger latency_100_500ms = 0;
+			AtomicInteger latency_500plus = 0;
+
+			// Timing breakdown (for averaging)
+			AtomicLong totalRoundTripMs = 0;
+			AtomicLong totalRequestMs = 0;
+
 		public:
 			SWGRealmsAPI();
 			~SWGRealmsAPI();
@@ -365,6 +381,9 @@ namespace server {
 
 			String toString() const;
 			String toStringData() const;
+
+			// Statistics
+			JSONSerializationType getStatsAsJSON() const;
 
 			// Hook for console "swgrealms" command
 			bool consoleCommand(const String& arguments);

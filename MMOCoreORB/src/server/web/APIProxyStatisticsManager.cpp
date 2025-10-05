@@ -15,6 +15,10 @@
 #include "APIProxyStatisticsManager.h"
 #include "APIRequest.h"
 
+#ifdef WITH_SWGREALMS_API
+#include "server/login/SWGRealmsAPI.h"
+#endif
+
 namespace server {
  namespace web3 {
 
@@ -28,6 +32,10 @@ void APIProxyStatisticsManager::handleGET(APIRequest& apiRequest) {
 
 	result["metadata"] = metadata;
 	result["result"] = StatisticsManager::instance()->getAsJSON();
+
+#ifdef WITH_SWGREALMS_API
+	result["result"]["swgrealms"] = SWGRealmsAPI::instance()->getStatsAsJSON();
+#endif
 
 	apiRequest.success(result);
 }

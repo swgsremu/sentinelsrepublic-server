@@ -248,6 +248,10 @@ void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& 
 					if (debug.has_field("trx_id")) {
 						result->setDebugValue("trx_id", String(debug[U("trx_id")].as_string().c_str()));
 					}
+
+					if (debug.has_field("req_time_ms")) {
+						result->setDebugValue("req_time_ms", String::valueOf(debug[U("req_time_ms")].as_integer()));
+					}
 				}
 
 				// Call subclass parse() to extract type-specific fields
@@ -481,9 +485,69 @@ bool SWGRealmsAPI::consoleCommand(const String& arguments) {
 		return true;
 	}
 
+	if (subcmd == "stats") {
+		auto stats = getStatsAsJSON();
+		auto latency = stats["latency"];
+
+		info(true) << "SWGRealms API Statistics:";
+		info(true) << "  Total transactions: " << stats["trxCount"].get<int>();
+		info(true) << "  Errors: " << stats["errCount"].get<int>();
+		info(true) << "  Outstanding blocking calls: " << stats["outstandingBlockingCalls"].get<int>();
+		info(true) << "  Peak concurrent calls: " << stats["peakConcurrentCalls"].get<int>();
+		info(true) << "  Total blocking calls: " << stats["totalBlockingCalls"].get<int>();
+		info(true) << "  Avg round-trip: " << stats["avgRoundTripMs"].get<int>() << "ms";
+		info(true) << "  Avg ig-88a request: " << stats["avgRequestMs"].get<int>() << "ms";
+		info(true) << "  Avg Core3 overhead: " << stats["avgProcessMs"].get<int>() << "ms";
+		info(true) << "  Latency 0-10ms: " << latency["0-10ms"].get<int>();
+		info(true) << "  Latency 10-50ms: " << latency["10-50ms"].get<int>();
+		info(true) << "  Latency 50-100ms: " << latency["50-100ms"].get<int>();
+		info(true) << "  Latency 100-500ms: " << latency["100-500ms"].get<int>();
+		info(true) << "  Latency 500ms+: " << latency["500ms+"].get<int>();
+
+		return true;
+	}
+
 	info(true) << "Unknown swgrealms subcommand: " << subcmd;
 
 	return false;
+}
+
+JSONSerializationType SWGRealmsAPI::getStatsAsJSON() const {
+	JSONSerializationType stats;
+
+	stats["trxCount"] = trxCount.get();
+	stats["errCount"] = errCount.get();
+	stats["outstandingBlockingCalls"] = outstandingBlockingCalls.get();
+	stats["peakConcurrentCalls"] = peakConcurrentCalls.get();
+	stats["totalBlockingCalls"] = totalBlockingCalls.get();
+
+	// Calculate averages
+	int total = totalBlockingCalls.get();
+	if (total > 0) {
+		stats["avgRoundTripMs"] = (int)(totalRoundTripMs.get() / total);
+		stats["avgRequestMs"] = (int)(totalRequestMs.get() / total);
+		stats["avgProcessMs"] = (int)((totalRoundTripMs.get() - totalRequestMs.get()) / total);
+	} else {
+		stats["avgRoundTripMs"] = 0;
+		stats["avgRequestMs"] = 0;
+		stats["avgProcessMs"] = 0;
+	}
+
+	JSONSerializationType latency;
+	latency["0-10ms"] = latency_0_10ms.get();
+	latency["10-50ms"] = latency_10_50ms.get();
+	latency["50-100ms"] = latency_50_100ms.get();
+	latency["100-500ms"] = latency_100_500ms.get();
+	latency["500ms+"] = latency_500plus.get();
+
+	stats["latency"] = latency;
+	stats["apiEnabled"] = apiEnabled;
+	stats["galaxyID"] = galaxyID;
+	stats["failOpen"] = failOpen;
+	stats["dryRun"] = dryRun;
+	stats["debugLevel"] = debugLevel;
+
+	return stats;
 }
 
 SWGRealmsAPIResult::SWGRealmsAPIResult() {
@@ -712,6 +776,21 @@ bool SWGRealmsAPI::apiCallBlocking(Reference<SWGRealmsAPIResult*> result, const 
 		return false;
 	}
 
+	// Track blocking call statistics
+	Time startTime;
+	outstandingBlockingCalls.increment();
+	totalBlockingCalls.increment();
+
+	// Update peak if needed
+	int current = outstandingBlockingCalls.get();
+	int peak = peakConcurrentCalls.get();
+	while (current > peak) {
+		if (peakConcurrentCalls.compareAndSet(peak, current)) {
+			break;
+		}
+		peak = peakConcurrentCalls.get();
+	}
+
 	// Reset blocking state
 	result->blockingReceived = false;
 
@@ -735,6 +814,36 @@ bool SWGRealmsAPI::apiCallBlocking(Reference<SWGRealmsAPIResult*> result, const 
 			errorMessage = "Timeout waiting for API response";
 			return false;
 		}
+	}
+
+	// Update statistics before return
+	outstandingBlockingCalls.decrement();
+
+	uint64 elapsed = startTime.miliDifference();
+	totalRoundTripMs.add(elapsed);
+
+	// Extract ig-88a's req_time_ms if available
+	String reqTimeStr = result->getDebugValue("req_time_ms");
+	if (!reqTimeStr.isEmpty()) {
+		try {
+			int reqTime = Integer::valueOf(reqTimeStr);
+			totalRequestMs.add(reqTime);
+		} catch (...) {
+			// Ignore parse errors
+		}
+	}
+
+	// Latency histogram
+	if (elapsed < 10) {
+		latency_0_10ms.increment();
+	} else if (elapsed < 50) {
+		latency_10_50ms.increment();
+	} else if (elapsed < 100) {
+		latency_50_100ms.increment();
+	} else if (elapsed < 500) {
+		latency_100_500ms.increment();
+	} else {
+		latency_500plus.increment();
 	}
 
 	// Check result status
