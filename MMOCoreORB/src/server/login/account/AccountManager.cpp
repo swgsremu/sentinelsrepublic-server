@@ -111,6 +111,7 @@ void AccountManager::loginAccount(LoginClient* client, Message* packet) {
 			loginClient->sendErrorMessage("Login Error", "Failed to find your account, please contact support.");
 
 			error() << "getAccount(" << result.getAccountID() << ") failed in createSession for user [" << username << "]: " << result.getLogMessage();
+			return;
 		}
 
 		Locker locker(loginAccount);
@@ -382,9 +383,31 @@ Reference<Account*> AccountManager::getAccount(uint32 accountID, bool forceSqlUp
 
 			return nullptr;
 		}
-	} else if (!forceSqlUpdate && accObj->isSqlLoaded()) {
+	} else if (!forceSqlUpdate && accObj->isSqlLoaded() && !accObj->isAccountDataStale()) {
 		return accObj;
 	}
+
+#ifdef WITH_SWGREALMS_API
+	// Try to get account data from API
+	String errorMessage;
+	auto swgRealmsAPI = SWGRealmsAPI::instance();
+
+	if (swgRealmsAPI != nullptr && swgRealmsAPI->getAccountDataBlocking(accountID, accObj, errorMessage)) {
+		accObj->updateFromDatabase();
+
+		return accObj;
+	}
+
+	// API failed - check failOpen setting
+	if (swgRealmsAPI != nullptr && !swgRealmsAPI->getFailOpen()) {
+		// Fail closed - do not fall back to MySQL
+		logger.error() << "SWGRealms API getAccountDataBlocking failed for accountID " << accountID << ": " << errorMessage << " (fail-closed, NOT falling back to MySQL)";
+		return nullptr;
+	}
+
+	// Fail open enabled - log error and fall back to direct SQL
+	logger.error() << "SWGRealms API getAccountDataBlocking failed for accountID " << accountID << ": " << errorMessage << " (fail-open, falling back to MySQL)";
+#endif // WITH_SWGREALMS_API
 
 	StringBuffer query;
 	query << "SELECT a.active, a.username, a.password, a.salt, a.account_id, a.station_id, UNIX_TIMESTAMP(a.created), a.admin_level, '' AS session_id FROM accounts a WHERE a.account_id = '" << accountID << "' LIMIT 1;";
@@ -399,6 +422,10 @@ Reference<Account*> AccountManager::getAccount(uint32 accountID, bool forceSqlUp
 		accObj->setSalt(result->getString(3));
 		accObj->setAccountID(accountID);
 		accObj->setStationID(result->getUnsignedInt(5));
+
+		Time ttl;
+		ttl.addMiliTime(3600 * 1000);
+		accObj->setAccountDataValidUntil(ttl);
 
 		if (!ConfigManager::instance()->getBool("Core3.AccountManager.CreatedDateFirstConnect", false)) {
 			accObj->setTimeCreated(result->getUnsignedInt(6));
@@ -419,6 +446,7 @@ Reference<Account*> AccountManager::getAccount(uint32 accountID, bool forceSqlUp
 	return nullptr;
 }
 
+#ifndef WITH_SWGREALMS_API
 Reference<Account*> AccountManager::getAccount(uint32 accountID, String& passwordStored, bool forceSqlUpdate) {
 	StringBuffer query;
 	query << "SELECT a.active, a.username, a.password, a.salt, a.account_id, a.station_id, UNIX_TIMESTAMP(a.created), a.admin_level, '' AS session_id FROM accounts a WHERE a.account_id = '" << accountID << "' LIMIT 1;";
@@ -484,6 +512,10 @@ Reference<Account*> AccountManager::getAccount(String query, String& passwordSto
 
 		account->setSessionId(result->getString(8));
 
+		Time ttl;
+		ttl.addMiliTime(3600 * 1000);
+		account->setAccountDataValidUntil(ttl);
+
 		account->updateFromDatabase();
 
 		return account;
@@ -504,6 +536,30 @@ Reference<Account*> AccountManager::getAccount(const String& accountName, bool f
 
 	return getAccount(query.toString(), temp, forceSqlUpdate);
 }
+#else // WITH_SWGREALMS_API
+Reference<Account*> AccountManager::getAccount(const String& accountName, bool forceSqlUpdate) {
+	static Logger logger("AccountManager");
+
+	String errorMessage;
+	auto swgRealmsAPI = SWGRealmsAPI::instance();
+
+	if (swgRealmsAPI == nullptr) {
+		logger.error() << "SWGRealms API instance is null";
+		return nullptr;
+	}
+
+	// Get account_id from username via API
+	uint32 accountID = swgRealmsAPI->getAccountID(accountName, errorMessage);
+
+	if (accountID == 0) {
+		logger.error() << "Failed to get account_id for username " << accountName << ": " << errorMessage;
+		return nullptr;
+	}
+
+	// Use account_id to get full account (may use cache, avoiding second API call)
+	return getAccount(accountID, forceSqlUpdate);
+}
+#endif // WITH_SWGREALMS_API
 
 void AccountManager::expireSession(Reference<Account*> account, const String& sessionID) {
 	if (account == nullptr || sessionID.isEmpty()) {

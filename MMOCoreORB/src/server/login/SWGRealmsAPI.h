@@ -16,12 +16,16 @@
 #include "server/login/account/Account.h"
 #include "server/login/LoginClient.h"
 
+#define _TURN_OFF_PLATFORM_STRING
+#include <cpprest/json.h>
+
 namespace server {
 	namespace zone {
 		class ZoneClientSession;
 	}
 	namespace login {
-		class SessionApprovalResult {
+		// Base class for all SWGRealms API results
+		class SWGRealmsAPIResult : public Object {
 		public:
 			enum ApprovalAction {
 				UNKNOWN = -2,
@@ -33,23 +37,31 @@ namespace server {
 				DEBUG = 4
 			};
 
-		private:
-			String resultTrxId;
+		protected:
+			web::json::value jsonData;
 			String resultClientTrxId;
 			ApprovalAction resultAction;
 			String resultTitle;
 			String resultMessage;
 			String resultDetails;
-			String resultEncryptedIP;
-			String resultSessionID;
-			uint32 resultAccountID;
-			uint32 resultStationID;
-			String resultRawJSON;
 			uint64 resultElapsedTimeMS;
 			HashTable<String, String> resultDebug;
 
 		public:
-			SessionApprovalResult();
+			Function<void()> callback;
+
+			SWGRealmsAPIResult();
+			virtual ~SWGRealmsAPIResult() {}
+
+			// Parse from JSON - implemented by subclasses
+			virtual bool parse() = 0;
+
+			// Invoke the callback if set
+			inline void invokeCallback() {
+				if (callback) {
+					callback();
+				}
+			}
 
 			String toString() const;
 			String toStringData() const;
@@ -103,12 +115,17 @@ namespace server {
 				resultAction = ApprovalAction::UNKNOWN;
 			}
 
-			inline void setTrxId(const String& trxId) {
-				resultDebug.put("trx_id", trxId);
+			inline void setJSONObject(const web::json::value& json) {
+				jsonData = json;
 			}
 
-			inline const String& getTrxId() const {
-				return resultDebug.get("trx_id");
+			inline const web::json::value& getJSONObject() const {
+				return jsonData;
+			}
+
+			inline String getRawJSON() const {
+				if (jsonData.is_null()) return "";
+				return String(jsonData.serialize().c_str());
 			}
 
 			inline void setClientTrxId(const String& clientTrxId) {
@@ -181,6 +198,62 @@ namespace server {
 				return resultDetails;
 			}
 
+			inline void setElapsedTimeMS(uint64 elapsedTimeMS) {
+				resultElapsedTimeMS = elapsedTimeMS;
+			}
+
+			inline uint64 getElapsedTimeMS() const {
+				return resultElapsedTimeMS;
+			}
+
+			inline void setDebugValue(const String& key, const String& value) {
+				resultDebug.put(key, value);
+			}
+
+			inline const String& getDebugValue(const String& key) const {
+				auto entry = resultDebug.getEntry(key);
+
+				if (entry) {
+					return entry->getValue();
+				} else {
+					const static String empty;
+					return empty;
+				}
+			}
+
+			inline const HashTable<String, String>& getDebugHashTable() const {
+				return resultDebug;
+			}
+
+			inline void setTrxId(const String& trxId) {
+				resultDebug.put("trx_id", trxId);
+			}
+
+			inline const String& getTrxId() const {
+				return resultDebug.get("trx_id");
+			}
+		};
+
+		// Forward declare for SessionApprovalResult constructor
+		class SessionApprovalResult;
+		using SessionAPICallback = Function<void(SessionApprovalResult)>;
+
+		// Session-specific result (login, session validation, etc.)
+		class SessionApprovalResult : public SWGRealmsAPIResult {
+		private:
+			String resultEncryptedIP;
+			String resultSessionID;
+			uint32 resultAccountID;
+			uint32 resultStationID;
+
+		public:
+			SessionApprovalResult();
+			SessionApprovalResult(const SessionAPICallback& resultCallback);
+
+			// Implement virtual parse() method
+			bool parse() override;
+
+			// Session-specific methods
 			inline void setEncryptedIP(const String& eip) {
 				resultEncryptedIP = eip;
 			}
@@ -212,44 +285,36 @@ namespace server {
 			inline uint32 getStationID() const {
 				return resultStationID;
 			}
+		};
 
-			inline void setElapsedTimeMS(uint64 elapsedTimeMS) {
-				resultElapsedTimeMS = elapsedTimeMS;
+		// Account-specific result (account data, ban status, etc.)
+		class AccountResult : public SWGRealmsAPIResult {
+		private:
+			Reference<Account*> account;
+			uint32 accountID;  // For getAccountID() - just returns the ID
+			bool accountIDOnly;  // Flag to indicate this is just an ID lookup
+
+		public:
+			AccountResult(Reference<Account*> acc);
+			AccountResult();  // For accountID-only lookup
+
+			bool parse() override;
+
+			inline uint32 getAccountID() const {
+				return accountID;
 			}
 
-			inline uint64 getElapsedTimeMS() const {
-				return resultElapsedTimeMS;
-			}
-
-			inline void setDebugValue(const String& key, const String& value) {
-				resultDebug.put(key, value);
-			}
-
-			inline const String& getDebugValue(const String& key) const {
-				auto entry = resultDebug.getEntry(key);
-
-				if (entry) {
-					return entry->getValue();
-				} else {
-					const static String empty;
-					return empty;
-				}
-			}
-
-			inline const HashTable<String, String>& getDebugHashTable() const {
-				return resultDebug;
-			}
-
-			inline const String& getRawJSON() const {
-				return resultRawJSON;
-			}
-
-			inline void setRawJSON(const String& json) {
-				resultRawJSON = json;
+			inline Reference<Account*> getAccount() const {
+				return account;
 			}
 		};
 
-		using SessionAPICallback = Function<void(SessionApprovalResult)>;
+		// Simple result for operations that just return success/failure (ban, unban, etc.)
+		class SimpleResult : public SWGRealmsAPIResult {
+		public:
+			SimpleResult() {}
+			bool parse() override { return true; } // No custom parsing needed
+		};
 
 		class SWGRealmsAPI : public Logger, public Singleton<SWGRealmsAPI>, public Object {
 		protected:
@@ -262,6 +327,7 @@ namespace server {
 			String baseURL = "";
 			bool dryRun = false;
 			bool failOpen = false;
+			int apiTimeoutMs = 30000;
 
 		public:
 			SWGRealmsAPI();
@@ -283,16 +349,39 @@ namespace server {
 				return debugLevel;
 			}
 
+			inline bool getFailOpen() const {
+				return failOpen;
+			}
+
 			String toString() const;
 			String toStringData() const;
 
 			// Hook for console "swgrealms" command
 			bool consoleCommand(const String& arguments);
 
+		private:
 			// API Helpers
-			void apiCall(const String& src, const String& basePath, const SessionAPICallback& resultCallback,
+			void apiCall(Reference<SWGRealmsAPIResult*> result, const String& src, const String& path,
 					const String& method = "GET", const String& body = "");
 			void apiNotify(const String& src, const String& basePath);
+
+			bool parseAccountFromJSON(const String& jsonStr, Reference<Account*> account, String& errorMessage);
+			bool parseAccountBanStatusFromJSON(const String& jsonStr, Reference<Account*> account, String& errorMessage);
+
+			// Generic blocking API call helper - eliminates boilerplate
+			bool apiCallBlocking(Reference<SWGRealmsAPIResult*> result, const String& path, const String& method,
+			                     const String& body, String& errorMessage);
+
+		public:
+			// Account Data Retrieval
+			bool getAccountDataBlocking(uint32 accountID, Reference<Account*> account, String& errorMessage);
+			uint32 getAccountID(const String& username, String& errorMessage);
+			bool getAccountBanStatusBlocking(uint32 accountID, Reference<Account*> account, String& errorMessage);
+
+			// Account Ban Operations
+			bool banAccountBlocking(uint32 accountID, uint32 issuerID, uint64 expiresTimestamp,
+			                        const String& reason, String& errorMessage);
+			bool unbanAccountBlocking(uint32 accountID, const String& reason, String& errorMessage);
 
 			// EIP Helper
 			static void updateClientIPAddress(server::zone::ZoneClientSession* client, const SessionApprovalResult& result);

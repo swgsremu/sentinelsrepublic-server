@@ -20,6 +20,12 @@
 #include <cpprest/http_client.h>
 #include <pplx/threadpool.h>
 
+// Workaround for googletest conflict
+// See https://github.com/Microsoft/cpprestsdk/blob/master/Release/include/cpprest/details/basic_types.h#L95
+#ifndef U
+#define U(x) _XPLATSTR(x)
+#endif
+
 using namespace utility;
 using namespace web;
 using namespace web::http;
@@ -67,6 +73,8 @@ SWGRealmsAPI::SWGRealmsAPI() {
 
 	failOpen = config->getBool("Core3.Login.API.FailOpen", false);
 
+	apiTimeoutMs = config->getInt("Core3.Login.API.Timeout", 30) * 1000;
+
 	info(true) << "Starting " << toString();
 }
 
@@ -95,19 +103,17 @@ String SWGRealmsAPI::toString() const {
 	return buf.toString();
 }
 
-void SWGRealmsAPI::apiCall(const String& src, const String& basePath, const SessionAPICallback& resultCallback, const String& method, const String& body) {
+void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& src, const String& path, const String& method, const String& body) {
 	// If not enabled just return ALLOW all the time
 	if (!apiEnabled) {
-		SessionApprovalResult result;
+		result->setAction(SWGRealmsAPIResult::ApprovalAction::ALLOW);
+		result->setTitle("");
+		result->setMessage("");
+		result->setDetails("API Not enabled.");
+		result->setDebugValue("trx_id", "api-disabled");
 
-		result.setAction(SessionApprovalResult::ApprovalAction::ALLOW);
-		result.setTitle("");
-		result.setMessage("");
-		result.setDetails("API Not enabled.");
-		result.setDebugValue("trx_id", "api-disabled");
-
-		Core::getTaskManager()->executeTask([resultCallback, result] {
-			resultCallback(result);
+		Core::getTaskManager()->executeTask([result]() {
+			result->invokeCallback();
 		}, "SWGRealmsAPIResult-nop-" + src, "slowQueue");
 		return;
 	}
@@ -116,45 +122,52 @@ void SWGRealmsAPI::apiCall(const String& src, const String& basePath, const Sess
 
 	incrementTrxCount();
 
-	String path = basePath;
+	String apiPath = path;
 
 	if (dryRun) {
-		path = basePath + (basePath.indexOf("?") == -1 ? "?" : "&") + "debug=1&dryrun=1";
+		apiPath = path + (path.indexOf("?") == -1 ? "?" : "&") + "debug=1&dryrun=1";
 	}
 
-	debug() << src << " START apiCall [path=" << path << "]";
+	debug() << src << " START apiCall [path=" << apiPath << "]";
 
 	web::http::client::http_client_config client_config;
 
 	client_config.set_validate_certificates(false);
 
-	utility::seconds timeout(5);
+	utility::seconds timeout(apiTimeoutMs / 1000);
 
 	client_config.set_timeout(timeout);
 
 	http_client client(baseURL.toCharArray(), client_config);
 
-	http_request req(method == "POST" ? methods::POST : methods::GET);
+	web::http::method httpMethod = methods::GET;
+	if (method == "POST") {
+		httpMethod = methods::POST;
+	} else if (method == "PUT") {
+		httpMethod = methods::PUT;
+	}
+
+	http_request req(httpMethod);
 
 	String authHeader = "Bearer " + apiToken;
 
 	req.headers().add(U("Authorization"), authHeader.toCharArray());
 
-	req.set_request_uri(path.toCharArray());
+	req.set_request_uri(apiPath.toCharArray());
 
 	if (!body.isEmpty()) {
 		req.set_body(body.toCharArray(), "application/json");
 	}
 
 	client.request(req)
-		.then([this, src, path](pplx::task<http_response> task) {
+		.then([this, src, apiPath, result](pplx::task<http_response> task) {
 			http_response resp;
 			bool failed = false;
 
 			try {
 				resp = task.get();
 			} catch (const http_exception& e) {
-				error() << src << " " << path << " HTTP Exception caught: " << e.what();
+				error() << src << " " << apiPath << " HTTP Exception caught: " << e.what();
 				failed = true;
 			}
 
@@ -183,115 +196,95 @@ void SWGRealmsAPI::apiCall(const String& src, const String& basePath, const Sess
 			}
 
 			return resp.extract_json();
-		}).then([this, src, method, path, resultCallback, startTime](pplx::task<json::value> task) {
-			SessionApprovalResult result;
-			auto logPrefix = result.getClientTrxId() + " " + src + ": ";
+		}).then([this, src, method, apiPath, result, startTime](pplx::task<json::value> task) {
+			auto logPrefix = result->getClientTrxId() + " " + src + ": ";
 			auto result_json = json::value();
 			bool failed = false;
 
 			try {
 				result_json = task.get();
 			} catch (const http_exception& e) {
-				error() << logPrefix << " " << path << " HTTP Exception caught reading body: " << e.what();
+				error() << logPrefix << " " << apiPath << " HTTP Exception caught reading body: " << e.what();
 				failed = true;
 			}
 
 			if (result_json.is_null()) {
 				incrementErrorCount();
 				error() << logPrefix << "Null JSON result from server.";
-				result.setAction(SessionApprovalResult::ApprovalAction::TEMPFAIL);
-				result.setTitle("Temporary Server Error");
-				result.setMessage("If the error continues please contact support and mention error code = K");
+				result->setAction(SWGRealmsAPIResult::ApprovalAction::TEMPFAIL);
+				result->setTitle("Temporary Server Error");
+				result->setMessage("If the error continues please contact support and mention error code = K");
 			} else {
-				result.setRawJSON(String(result_json.serialize().c_str()));
+				result->setJSONObject(result_json);
 
 				if (result_json.has_field("action")) {
-					result.setAction(String(result_json[U("action")].as_string().c_str()));
+					result->setAction(String(result_json[U("action")].as_string().c_str()));
 				} else if (failOpen) {
 					warning() << logPrefix << "Missing action from result, failing to ALLOW: JSON: " << result_json.serialize().c_str();
-					result.setAction(SessionApprovalResult::ApprovalAction::ALLOW);
+					result->setAction(SWGRealmsAPIResult::ApprovalAction::ALLOW);
 				} else {
 					incrementErrorCount();
-					result.setAction(SessionApprovalResult::ApprovalAction::TEMPFAIL);
-					result.setTitle("Temporary Server Error");
-					result.setMessage("If the error continues please contact support and mention error code = L");
-					result.setDetails("Missing action field from server");
+					result->setAction(SWGRealmsAPIResult::ApprovalAction::TEMPFAIL);
+					result->setTitle("Temporary Server Error");
+					result->setMessage("If the error continues please contact support and mention error code = L");
+					result->setDetails("Missing action field from server");
 				}
 
 				if (result_json.has_field("title")) {
-					result.setTitle(String(result_json[U("title")].as_string().c_str()));
+					result->setTitle(String(result_json[U("title")].as_string().c_str()));
 				}
 
 				if (result_json.has_field("message")) {
-					result.setMessage(String(result_json[U("message")].as_string().c_str()));
+					result->setMessage(String(result_json[U("message")].as_string().c_str()));
 				}
 
 				if (result_json.has_field("details")) {
-					result.setDetails(String(result_json[U("details")].as_string().c_str()));
-				}
-
-				if (result_json.has_field("eip")) {
-					result.setEncryptedIP(String(result_json[U("eip")].as_string().c_str()));
-				}
-
-				if (result_json.has_field("session_id")) {
-					result.setSessionID(String(result_json[U("session_id")].as_string().c_str()));
-				}
-
-				if (result_json.has_field("account_id")) {
-					auto field = result_json[U("account_id")];
-
-					if (field.is_number()) {
-						result.setAccountID((uint32)field.as_number().to_uint32());
-					}
-				}
-
-				if (result_json.has_field("station_id")) {
-					auto field = result_json[U("station_id")];
-
-					if (field.is_number()) {
-						result.setStationID((uint32)field.as_number().to_uint32());
-					}
+					result->setDetails(String(result_json[U("details")].as_string().c_str()));
 				}
 
 				if (result_json.has_field("debug")) {
 					auto debug = result_json[U("debug")];
 
 					if (debug.has_field("trx_id")) {
-						result.setDebugValue("trx_id", String(debug[U("trx_id")].as_string().c_str()));
+						result->setDebugValue("trx_id", String(debug[U("trx_id")].as_string().c_str()));
 					}
 				}
+
+				// Call subclass parse() to extract type-specific fields
+				result->parse();
 			}
 
-			result.setElapsedTimeMS(startTime.miliDifference());
+			result->setElapsedTimeMS(startTime.miliDifference());
 
-			if (result.getElapsedTimeMS() > 500)
-				warning() << "Slow API Call: " << result.toString();
+			if (result->getElapsedTimeMS() > 500)
+				warning() << "Slow API Call: " << result->toString();
 
 			if (dryRun) {
-				debug() << logPrefix << "DryRun: original result = " << result;
+				debug() << logPrefix << "DryRun: original result = " << *result;
 
-				result.setAction(SessionApprovalResult::ApprovalAction::ALLOW);
-				result.setTitle("");
-				result.setMessage("");
-				result.setDetails("");
-				result.setDebugValue("trx_id", "dry-run-trx-id");
+				result->setAction(SWGRealmsAPIResult::ApprovalAction::ALLOW);
+				result->setTitle("");
+				result->setMessage("");
+				result->setDetails("");
+				result->setDebugValue("trx_id", "dry-run-trx-id");
 			}
 
-			debug() << logPrefix << "END apiCall " << method << " [path=" << path << "] result = " << result;
+			debug() << logPrefix << "END apiCall " << method << " [path=" << apiPath << "] result = " << *result;
 
-			Core::getTaskManager()->executeTask([resultCallback, result] {
-				resultCallback(result);
+			Core::getTaskManager()->executeTask([result] {
+				result->invokeCallback();
 			}, "SWGRealmsAPIResult-" + src, "slowQueue");
 		});
 }
 
 void SWGRealmsAPI::apiNotify(const String& src, const String& basePath) {
-	apiCall(src, basePath, [=](const SessionApprovalResult& result) {
-		if (!result.isActionAllowed()) {
-			error() << src << " unexpected failure: " << result;
+	Reference<SessionApprovalResult*> result = new SessionApprovalResult([this, src](const SessionApprovalResult& r) {
+		if (!r.isActionAllowed()) {
+			error() << src << " unexpected failure: " << r;
 		}
 	});
+
+	apiCall(result.castTo<SWGRealmsAPIResult*>(), src, basePath);
 }
 
 void SWGRealmsAPI::notifyGalaxyStart(uint32 galaxyID) {
@@ -314,16 +307,17 @@ void SWGRealmsAPI::notifyGalaxyShutdown() {
 }
 
 void SWGRealmsAPI::createSession(const String& username, const String& password, const String& clientVersion, const String& clientEndpoint, const SessionAPICallback& resultCallback) {
-	if (!apiEnabled) {
-		SessionApprovalResult result;
-		result.setAction(SessionApprovalResult::ApprovalAction::REJECT);
-		result.setTitle("Temporary Server Error");
-		result.setMessage("If the error continues please contact support and mention error code = S");
-		result.setDetails("SWGRealms API required for authentication but not configured");
-		result.setDebugValue("trx_id", "api-disabled-auth");
+	Reference<SessionApprovalResult*> result = new SessionApprovalResult(resultCallback);
 
-		Core::getTaskManager()->executeTask([resultCallback, result] {
-			resultCallback(result);
+	if (!apiEnabled) {
+		result->setAction(SWGRealmsAPIResult::ApprovalAction::REJECT);
+		result->setTitle("Temporary Server Error");
+		result->setMessage("If the error continues please contact support and mention error code = S");
+		result->setDetails("SWGRealms API required for authentication but not configured");
+		result->setDebugValue("trx_id", "api-disabled-auth");
+
+		Core::getTaskManager()->executeTask([result]() mutable {
+			result->invokeCallback();
 		}, "SWGRealmsAPIResult-nop-createSession", "slowQueue");
 
 		return;
@@ -336,28 +330,29 @@ void SWGRealmsAPI::createSession(const String& username, const String& password,
 	requestBody[U("client_ip")] = json::value::string(U(clientEndpoint.toCharArray()));
 	requestBody[U("galaxy_id")] = json::value::number(galaxyID);
 
-	apiCall(__FUNCTION__, "/v1/core3/account/login", resultCallback, "POST", String(requestBody.serialize().c_str()));
+	apiCall(result.castTo<SWGRealmsAPIResult*>(), __FUNCTION__, "/v1/core3/account/login", "POST", String(requestBody.serialize().c_str()));
 }
 
 void SWGRealmsAPI::approveNewSession(const String& ip, uint32 accountID, const SessionAPICallback& resultCallback) {
-	StringBuffer path;
+	Reference<SessionApprovalResult*> result = new SessionApprovalResult(resultCallback);
 
+	StringBuffer path;
 	path << "/v1/core3/account/" << accountID << "/galaxy/" << galaxyID << "/session/ip/" << ip << "/approval";
 
-	apiCall(__FUNCTION__, path.toString(), resultCallback);
+	apiCall(result.castTo<SWGRealmsAPIResult*>(), __FUNCTION__, path.toString());
 }
 
 void SWGRealmsAPI::validateSession(const String& sessionID, uint32 accountID, const String& ip, const SessionAPICallback& resultCallback) {
-	StringBuffer path;
+	Reference<SessionApprovalResult*> result = new SessionApprovalResult(resultCallback);
 
+	StringBuffer path;
 	path << "/v1/core3/account/" << accountID
 		<< "/galaxy/" << galaxyID
 		<< "/session/ip/" << ip
 		<< "/sessionHash/" << sessionID
-		<< "/isvalidsession"
-		;
+		<< "/isvalidsession";
 
-	apiCall(__FUNCTION__, path.toString(), resultCallback);
+	apiCall(result.castTo<SWGRealmsAPIResult*>(), __FUNCTION__, path.toString(), "GET", "");
 }
 
 void SWGRealmsAPI::notifySessionStart(const String& ip, uint32 accountID) {
@@ -379,8 +374,9 @@ void SWGRealmsAPI::notifyDisconnectClient(const String& ip, uint32 accountID, ui
 
 void SWGRealmsAPI::approvePlayerConnect(const String& ip, uint32 accountID, uint64_t characterID,
 		const ArrayList<uint32>& loggedInAccounts, const SessionAPICallback& resultCallback) {
-	StringBuffer path;
+	Reference<SessionApprovalResult*> result = new SessionApprovalResult(resultCallback);
 
+	StringBuffer path;
 	path << "/v1/core3/account/" << accountID << "/galaxy/" << galaxyID << "/session/ip/" << ip << "/player/" << characterID << "/approval";
 
 	if (loggedInAccounts.size() > 0) {
@@ -391,17 +387,17 @@ void SWGRealmsAPI::approvePlayerConnect(const String& ip, uint32 accountID, uint
 		}
 	}
 
-	apiCall(__FUNCTION__, path.toString(), resultCallback);
+	apiCall(result.castTo<SWGRealmsAPIResult*>(), __FUNCTION__, path.toString(), "GET", "");
 }
 
 void SWGRealmsAPI::notifyPlayerOnline(const String& ip, uint32 accountID, uint64_t characterID,
 		const SessionAPICallback& resultCallback) {
 	StringBuffer path;
-
 	path << "/v1/core3/account/" << accountID << "/galaxy/" << galaxyID << "/session/ip/" << ip << "/player/" << characterID << "/online";
 
 	if (resultCallback != nullptr) {
-		apiCall(__FUNCTION__, path.toString(), resultCallback);
+		Reference<SessionApprovalResult*> result = new SessionApprovalResult(resultCallback);
+		apiCall(result.castTo<SWGRealmsAPIResult*>(), __FUNCTION__, path.toString(), "GET", "");
 	} else {
 		apiNotify(__FUNCTION__, path.toString());
 	}
@@ -490,14 +486,25 @@ bool SWGRealmsAPI::consoleCommand(const String& arguments) {
 	return false;
 }
 
-String SessionApprovalResult::toStringData() const {
+SWGRealmsAPIResult::SWGRealmsAPIResult() {
+	// Generate simple code for log tracing
+	uint64 trxid = (System::getMikroTime() << 8) | System::random(255);
+
+	resultClientTrxId = String::hexvalueOf(trxid);
+	resultAction = ApprovalAction::UNKNOWN;
+	resultElapsedTimeMS = 0ull;
+
+	resultDebug.setNullValue("<not set>");
+}
+
+String SWGRealmsAPIResult::toStringData() const {
 	return toString();
 }
 
-String SessionApprovalResult::toString() const {
+String SWGRealmsAPIResult::toString() const {
 	StringBuffer buf;
 
-	buf << "SessionApprovalResult " << this << " ["
+	buf << TypeInfo<SWGRealmsAPIResult>::getClassName(this) << " " << this << " ["
 		<< "clientTrxId: " << getClientTrxId() << ", "
 		<< "trxId: " << getTrxId() << ", "
 		<< "action: " << actionToString(getAction()) << ", "
@@ -506,7 +513,7 @@ String SessionApprovalResult::toString() const {
 		<< "details: '" << getDetails() << "'"
 		;
 
-	if (getRawJSON().length() > 0) {
+	if (!jsonData.is_null()) {
 		buf << ", JSON: '" << getRawJSON() << "'";
 	}
 
@@ -515,12 +522,12 @@ String SessionApprovalResult::toString() const {
 	return buf.toString();
 }
 
-String SessionApprovalResult::getLogMessage() const {
+String SWGRealmsAPIResult::getLogMessage() const {
 	int debugLevel = SWGRealmsAPI::instance()->getDebugLevel();
 
 	StringBuffer buf;
 
-	buf << "SessionApprovalResult " << this << " ["
+	buf << TypeInfo<SWGRealmsAPIResult>::getClassName(this) << " " << this << " ["
 		<< "clientTrxId: " << getClientTrxId() << ", "
 		<< "trxId: " << getTrxId() << ", "
 		<< "action: " << actionToString(getAction()) << ", "
@@ -532,7 +539,7 @@ String SessionApprovalResult::getLogMessage() const {
 
 	buf << "details: '" << getDetails() << "'" ;
 
-	if (debugLevel == Logger::DEBUG && getRawJSON().length() > 0) {
+	if (debugLevel == Logger::DEBUG && !jsonData.is_null()) {
 		buf << ", JSON: '" << getRawJSON() << "'";
 	}
 
@@ -542,14 +549,201 @@ String SessionApprovalResult::getLogMessage() const {
 }
 
 SessionApprovalResult::SessionApprovalResult() {
-	// Generate simple code for log tracing
-	uint64 trxid = (System::getMikroTime() << 8) | System::random(255);
+	resultAccountID = 0;
+	resultStationID = 0;
+}
 
-	resultClientTrxId = String::hexvalueOf(trxid);
-	resultAction = ApprovalAction::UNKNOWN;
-	resultElapsedTimeMS = 0ull;
+SessionApprovalResult::SessionApprovalResult(const SessionAPICallback& resultCallback) {
+	resultAccountID = 0;
+	resultStationID = 0;
+	callback = [this, resultCallback]() {
+		resultCallback(*this);
+	};
+}
 
-	resultDebug.setNullValue("<not set>");
+bool SessionApprovalResult::parse() {
+	// Parse session-specific fields from jsonData
+	if (jsonData.is_null()) {
+		return true; // Nothing to parse
+	}
+
+	try {
+		if (jsonData.has_field(U("eip"))) {
+			resultEncryptedIP = conversions::to_utf8string(jsonData[U("eip")].as_string());
+		}
+
+		if (jsonData.has_field(U("session_id"))) {
+			resultSessionID = conversions::to_utf8string(jsonData[U("session_id")].as_string());
+		}
+
+		if (jsonData.has_field(U("account_id"))) {
+			auto field = jsonData[U("account_id")];
+			if (field.is_number()) {
+				resultAccountID = (uint32)field.as_number().to_uint32();
+			}
+		}
+
+		if (jsonData.has_field(U("station_id"))) {
+			auto field = jsonData[U("station_id")];
+			if (field.is_number()) {
+				resultStationID = (uint32)field.as_number().to_uint32();
+			}
+		}
+
+		return true;
+	} catch (const web::json::json_exception&) {
+		// Parsing error - return false but don't log here (apiCall will handle)
+		return false;
+	}
+}
+
+AccountResult::AccountResult(Reference<Account*> acc) {
+	account = acc;
+	accountID = 0;
+	accountIDOnly = false;
+}
+
+AccountResult::AccountResult() {
+	account = nullptr;
+	accountID = 0;
+	accountIDOnly = true;  // This is for getAccountID() calls
+}
+
+bool AccountResult::parse() {
+	// Parse account data from jsonData
+	if (jsonData.is_null()) {
+		return false;
+	}
+
+	try {
+		// Check if this is just an ID lookup or full account data
+		if (!jsonData.has_field(U("account"))) {
+			return false;
+		}
+
+		auto accountObj = jsonData[U("account")];
+
+		if (!accountObj.has_field(U("account_id"))) {
+			return false;
+		}
+
+		accountID = accountObj[U("account_id")].as_integer();
+
+		// If this is accountID-only lookup, we're done
+		if (accountIDOnly || account == nullptr) {
+			return true;
+		}
+
+		// Parse full account data into Account object
+		if (!accountObj.has_field(U("station_id")) || !accountObj.has_field(U("username")) ||
+		    !accountObj.has_field(U("active"))) {
+			return false;
+		}
+
+		uint32 stationID = accountObj[U("station_id")].as_integer();
+		String username = conversions::to_utf8string(accountObj[U("username")].as_string());
+		bool active = accountObj[U("active")].as_bool();
+		uint32 adminLevel = accountObj.has_field(U("admin_level")) ? accountObj[U("admin_level")].as_integer() : 0;
+		uint32 created = accountObj.has_field(U("created")) ? accountObj[U("created")].as_integer() : 0;
+
+		// Ban fields
+		uint32 banExpires = 0;
+		String banReason = "";
+		uint32 banAdmin = 0;
+
+		if (accountObj.has_field(U("ban_expires"))) {
+			banExpires = accountObj[U("ban_expires")].as_integer();
+		}
+
+		if (accountObj.has_field(U("ban_reason"))) {
+			banReason = conversions::to_utf8string(accountObj[U("ban_reason")].as_string());
+		}
+
+		if (accountObj.has_field(U("ban_admin"))) {
+			banAdmin = accountObj[U("ban_admin")].as_integer();
+		}
+
+		// Parse valid_until for caching
+		Time validUntil;
+		if (jsonData.has_field(U("valid_until"))) {
+			if (jsonData[U("valid_until")].is_number()) {
+				uint64 timestamp = jsonData[U("valid_until")].as_number().to_uint64();
+				validUntil = Time((uint32)timestamp);
+			} else if (jsonData[U("valid_until")].is_string()) {
+				String isoTimestamp = conversions::to_utf8string(jsonData[U("valid_until")].as_string());
+				validUntil = Time::fromISO8601(isoTimestamp);
+			}
+		}
+
+		// Update account object
+		Locker locker(account);
+		account->setAccountID(accountID);
+		account->setStationID(stationID);
+		account->setUsername(username);
+		account->setActive(active);
+		account->setAdminLevel(adminLevel);
+		account->setTimeCreated(created);
+		account->setBanExpires(banExpires);
+		account->setBanReason(banReason);
+		account->setBanAdmin(banAdmin);
+		account->setAccountDataValidUntil(validUntil);
+
+		// Set default TTL if none provided
+		if (account->getAccountDataValidUntil()->getTime() == 0) {
+			Time defaultTTL;
+			defaultTTL.addMiliTime(300000); // 5 minute default
+			account->setAccountDataValidUntil(defaultTTL);
+		}
+
+		return true;
+
+	} catch (const web::json::json_exception&) {
+		return false;
+	} catch (const std::exception&) {
+		return false;
+	}
+}
+
+bool SWGRealmsAPI::apiCallBlocking(Reference<SWGRealmsAPIResult*> result, const String& path, const String& method,
+                                    const String& body, String& errorMessage) {
+	if (!apiEnabled) {
+		errorMessage = "SWGRealms API is not enabled";
+		return false;
+	}
+
+	Mutex resultMutex;
+	Condition resultCondition;
+	bool resultReceived = false;
+
+	// Set callback that signals completion
+	result->callback = [&]() {
+		Locker lock(&resultMutex);
+		resultReceived = true;
+		resultCondition.broadcast();
+	};
+
+	// Make API call - result will be populated and callback invoked
+	apiCall(result, "apiCallBlocking", path, method, body);
+
+	// Wait for result with timeout
+	Locker lock(&resultMutex);
+	if (!resultReceived) {
+		Time timeout;
+		timeout.addMiliTime(apiTimeoutMs);
+
+		if (resultCondition.timedWait(&resultMutex, &timeout) != 0) {
+			errorMessage = "Timeout waiting for API response";
+			return false;
+		}
+	}
+
+	// Check result status
+	if (!result->isActionAllowed()) {
+		errorMessage = result->getMessage(true);
+		return false;
+	}
+
+	return true;
 }
 
 void SWGRealmsAPI::updateClientIPAddress(ZoneClientSession* client, const SessionApprovalResult& result) {
@@ -559,6 +753,248 @@ void SWGRealmsAPI::updateClientIPAddress(ZoneClientSession* client, const Sessio
 		Locker lock(client);
 		client->setIPAddress(result.getEncryptedIP());
 	}
+}
+
+bool SWGRealmsAPI::parseAccountFromJSON(const String& jsonStr, Reference<Account*> account, String& errorMessage) {
+	if (account == nullptr) {
+		errorMessage = "Account reference is null";
+		return false;
+	}
+
+	try {
+		auto rootJson = json::value::parse(conversions::to_string_t(jsonStr.toCharArray()));
+
+		if (!rootJson.is_object()) {
+			errorMessage = "Response is not a JSON object";
+			return false;
+		}
+
+		// Extract the "account" field from the root response
+		if (!rootJson.has_field(U("account"))) {
+			errorMessage = "Missing 'account' field in JSON response";
+			return false;
+		}
+
+		auto jsonValue = rootJson[U("account")];
+
+		// Parse required fields from account object
+		if (!jsonValue.has_field(U("account_id")) || !jsonValue.has_field(U("station_id")) ||
+		    !jsonValue.has_field(U("username")) || !jsonValue.has_field(U("active"))) {
+			errorMessage = "Missing required fields in account object";
+			return false;
+		}
+
+		uint32 accountID = jsonValue[U("account_id")].as_integer();
+		uint32 stationID = jsonValue[U("station_id")].as_integer();
+		String username = conversions::to_utf8string(jsonValue[U("username")].as_string());
+		bool active = jsonValue[U("active")].as_bool();
+
+		// Optional fields with defaults
+		uint32 adminLevel = jsonValue.has_field(U("admin_level")) ? jsonValue[U("admin_level")].as_integer() : 0;
+		uint32 created = jsonValue.has_field(U("created")) ? jsonValue[U("created")].as_integer() : 0;
+
+		// Ban fields
+		uint32 banExpires = 0;
+		String banReason = "";
+		uint32 banAdmin = 0;
+
+		if (jsonValue.has_field(U("ban_expires"))) {
+			banExpires = jsonValue[U("ban_expires")].as_integer();
+		}
+
+		if (jsonValue.has_field(U("ban_reason"))) {
+			banReason = conversions::to_utf8string(jsonValue[U("ban_reason")].as_string());
+		}
+
+		if (jsonValue.has_field(U("ban_admin"))) {
+			banAdmin = jsonValue[U("ban_admin")].as_integer();
+		}
+
+		// Parse valid_until for caching (supports both Unix timestamp and ISO 8601)
+		Time validUntil;
+		if (rootJson.has_field(U("valid_until"))) {
+			if (rootJson[U("valid_until")].is_number()) {
+				uint64 timestamp = rootJson[U("valid_until")].as_number().to_uint64();
+				validUntil = Time((uint32)timestamp);
+			} else if (rootJson[U("valid_until")].is_string()) {
+				// ISO 8601 timestamp (e.g., "2025-10-03T10:25:30Z")
+				String isoTimestamp = conversions::to_utf8string(rootJson[U("valid_until")].as_string());
+				validUntil = Time::fromISO8601(isoTimestamp);
+
+				if (validUntil.getTime() == 0) {
+					error() << "Failed to parse ISO 8601 timestamp: " << isoTimestamp;
+				}
+			}
+		}
+
+		// Update account object
+		Locker locker(account);
+
+		account->setAccountID(accountID);
+		account->setStationID(stationID);
+		account->setUsername(username);
+		account->setActive(active);
+		account->setAdminLevel(adminLevel);
+		account->setTimeCreated(created);
+		account->setBanExpires(banExpires);
+		account->setBanReason(banReason);
+		account->setBanAdmin(banAdmin);
+		account->setAccountDataValidUntil(validUntil);
+
+		return true;
+
+	} catch (const json::json_exception& e) {
+		errorMessage = String("JSON parsing error: ") + e.what();
+		return false;
+	} catch (const std::exception& e) {
+		errorMessage = String("Exception parsing account JSON: ") + e.what();
+		return false;
+	}
+}
+
+bool SWGRealmsAPI::getAccountDataBlocking(uint32 accountID, Reference<Account*> account, String& errorMessage) {
+	if (account == nullptr) {
+		errorMessage = "Account reference is null";
+		return false;
+	}
+
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << accountID;
+
+	Reference<AccountResult*> result = new AccountResult(account);
+	return apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "GET", "", errorMessage);
+}
+
+uint32 SWGRealmsAPI::getAccountID(const String& username, String& errorMessage) {
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << username;
+
+	Reference<AccountResult*> result = new AccountResult();  // accountID-only mode
+	if (!apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "GET", "", errorMessage)) {
+		return 0;
+	}
+
+	return result->getAccountID();
+}
+
+bool SWGRealmsAPI::parseAccountBanStatusFromJSON(const String& jsonStr, Reference<Account*> account, String& errorMessage) {
+	if (account == nullptr) {
+		errorMessage = "Account reference is null";
+		return false;
+	}
+
+	try {
+		auto jsonValue = json::value::parse(conversions::to_string_t(jsonStr.toCharArray()));
+
+		if (!jsonValue.is_object()) {
+			errorMessage = "Response is not a JSON object";
+			return false;
+		}
+
+		// Check isbanned flag - optimization to avoid parsing when not banned
+		if (!jsonValue.has_field(U("isbanned"))) {
+			errorMessage = "Missing isbanned field in response";
+			return false;
+		}
+
+		bool isBanned = jsonValue[U("isbanned")].as_bool();
+
+		if (!isBanned) {
+			// No ban data to parse, success with no updates
+			return true;
+		}
+
+		// Parse ban data (only present when isbanned=true)
+		if (!jsonValue.has_field(U("active")) || !jsonValue.has_field(U("admin_level"))) {
+			errorMessage = "Missing required fields in ban status JSON response";
+			return false;
+		}
+
+		bool active = jsonValue[U("active")].as_bool();
+		uint32 adminLevel = jsonValue[U("admin_level")].as_integer();
+
+		// Ban fields (required when isbanned=true)
+		uint32 banExpires = 0;
+		String banReason = "";
+		uint32 banAdmin = 0;
+
+		if (jsonValue.has_field(U("ban_expires"))) {
+			banExpires = jsonValue[U("ban_expires")].as_integer();
+		}
+
+		if (jsonValue.has_field(U("ban_reason"))) {
+			banReason = conversions::to_utf8string(jsonValue[U("ban_reason")].as_string());
+		}
+
+		if (jsonValue.has_field(U("ban_admin"))) {
+			banAdmin = jsonValue[U("ban_admin")].as_integer();
+		}
+
+		// Update account object with ban status
+		Locker locker(account);
+
+		account->setActive(active);
+		account->setAdminLevel(adminLevel);
+		account->setBanExpires(banExpires);
+		account->setBanReason(banReason);
+		account->setBanAdmin(banAdmin);
+
+		return true;
+
+	} catch (const json::json_exception& e) {
+		errorMessage = String("JSON parsing error: ") + e.what();
+		return false;
+	} catch (const std::exception& e) {
+		errorMessage = String("Exception parsing ban status JSON: ") + e.what();
+		return false;
+	}
+}
+
+bool SWGRealmsAPI::getAccountBanStatusBlocking(uint32 accountID, Reference<Account*> account, String& errorMessage) {
+	if (account == nullptr) {
+		errorMessage = "Account reference is null";
+		return false;
+	}
+
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << accountID << "/isbanned";
+
+	// TODO: Create BanStatusResult or reuse AccountResult for ban status parsing
+	// For now, keep using parseAccountBanStatusFromJSON until we refactor
+	Reference<SimpleResult*> result = new SimpleResult();
+	if (!apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "GET", "", errorMessage)) {
+		return false;
+	}
+
+	// Parse ban status from result's jsonData
+	return parseAccountBanStatusFromJSON(result->getRawJSON(), account, errorMessage);
+}
+
+bool SWGRealmsAPI::banAccountBlocking(uint32 accountID, uint32 issuerID, uint64 expiresTimestamp,
+                                       const String& reason, String& errorMessage) {
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << accountID << "/ban";
+
+	StringBuffer jsonBody;
+	jsonBody << "{"
+	         << "\"issuer_id\":" << issuerID << ","
+	         << "\"expires\":" << expiresTimestamp << ","
+	         << "\"reason\":\"" << reason << "\""
+	         << "}";
+
+	Reference<SimpleResult*> result = new SimpleResult();
+	return apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "POST", jsonBody.toString(), errorMessage);
+}
+
+bool SWGRealmsAPI::unbanAccountBlocking(uint32 accountID, const String& reason, String& errorMessage) {
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << accountID << "/unban";
+
+	StringBuffer jsonBody;
+	jsonBody << "{\"reason\":\"" << reason << "\"}";
+
+	Reference<SimpleResult*> result = new SimpleResult();
+	return apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "PUT", jsonBody.toString(), errorMessage);
 }
 
 #endif // WITH_SWGREALMS_API

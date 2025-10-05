@@ -133,9 +133,11 @@ build-ninja:
 clean-ninja:
 	rm -rf $(BUILD_PATH)/ninja
 
+NINJA_ARGS ?=
+
 build-ninja-debug:
 	mkdir -p $(BUILD_PATH)/ninja-debug
-	cd $(BUILD_PATH)/ninja-debug && cmake -G Ninja -DRUN_GIT=ON -DCMAKE_BUILD_TYPE=Debug $(CMAKE_ARGS) ../../.. && ninja
+	cd $(BUILD_PATH)/ninja-debug && cmake -G Ninja -DRUN_GIT=ON -DCMAKE_BUILD_TYPE=Debug $(CMAKE_ARGS) ../../.. && ninja $(NINJA_ARGS)
 
 clean-ninja-debug:
 	rm -rf $(BUILD_PATH)/ninja-debug

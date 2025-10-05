@@ -6,6 +6,9 @@
 #include "../objects.h"
 #include "server/login/account/Account.h"
 #include "../objects/GalaxyBanEntry.h"
+#ifdef WITH_SWGREALMS_API
+#include "server/login/SWGRealmsAPI.h"
+#endif // WITH_SWGREALMS_API
 
 AccountImplementation::AccountImplementation() {
 	created = 0;
@@ -45,6 +48,7 @@ void AccountImplementation::addGalaxyBan(GalaxyBanEntry* ban, uint32 galaxy) {
 	galaxyBans.put(galaxy, ban);
 }
 
+#ifndef WITH_SWGREALMS_API
 void AccountImplementation::updateAccount() {
 	StringBuffer query;
 	query << "SELECT a.active, a.admin_level, "
@@ -64,6 +68,19 @@ void AccountImplementation::updateAccount() {
 		setBanAdmin(result->getUnsignedInt(4));
 	}
 }
+#else // WITH_SWGREALMS_API
+void AccountImplementation::updateAccount() {
+	String errorMessage;
+	auto swgRealmsAPI = SWGRealmsAPI::instance();
+
+	if (swgRealmsAPI != nullptr && swgRealmsAPI->getAccountBanStatusBlocking(accountID, _this.getReferenceUnsafeStaticCast(), errorMessage)) {
+		return;
+	}
+
+	// API Failed
+	error() << "SWGRealms API getAccountBanStatusBlocking failed for accountID " << accountID << ": " << errorMessage << " (fail-closed, NOT falling back to MySQL)";
+}
+#endif // WITH_SWGREALMS_API
 
 void AccountImplementation::updateCharacters() {
 	characterList = new CharacterList(getAccountID(), getUsername());
@@ -153,4 +170,20 @@ uint32 AccountImplementation::getAgeInDays() const {
 
 bool AccountImplementation::isSqlLoaded() const {
 	return (accountID || stationID || adminLevel || created);
+}
+
+void AccountImplementation::setAccountDataValidUntil(Time& validUntil) {
+	accountDataValidUntil = validUntil;
+}
+
+Time* AccountImplementation::getAccountDataValidUntil() const {
+	return const_cast<Time*>(&accountDataValidUntil);
+}
+
+bool AccountImplementation::isAccountDataStale() {
+	if (accountDataValidUntil.getTime() == 0) {
+		return true;
+	}
+
+	return accountDataValidUntil.isPast();
 }
