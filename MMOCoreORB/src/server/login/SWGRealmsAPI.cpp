@@ -493,6 +493,7 @@ SWGRealmsAPIResult::SWGRealmsAPIResult() {
 	resultClientTrxId = String::hexvalueOf(trxid);
 	resultAction = ApprovalAction::UNKNOWN;
 	resultElapsedTimeMS = 0ull;
+	blockingReceived = false;
 
 	resultDebug.setNullValue("<not set>");
 }
@@ -711,27 +712,26 @@ bool SWGRealmsAPI::apiCallBlocking(Reference<SWGRealmsAPIResult*> result, const 
 		return false;
 	}
 
-	Mutex resultMutex;
-	Condition resultCondition;
-	bool resultReceived = false;
+	// Reset blocking state
+	result->blockingReceived = false;
 
 	// Set callback that signals completion
-	result->callback = [&]() {
-		Locker lock(&resultMutex);
-		resultReceived = true;
-		resultCondition.broadcast();
+	result->callback = [result]() {
+		Locker lock(&result->blockingMutex);
+		result->blockingReceived = true;
+		result->blockingCondition.broadcast();
 	};
 
 	// Make API call - result will be populated and callback invoked
 	apiCall(result, "apiCallBlocking", path, method, body);
 
-	// Wait for result with timeout
-	Locker lock(&resultMutex);
-	if (!resultReceived) {
+	// Wait for result with timeout using result's members
+	Locker lock(&result->blockingMutex);
+	if (!result->blockingReceived) {
 		Time timeout;
 		timeout.addMiliTime(apiTimeoutMs);
 
-		if (resultCondition.timedWait(&resultMutex, &timeout) != 0) {
+		if (result->blockingCondition.timedWait(&result->blockingMutex, &timeout) != 0) {
 			errorMessage = "Timeout waiting for API response";
 			return false;
 		}

@@ -24,8 +24,13 @@ namespace server {
 		class ZoneClientSession;
 	}
 	namespace login {
+		// Forward declare for friend
+		class SWGRealmsAPI;
+
 		// Base class for all SWGRealms API results
 		class SWGRealmsAPIResult : public Object {
+			friend class SWGRealmsAPI;
+
 		public:
 			enum ApprovalAction {
 				UNKNOWN = -2,
@@ -46,6 +51,11 @@ namespace server {
 			String resultDetails;
 			uint64 resultElapsedTimeMS;
 			HashTable<String, String> resultDebug;
+
+			// Blocking call synchronization
+			Mutex blockingMutex;
+			Condition blockingCondition;
+			bool blockingReceived;
 
 		public:
 			Function<void()> callback;
