@@ -87,10 +87,12 @@ namespace server {
 
 				static Reference<Account*> getAccount(const String& accountName, bool forceSqlUpdate = false);
 
+#ifndef WITH_SWGREALMS_API
 				static Reference<Account*> getAccount(uint32 accountID, String& passwordStored, bool forceSqlUpdate = false);
 
 			private:
 				static Reference<Account*> getAccount(String query, String& passwordStored, bool forceSqlUpdate = false);
+#endif // !WITH_SWGREALMS_API
 			};
 		}
 	}

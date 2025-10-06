@@ -23,6 +23,12 @@
 #include "APIProxyConfigManager.h"
 #include "APIProxyStatisticsManager.h"
 
+// Workaround for googletest conflict
+// See https://github.com/Microsoft/cpprestsdk/blob/master/Release/include/cpprest/details/basic_types.h#L95
+#ifndef U
+#define U(x) _XPLATSTR(x)
+#endif
+
 using namespace server::web3;
 
 RESTServer::RESTServer() {

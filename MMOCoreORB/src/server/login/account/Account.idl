@@ -9,6 +9,7 @@ include server.login.objects.GalaxyBanEntry;
 include server.login.account.GalaxyAccountInfo;
 include server.login.account.GalaxyAccountInfoMap;
 import system.lang.ref.Reference;
+import system.lang.Time;
 
 @json
 class Account extends ManagedObject implements Logger {
@@ -37,6 +38,9 @@ class Account extends ManagedObject implements Logger {
 	protected transient string banReason;
 	protected transient unsigned int banAdmin;
 	protected transient string sessionId;
+
+	@dereferenced
+	protected transient Time accountDataValidUntil;
 
 	public native Account();
 
@@ -90,16 +94,19 @@ class Account extends ManagedObject implements Logger {
 		return banAdmin;
 	}
 
+	@local
 	@preLocked
 	public void setTimeCreated(unsigned int seconds) {
 		created = seconds;
 	}
 
+	@local
 	@dirty
 	public boolean isActive() {
 		return active == true;
 	}
 
+	@local
 	@read
 	public unsigned int getAccountID() {
 		return accountID;
@@ -205,4 +212,16 @@ class Account extends ManagedObject implements Logger {
 	public string getSessionId() {
 	    return sessionId;
 	}
+
+	@local
+	@preLocked
+	public native void setAccountDataValidUntil(@dereferenced Time validUntil);
+
+	@local
+	@read
+	public native Time getAccountDataValidUntil();
+
+	@local
+	@dirty
+	public native boolean isAccountDataStale();
 }
