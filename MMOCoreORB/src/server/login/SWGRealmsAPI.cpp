@@ -15,6 +15,7 @@
 #include "SWGRealmsAPI.h"
 
 #include "server/zone/ZoneClientSession.h"
+#include "server/login/objects/GalaxyBanEntry.h"
 
 #include <cpprest/filestream.h>
 #include <cpprest/http_client.h>
@@ -1168,6 +1169,121 @@ bool SWGRealmsAPI::banAccountBlocking(uint32 accountID, uint32 issuerID, uint64 
 bool SWGRealmsAPI::unbanAccountBlocking(uint32 accountID, const String& reason, String& errorMessage) {
 	StringBuffer pathBuffer;
 	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << accountID << "/unban";
+
+	StringBuffer jsonBody;
+	jsonBody << "{\"reason\":\"" << reason << "\"}";
+
+	Reference<SimpleResult*> result = new SimpleResult();
+	return apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "PUT", jsonBody.toString(), errorMessage);
+}
+
+bool SWGRealmsAPI::parseGalaxyBansFromJSON(const String& jsonStr, VectorMap<uint32, Reference<GalaxyBanEntry*>>& galaxyBans, String& errorMessage) {
+	try {
+		auto jsonValue = json::value::parse(conversions::to_string_t(jsonStr.toCharArray()));
+
+		if (!jsonValue.is_object()) {
+			errorMessage = "Response is not a JSON object";
+			return false;
+		}
+
+		// Check for bans array
+		if (!jsonValue.has_field(U("bans"))) {
+			errorMessage = "Missing bans field in response";
+			return false;
+		}
+
+		auto bansArray = jsonValue[U("bans")];
+		if (!bansArray.is_array()) {
+			errorMessage = "bans field is not an array";
+			return false;
+		}
+
+		// Clear existing bans
+		galaxyBans.removeAll();
+
+		// Parse each ban entry
+		for (auto& banValue : bansArray.as_array()) {
+			if (!banValue.is_object()) {
+				continue; // Skip invalid entries
+			}
+
+			Reference<GalaxyBanEntry*> entry = new GalaxyBanEntry();
+
+			if (banValue.has_field(U("account_id"))) {
+				entry->setAccountID(banValue[U("account_id")].as_integer());
+			}
+
+			if (banValue.has_field(U("issuer_id"))) {
+				entry->setBanAdmin(banValue[U("issuer_id")].as_integer());
+			}
+
+			if (banValue.has_field(U("galaxy_id"))) {
+				entry->setGalaxyID(banValue[U("galaxy_id")].as_integer());
+			}
+
+			if (banValue.has_field(U("created"))) {
+				Time bancreated(banValue[U("created")].as_integer());
+				entry->setCreationDate(bancreated);
+			}
+
+			if (banValue.has_field(U("expires"))) {
+				Time banexpires(banValue[U("expires")].as_integer());
+				entry->setBanExpiration(banexpires);
+			}
+
+			if (banValue.has_field(U("reason"))) {
+				String reason = conversions::to_utf8string(banValue[U("reason")].as_string());
+				entry->setBanReason(reason);
+			}
+
+			// Add to map keyed by galaxy_id
+			galaxyBans.put(entry->getGalaxyID(), entry);
+		}
+
+		return true;
+
+	} catch (const json::json_exception& e) {
+		errorMessage = String("JSON parse error: ") + e.what();
+		return false;
+	} catch (const Exception& e) {
+		errorMessage = String("Error parsing galaxy bans: ") + e.getMessage();
+		return false;
+	}
+}
+
+bool SWGRealmsAPI::getGalaxyBansBlocking(uint32 accountID, VectorMap<uint32, Reference<GalaxyBanEntry*>>& galaxyBans, String& errorMessage) {
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << accountID << "/galaxybans";
+
+	Reference<SimpleResult*> result = new SimpleResult();
+	if (!apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "GET", "", errorMessage)) {
+		return false;
+	}
+
+	// Parse galaxy bans from result's jsonData
+	return parseGalaxyBansFromJSON(result->getRawJSON(), galaxyBans, errorMessage);
+}
+
+bool SWGRealmsAPI::banFromGalaxyBlocking(uint32 accountID, uint32 targetGalaxyID, uint32 issuerID, uint64 expiresTimestamp,
+                                          const String& reason, String& errorMessage) {
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << accountID << "/galaxyban";
+
+	StringBuffer jsonBody;
+	jsonBody << "{"
+	         << "\"galaxy_id\":" << targetGalaxyID << ","
+	         << "\"issuer_id\":" << issuerID << ","
+	         << "\"expires\":" << expiresTimestamp << ","
+	         << "\"reason\":\"" << reason << "\""
+	         << "}";
+
+	Reference<SimpleResult*> result = new SimpleResult();
+	return apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "POST", jsonBody.toString(), errorMessage);
+}
+
+bool SWGRealmsAPI::unbanFromGalaxyBlocking(uint32 accountID, uint32 targetGalaxyID, const String& reason, String& errorMessage) {
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << accountID << "/galaxyban/" << targetGalaxyID;
 
 	StringBuffer jsonBody;
 	jsonBody << "{\"reason\":\"" << reason << "\"}";

@@ -20,6 +20,8 @@
 #include <cpprest/json.h>
 
 // Forward declarations
+class GalaxyBanEntry;
+
 namespace web {
 	namespace http {
 		namespace client {
@@ -419,6 +421,7 @@ namespace server {
 
 			bool parseAccountFromJSON(const String& jsonStr, Reference<Account*> account, String& errorMessage);
 			bool parseAccountBanStatusFromJSON(const String& jsonStr, Reference<Account*> account, String& errorMessage);
+			bool parseGalaxyBansFromJSON(const String& jsonStr, VectorMap<uint32, Reference<GalaxyBanEntry*>>& galaxyBans, String& errorMessage);
 
 			// Generic blocking API call helper - eliminates boilerplate
 			bool apiCallBlocking(Reference<SWGRealmsAPIResult*> result, const String& path, const String& method,
@@ -434,6 +437,13 @@ namespace server {
 			bool banAccountBlocking(uint32 accountID, uint32 issuerID, uint64 expiresTimestamp,
 			                        const String& reason, String& errorMessage);
 			bool unbanAccountBlocking(uint32 accountID, const String& reason, String& errorMessage);
+
+			// Galaxy Ban Operations
+			bool getGalaxyBansBlocking(uint32 accountID, VectorMap<uint32, Reference<GalaxyBanEntry*>>& galaxyBans,
+			                           String& errorMessage);
+			bool banFromGalaxyBlocking(uint32 accountID, uint32 galaxyID, uint32 issuerID, uint64 expiresTimestamp,
+			                           const String& reason, String& errorMessage);
+			bool unbanFromGalaxyBlocking(uint32 accountID, uint32 galaxyID, const String& reason, String& errorMessage);
 
 			// EIP Helper
 			static void updateClientIPAddress(server::zone::ZoneClientSession* client, const SessionApprovalResult& result);
