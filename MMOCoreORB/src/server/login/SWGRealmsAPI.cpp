@@ -26,6 +26,12 @@
 #define U(x) _XPLATSTR(x)
 #endif
 
+#ifdef WITH_SWGREALMS_CALLSTATS
+#define API_TRACE(result, key) result->trace(key)
+#else
+#define API_TRACE(result, key) // NOOP
+#endif // WITH_SWGREALMS_CALLSTATS
+
 using namespace utility;
 using namespace web;
 using namespace web::http;
@@ -75,10 +81,22 @@ SWGRealmsAPI::SWGRealmsAPI() {
 
 	apiTimeoutMs = config->getInt("Core3.Login.API.Timeout", 30) * 1000;
 
+	// Create persistent HTTP client for connection reuse
+	web::http::client::http_client_config client_config;
+	client_config.set_validate_certificates(false);
+	client_config.set_timeout(utility::seconds(apiTimeoutMs / 1000));
+
+	httpClient = new http_client(baseURL.toCharArray(), client_config);
+
 	info(true) << "Starting " << toString();
 }
 
 SWGRealmsAPI::~SWGRealmsAPI() {
+	if (httpClient != nullptr) {
+		delete httpClient;
+		httpClient = nullptr;
+	}
+
 	crossplat::threadpool::shared_instance().service().stop();
 	info(true) << "Shutdown";
 }
@@ -130,15 +148,7 @@ void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& 
 
 	debug() << src << " START apiCall [path=" << apiPath << "]";
 
-	web::http::client::http_client_config client_config;
-
-	client_config.set_validate_certificates(false);
-
-	utility::seconds timeout(apiTimeoutMs / 1000);
-
-	client_config.set_timeout(timeout);
-
-	http_client client(baseURL.toCharArray(), client_config);
+	API_TRACE(result, "apiCall_start");
 
 	web::http::method httpMethod = methods::GET;
 	if (method == "POST") {
@@ -159,13 +169,16 @@ void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& 
 		req.set_body(body.toCharArray(), "application/json");
 	}
 
-	client.request(req)
+	API_TRACE(result, "http_request_sent");
+
+	httpClient->request(req)
 		.then([this, src, apiPath, result](pplx::task<http_response> task) {
 			http_response resp;
 			bool failed = false;
 
 			try {
 				resp = task.get();
+				API_TRACE(result, "http_response_received");
 			} catch (const http_exception& e) {
 				error() << src << " " << apiPath << " HTTP Exception caught: " << e.what();
 				failed = true;
@@ -256,6 +269,7 @@ void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& 
 
 				// Call subclass parse() to extract type-specific fields
 				result->parse();
+				API_TRACE(result, "json_parsed");
 			}
 
 			result->setElapsedTimeMS(startTime.miliDifference());
@@ -275,7 +289,9 @@ void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& 
 
 			debug() << logPrefix << "END apiCall " << method << " [path=" << apiPath << "] result = " << *result;
 
+			API_TRACE(result, "queue_scheduled");
 			Core::getTaskManager()->executeTask([result] {
+				API_TRACE(result, "callback_invoked");
 				result->invokeCallback();
 			}, "SWGRealmsAPIResult-" + src, "slowQueue");
 		});
@@ -551,6 +567,8 @@ JSONSerializationType SWGRealmsAPI::getStatsAsJSON() const {
 }
 
 SWGRealmsAPIResult::SWGRealmsAPIResult() {
+	API_TRACE(this, "ctor");
+
 	// Generate simple code for log tracing
 	uint64 trxid = (System::getMikroTime() << 8) | System::random(255);
 
@@ -561,6 +579,50 @@ SWGRealmsAPIResult::SWGRealmsAPIResult() {
 
 	resultDebug.setNullValue("<not set>");
 }
+
+SWGRealmsAPIResult::~SWGRealmsAPIResult() {
+#ifdef WITH_SWGREALMS_CALLSTATS
+	if (callTrace.size() > 0) {
+		SWGRealmsAPI::instance()->info(true) << "TRACE [" << resultClientTrxId << "]: " << dumpTrace();
+	}
+#endif
+}
+
+#ifdef WITH_SWGREALMS_CALLSTATS
+void SWGRealmsAPIResult::trace(const String& tag) {
+	Time now;
+	now.updateToCurrentTime();
+	callTrace.add(Pair<String, Time>(tag, now));
+}
+
+String SWGRealmsAPIResult::dumpTrace() const {
+	if (callTrace.size() == 0) {
+		return "No trace data";
+	}
+
+	StringBuffer output;
+	const Time& baseline = callTrace.get(0).second;
+	Time previous = baseline;
+
+	for (int i = 0; i < callTrace.size(); ++i) {
+		const Pair<String, Time>& entry = callTrace.get(i);
+		const String& tag = entry.first;
+		const Time& timestamp = entry.second;
+
+		uint64 totalMs = baseline.miliDifference(timestamp);
+		uint64 deltaMs = previous.miliDifference(timestamp);
+
+		if (i > 0) {
+			output << ", ";
+		}
+
+		output << tag << ": +" << deltaMs << "ms (total: " << totalMs << "ms)";
+		previous = timestamp;
+	}
+
+	return output.toString();
+}
+#endif // WITH_SWGREALMS_CALLSTATS
 
 String SWGRealmsAPIResult::toStringData() const {
 	return toString();
@@ -582,7 +644,15 @@ String SWGRealmsAPIResult::toString() const {
 		buf << ", JSON: '" << getRawJSON() << "'";
 	}
 
-	buf << ", elapsedTimeMS: " << getElapsedTimeMS() << "]";
+	buf << ", elapsedTimeMS: " << getElapsedTimeMS();
+
+#ifdef WITH_SWGREALMS_CALLSTATS
+	if (callTrace.size() > 0) {
+		buf << ", trace: [" << dumpTrace() << "]";
+	}
+#endif
+
+	buf << "]";
 
 	return buf.toString();
 }

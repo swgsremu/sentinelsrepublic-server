@@ -19,6 +19,15 @@
 #define _TURN_OFF_PLATFORM_STRING
 #include <cpprest/json.h>
 
+// Forward declarations
+namespace web {
+	namespace http {
+		namespace client {
+			class http_client;
+		}
+	}
+}
+
 namespace server {
 	namespace zone {
 		class ZoneClientSession;
@@ -57,11 +66,16 @@ namespace server {
 			Condition blockingCondition;
 			bool blockingReceived;
 
+#ifdef WITH_SWGREALMS_CALLSTATS
+			// Call trace for detailed profiling (maintains insertion order)
+			Vector<Pair<String, Time>> callTrace;
+#endif
+
 		public:
 			Function<void()> callback;
 
 			SWGRealmsAPIResult();
-			virtual ~SWGRealmsAPIResult() {}
+			virtual ~SWGRealmsAPIResult();
 
 			// Parse from JSON - implemented by subclasses
 			virtual bool parse() = 0;
@@ -72,6 +86,12 @@ namespace server {
 					callback();
 				}
 			}
+
+#ifdef WITH_SWGREALMS_CALLSTATS
+			// Call tracing for profiling
+			void trace(const String& tag);
+			String dumpTrace() const;
+#endif
 
 			String toString() const;
 			String toStringData() const;
@@ -338,6 +358,9 @@ namespace server {
 			bool dryRun = false;
 			bool failOpen = false;
 			int apiTimeoutMs = 30000;
+
+			// Persistent HTTP client for connection reuse (thread-safe)
+			web::http::client::http_client* httpClient = nullptr;
 
 			// Blocking call statistics
 			AtomicInteger outstandingBlockingCalls = 0;
