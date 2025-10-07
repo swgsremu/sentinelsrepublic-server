@@ -86,6 +86,7 @@ void AccountImplementation::updateCharacters() {
 	characterList = new CharacterList(getAccountID(), getUsername());
 }
 
+#ifndef WITH_SWGREALMS_API
 void AccountImplementation::updateGalaxyBans() {
 	StringBuffer query;
 	query << "SELECT * FROM galaxy_bans as gb WHERE account_id=" << getAccountID() << " and expires > UNIX_TIMESTAMP()";
@@ -111,6 +112,19 @@ void AccountImplementation::updateGalaxyBans() {
 		galaxyBans.put(entry->getGalaxyID(), entry);
 	}
 }
+#else // WITH_SWGREALMS_API
+void AccountImplementation::updateGalaxyBans() {
+	String errorMessage;
+	auto swgRealmsAPI = SWGRealmsAPI::instance();
+
+	if (swgRealmsAPI != nullptr && swgRealmsAPI->getGalaxyBansBlocking(accountID, galaxyBans, errorMessage)) {
+		return;
+	}
+
+	// API Failed - fail closed
+	error() << "SWGRealms API getGalaxyBansBlocking failed for accountID " << accountID << ": " << errorMessage;
+}
+#endif // WITH_SWGREALMS_API
 
 bool AccountImplementation::isBanned() const {
 	return banExpires > time(0);

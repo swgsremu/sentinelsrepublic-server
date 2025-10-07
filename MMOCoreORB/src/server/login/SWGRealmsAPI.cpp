@@ -15,6 +15,7 @@
 #include "SWGRealmsAPI.h"
 
 #include "server/zone/ZoneClientSession.h"
+#include "server/login/objects/GalaxyBanEntry.h"
 
 #include <cpprest/filestream.h>
 #include <cpprest/http_client.h>
@@ -25,6 +26,12 @@
 #ifndef U
 #define U(x) _XPLATSTR(x)
 #endif
+
+#ifdef WITH_SWGREALMS_CALLSTATS
+#define API_TRACE(result, key) result->trace(key)
+#else
+#define API_TRACE(result, key) // NOOP
+#endif // WITH_SWGREALMS_CALLSTATS
 
 using namespace utility;
 using namespace web;
@@ -75,10 +82,22 @@ SWGRealmsAPI::SWGRealmsAPI() {
 
 	apiTimeoutMs = config->getInt("Core3.Login.API.Timeout", 30) * 1000;
 
+	// Create persistent HTTP client for connection reuse
+	web::http::client::http_client_config client_config;
+	client_config.set_validate_certificates(false);
+	client_config.set_timeout(utility::seconds(apiTimeoutMs / 1000));
+
+	httpClient = new http_client(baseURL.toCharArray(), client_config);
+
 	info(true) << "Starting " << toString();
 }
 
 SWGRealmsAPI::~SWGRealmsAPI() {
+	if (httpClient != nullptr) {
+		delete httpClient;
+		httpClient = nullptr;
+	}
+
 	crossplat::threadpool::shared_instance().service().stop();
 	info(true) << "Shutdown";
 }
@@ -130,15 +149,7 @@ void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& 
 
 	debug() << src << " START apiCall [path=" << apiPath << "]";
 
-	web::http::client::http_client_config client_config;
-
-	client_config.set_validate_certificates(false);
-
-	utility::seconds timeout(apiTimeoutMs / 1000);
-
-	client_config.set_timeout(timeout);
-
-	http_client client(baseURL.toCharArray(), client_config);
+	API_TRACE(result, "apiCall_start");
 
 	web::http::method httpMethod = methods::GET;
 	if (method == "POST") {
@@ -159,13 +170,16 @@ void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& 
 		req.set_body(body.toCharArray(), "application/json");
 	}
 
-	client.request(req)
+	API_TRACE(result, "http_request_sent");
+
+	httpClient->request(req)
 		.then([this, src, apiPath, result](pplx::task<http_response> task) {
 			http_response resp;
 			bool failed = false;
 
 			try {
 				resp = task.get();
+				API_TRACE(result, "http_response_received");
 			} catch (const http_exception& e) {
 				error() << src << " " << apiPath << " HTTP Exception caught: " << e.what();
 				failed = true;
@@ -256,6 +270,7 @@ void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& 
 
 				// Call subclass parse() to extract type-specific fields
 				result->parse();
+				API_TRACE(result, "json_parsed");
 			}
 
 			result->setElapsedTimeMS(startTime.miliDifference());
@@ -275,7 +290,9 @@ void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& 
 
 			debug() << logPrefix << "END apiCall " << method << " [path=" << apiPath << "] result = " << *result;
 
+			API_TRACE(result, "queue_scheduled");
 			Core::getTaskManager()->executeTask([result] {
+				API_TRACE(result, "callback_invoked");
 				result->invokeCallback();
 			}, "SWGRealmsAPIResult-" + src, "slowQueue");
 		});
@@ -551,6 +568,8 @@ JSONSerializationType SWGRealmsAPI::getStatsAsJSON() const {
 }
 
 SWGRealmsAPIResult::SWGRealmsAPIResult() {
+	API_TRACE(this, "ctor");
+
 	// Generate simple code for log tracing
 	uint64 trxid = (System::getMikroTime() << 8) | System::random(255);
 
@@ -561,6 +580,50 @@ SWGRealmsAPIResult::SWGRealmsAPIResult() {
 
 	resultDebug.setNullValue("<not set>");
 }
+
+SWGRealmsAPIResult::~SWGRealmsAPIResult() {
+#ifdef WITH_SWGREALMS_CALLSTATS
+	if (callTrace.size() > 0) {
+		SWGRealmsAPI::instance()->info(true) << "TRACE [" << resultClientTrxId << "]: " << dumpTrace();
+	}
+#endif
+}
+
+#ifdef WITH_SWGREALMS_CALLSTATS
+void SWGRealmsAPIResult::trace(const String& tag) {
+	Time now;
+	now.updateToCurrentTime();
+	callTrace.add(Pair<String, Time>(tag, now));
+}
+
+String SWGRealmsAPIResult::dumpTrace() const {
+	if (callTrace.size() == 0) {
+		return "No trace data";
+	}
+
+	StringBuffer output;
+	const Time& baseline = callTrace.get(0).second;
+	Time previous = baseline;
+
+	for (int i = 0; i < callTrace.size(); ++i) {
+		const Pair<String, Time>& entry = callTrace.get(i);
+		const String& tag = entry.first;
+		const Time& timestamp = entry.second;
+
+		uint64 totalMs = baseline.miliDifference(timestamp);
+		uint64 deltaMs = previous.miliDifference(timestamp);
+
+		if (i > 0) {
+			output << ", ";
+		}
+
+		output << tag << ": +" << deltaMs << "ms (total: " << totalMs << "ms)";
+		previous = timestamp;
+	}
+
+	return output.toString();
+}
+#endif // WITH_SWGREALMS_CALLSTATS
 
 String SWGRealmsAPIResult::toStringData() const {
 	return toString();
@@ -582,7 +645,15 @@ String SWGRealmsAPIResult::toString() const {
 		buf << ", JSON: '" << getRawJSON() << "'";
 	}
 
-	buf << ", elapsedTimeMS: " << getElapsedTimeMS() << "]";
+	buf << ", elapsedTimeMS: " << getElapsedTimeMS();
+
+#ifdef WITH_SWGREALMS_CALLSTATS
+	if (callTrace.size() > 0) {
+		buf << ", trace: [" << dumpTrace() << "]";
+	}
+#endif
+
+	buf << "]";
 
 	return buf.toString();
 }
@@ -1098,6 +1169,121 @@ bool SWGRealmsAPI::banAccountBlocking(uint32 accountID, uint32 issuerID, uint64 
 bool SWGRealmsAPI::unbanAccountBlocking(uint32 accountID, const String& reason, String& errorMessage) {
 	StringBuffer pathBuffer;
 	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << accountID << "/unban";
+
+	StringBuffer jsonBody;
+	jsonBody << "{\"reason\":\"" << reason << "\"}";
+
+	Reference<SimpleResult*> result = new SimpleResult();
+	return apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "PUT", jsonBody.toString(), errorMessage);
+}
+
+bool SWGRealmsAPI::parseGalaxyBansFromJSON(const String& jsonStr, VectorMap<uint32, Reference<GalaxyBanEntry*>>& galaxyBans, String& errorMessage) {
+	try {
+		auto jsonValue = json::value::parse(conversions::to_string_t(jsonStr.toCharArray()));
+
+		if (!jsonValue.is_object()) {
+			errorMessage = "Response is not a JSON object";
+			return false;
+		}
+
+		// Check for bans array
+		if (!jsonValue.has_field(U("bans"))) {
+			errorMessage = "Missing bans field in response";
+			return false;
+		}
+
+		auto bansArray = jsonValue[U("bans")];
+		if (!bansArray.is_array()) {
+			errorMessage = "bans field is not an array";
+			return false;
+		}
+
+		// Clear existing bans
+		galaxyBans.removeAll();
+
+		// Parse each ban entry
+		for (auto& banValue : bansArray.as_array()) {
+			if (!banValue.is_object()) {
+				continue; // Skip invalid entries
+			}
+
+			Reference<GalaxyBanEntry*> entry = new GalaxyBanEntry();
+
+			if (banValue.has_field(U("account_id"))) {
+				entry->setAccountID(banValue[U("account_id")].as_integer());
+			}
+
+			if (banValue.has_field(U("issuer_id"))) {
+				entry->setBanAdmin(banValue[U("issuer_id")].as_integer());
+			}
+
+			if (banValue.has_field(U("galaxy_id"))) {
+				entry->setGalaxyID(banValue[U("galaxy_id")].as_integer());
+			}
+
+			if (banValue.has_field(U("created"))) {
+				Time bancreated(banValue[U("created")].as_integer());
+				entry->setCreationDate(bancreated);
+			}
+
+			if (banValue.has_field(U("expires"))) {
+				Time banexpires(banValue[U("expires")].as_integer());
+				entry->setBanExpiration(banexpires);
+			}
+
+			if (banValue.has_field(U("reason"))) {
+				String reason = conversions::to_utf8string(banValue[U("reason")].as_string());
+				entry->setBanReason(reason);
+			}
+
+			// Add to map keyed by galaxy_id
+			galaxyBans.put(entry->getGalaxyID(), entry);
+		}
+
+		return true;
+
+	} catch (const json::json_exception& e) {
+		errorMessage = String("JSON parse error: ") + e.what();
+		return false;
+	} catch (const Exception& e) {
+		errorMessage = String("Error parsing galaxy bans: ") + e.getMessage();
+		return false;
+	}
+}
+
+bool SWGRealmsAPI::getGalaxyBansBlocking(uint32 accountID, VectorMap<uint32, Reference<GalaxyBanEntry*>>& galaxyBans, String& errorMessage) {
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << accountID << "/galaxybans";
+
+	Reference<SimpleResult*> result = new SimpleResult();
+	if (!apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "GET", "", errorMessage)) {
+		return false;
+	}
+
+	// Parse galaxy bans from result's jsonData
+	return parseGalaxyBansFromJSON(result->getRawJSON(), galaxyBans, errorMessage);
+}
+
+bool SWGRealmsAPI::banFromGalaxyBlocking(uint32 accountID, uint32 targetGalaxyID, uint32 issuerID, uint64 expiresTimestamp,
+                                          const String& reason, String& errorMessage) {
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << accountID << "/galaxyban";
+
+	StringBuffer jsonBody;
+	jsonBody << "{"
+	         << "\"galaxy_id\":" << targetGalaxyID << ","
+	         << "\"issuer_id\":" << issuerID << ","
+	         << "\"expires\":" << expiresTimestamp << ","
+	         << "\"reason\":\"" << reason << "\""
+	         << "}";
+
+	Reference<SimpleResult*> result = new SimpleResult();
+	return apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "POST", jsonBody.toString(), errorMessage);
+}
+
+bool SWGRealmsAPI::unbanFromGalaxyBlocking(uint32 accountID, uint32 targetGalaxyID, const String& reason, String& errorMessage) {
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/account/" << accountID << "/galaxyban/" << targetGalaxyID;
 
 	StringBuffer jsonBody;
 	jsonBody << "{\"reason\":\"" << reason << "\"}";

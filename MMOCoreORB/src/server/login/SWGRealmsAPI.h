@@ -19,6 +19,17 @@
 #define _TURN_OFF_PLATFORM_STRING
 #include <cpprest/json.h>
 
+// Forward declarations
+class GalaxyBanEntry;
+
+namespace web {
+	namespace http {
+		namespace client {
+			class http_client;
+		}
+	}
+}
+
 namespace server {
 	namespace zone {
 		class ZoneClientSession;
@@ -57,11 +68,16 @@ namespace server {
 			Condition blockingCondition;
 			bool blockingReceived;
 
+#ifdef WITH_SWGREALMS_CALLSTATS
+			// Call trace for detailed profiling (maintains insertion order)
+			Vector<Pair<String, Time>> callTrace;
+#endif
+
 		public:
 			Function<void()> callback;
 
 			SWGRealmsAPIResult();
-			virtual ~SWGRealmsAPIResult() {}
+			virtual ~SWGRealmsAPIResult();
 
 			// Parse from JSON - implemented by subclasses
 			virtual bool parse() = 0;
@@ -72,6 +88,12 @@ namespace server {
 					callback();
 				}
 			}
+
+#ifdef WITH_SWGREALMS_CALLSTATS
+			// Call tracing for profiling
+			void trace(const String& tag);
+			String dumpTrace() const;
+#endif
 
 			String toString() const;
 			String toStringData() const;
@@ -339,6 +361,9 @@ namespace server {
 			bool failOpen = false;
 			int apiTimeoutMs = 30000;
 
+			// Persistent HTTP client for connection reuse (thread-safe)
+			web::http::client::http_client* httpClient = nullptr;
+
 			// Blocking call statistics
 			AtomicInteger outstandingBlockingCalls = 0;
 			AtomicInteger peakConcurrentCalls = 0;
@@ -396,6 +421,7 @@ namespace server {
 
 			bool parseAccountFromJSON(const String& jsonStr, Reference<Account*> account, String& errorMessage);
 			bool parseAccountBanStatusFromJSON(const String& jsonStr, Reference<Account*> account, String& errorMessage);
+			bool parseGalaxyBansFromJSON(const String& jsonStr, VectorMap<uint32, Reference<GalaxyBanEntry*>>& galaxyBans, String& errorMessage);
 
 			// Generic blocking API call helper - eliminates boilerplate
 			bool apiCallBlocking(Reference<SWGRealmsAPIResult*> result, const String& path, const String& method,
@@ -411,6 +437,13 @@ namespace server {
 			bool banAccountBlocking(uint32 accountID, uint32 issuerID, uint64 expiresTimestamp,
 			                        const String& reason, String& errorMessage);
 			bool unbanAccountBlocking(uint32 accountID, const String& reason, String& errorMessage);
+
+			// Galaxy Ban Operations
+			bool getGalaxyBansBlocking(uint32 accountID, VectorMap<uint32, Reference<GalaxyBanEntry*>>& galaxyBans,
+			                           String& errorMessage);
+			bool banFromGalaxyBlocking(uint32 accountID, uint32 galaxyID, uint32 issuerID, uint64 expiresTimestamp,
+			                           const String& reason, String& errorMessage);
+			bool unbanFromGalaxyBlocking(uint32 accountID, uint32 galaxyID, const String& reason, String& errorMessage);
 
 			// EIP Helper
 			static void updateClientIPAddress(server::zone::ZoneClientSession* client, const SessionApprovalResult& result);
