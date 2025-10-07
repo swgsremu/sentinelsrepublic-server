@@ -15,7 +15,6 @@
 
 #include "engine/engine.h"
 #include "system/thread/atomic/AtomicInteger.h"
-#include "server/login/LoginClient.h"
 #include "server/login/objects/Galaxy.h"
 
 #define _TURN_OFF_PLATFORM_STRING
