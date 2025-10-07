@@ -24,6 +24,18 @@ struct ClientCoreOptions {
 	String saveState;
 	bool loginOnly = false;
 
+	// Character creation options
+	bool createCharacter = false;
+	String createCharName;
+	String createCharRace;
+	String createCharProfession;
+	float createCharHeight = 1.0f;
+	String createCharCustomization;
+	String createCharHairTemplate;
+	String createCharHairCustomization;
+	String createCharBiography;
+	bool createCharSkipTutorial = true;
+
 	void parse(int argc, char* argv[]);
 	void updateWithProperties();
 	void saveToProperties();
@@ -35,6 +47,7 @@ struct ClientCoreOptions {
 private:
 	void loadEnvFile(const String& filename);
 	int parseLogLevel(const String& levelStr);
+	String resolveFileReference(const String& value);
 };
 
 class ClientCore : public Core, public Logger {
@@ -109,6 +122,17 @@ public:
 		}
 		return Core::getIntProperty("Client3.ZoneTimeout", 30);
 	}
+
+	static bool shouldCreateCharacter() {
+		Core* instance = Core::getCoreInstance();
+		if (instance) {
+			ClientCore* clientCore = static_cast<ClientCore*>(instance);
+			return clientCore && clientCore->options.createCharacter;
+		}
+		return false;
+	}
+
+	static class BaseMessage* buildCreateCharacterPacket();
 
 public:
 	ClientCore(const ClientCoreOptions& opts);
