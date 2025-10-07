@@ -11,6 +11,9 @@
 #include "server/zone/SpaceZone.h"
 
 #include "server/db/ServerDatabase.h"
+#ifdef WITH_SWGREALMS_API
+#include "server/login/SWGRealmsAPI.h"
+#endif
 
 #include "conf/ConfigManager.h"
 
@@ -105,6 +108,7 @@ void ZoneServerImplementation::initializeTransientMembers() {
 	ManagedObjectImplementation::initializeTransientMembers();
 }
 
+#ifndef WITH_SWGREALMS_API
 void ZoneServerImplementation::loadGalaxyName() {
 	try {
 		const String query = "SELECT name FROM galaxy WHERE galaxy_id = " + String::valueOf(galaxyID);
@@ -122,6 +126,26 @@ void ZoneServerImplementation::loadGalaxyName() {
 
 	loadLoginMessage();
 }
+#else // WITH_SWGREALMS_API
+void ZoneServerImplementation::loadGalaxyName() {
+	auto swgRealmsAPI = SWGRealmsAPI::instance();
+
+	if (swgRealmsAPI != nullptr) {
+		auto galaxyOpt = swgRealmsAPI->getGalaxyEntry(galaxyID);
+
+		if (galaxyOpt.has_value()) {
+			galaxyName = galaxyOpt.value().getName();
+			setLoggingName("ZoneServer " + galaxyName);
+			return;
+		}
+	}
+
+	error() << "Failed to load galaxy name for galaxy_id " << galaxyID;
+	setLoggingName("ZoneServer UNKNOWN");
+
+	loadLoginMessage();
+}
+#endif // WITH_SWGREALMS_API
 
 void ZoneServerImplementation::initialize() {
 	serverState = LOADING;

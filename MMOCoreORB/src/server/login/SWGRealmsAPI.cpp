@@ -14,8 +14,10 @@
 
 #include "SWGRealmsAPI.h"
 
+#include "server/login/account/Account.h"
 #include "server/zone/ZoneClientSession.h"
 #include "server/login/objects/GalaxyBanEntry.h"
+#include "server/login/objects/GalaxyList.h"
 
 #include <cpprest/filestream.h>
 #include <cpprest/http_client.h>
@@ -37,6 +39,45 @@ using namespace utility;
 using namespace web;
 using namespace web::http;
 using namespace web::http::client;
+
+namespace server {
+namespace login {
+
+// Result class definitions (moved from header to avoid circular includes)
+
+// Account-specific result (account data, ban status, etc.)
+class AccountResult : public SWGRealmsAPIResult {
+private:
+	Reference<account::Account*> account;
+	uint32 accountID;
+	bool accountIDOnly;
+
+public:
+	AccountResult(Reference<account::Account*> acc);
+	AccountResult();
+
+	bool parse() override;
+
+	inline uint32 getAccountID() const {
+		return accountID;
+	}
+
+	inline Reference<account::Account*> getAccount() const {
+		return account;
+	}
+};
+
+// Simple result for operations that just return success/failure
+class SimpleResult : public SWGRealmsAPIResult {
+public:
+	SimpleResult() {}
+	bool parse() override { return true; }
+};
+
+} // namespace login
+} // namespace server
+
+using namespace server::login;
 
 SWGRealmsAPI::SWGRealmsAPI() {
 	trxCount = 0;
@@ -1290,6 +1331,149 @@ bool SWGRealmsAPI::unbanFromGalaxyBlocking(uint32 accountID, uint32 targetGalaxy
 
 	Reference<SimpleResult*> result = new SimpleResult();
 	return apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "PUT", jsonBody.toString(), errorMessage);
+}
+
+bool SWGRealmsAPI::parseGalaxyListFromJSON(const String& jsonStr, Vector<Galaxy>& galaxies, String& errorMessage) {
+	try {
+		auto jsonValue = json::value::parse(conversions::to_string_t(jsonStr.toCharArray()));
+
+		if (!jsonValue.is_object()) {
+			errorMessage = "Response is not a JSON object";
+			return false;
+		}
+
+		if (!jsonValue.has_field(U("galaxies"))) {
+			errorMessage = "Missing galaxies field in response";
+			return false;
+		}
+
+		auto galaxiesArray = jsonValue[U("galaxies")];
+		if (!galaxiesArray.is_array()) {
+			errorMessage = "galaxies field is not an array";
+			return false;
+		}
+
+		galaxies.removeAll();
+
+		for (auto& galaxyObj : galaxiesArray.as_array()) {
+			if (!galaxyObj.is_object()) {
+				continue;
+			}
+
+			uint32 galaxyID = 0;
+
+			if (galaxyObj.has_field(U("galaxy_id"))) {
+				galaxyID = galaxyObj[U("galaxy_id")].as_integer();
+			} else {
+				errorMessage = "missing galaxy_id in result";
+				return false;
+			}
+
+			Galaxy galaxy(galaxyID);
+
+			if (galaxyObj.has_field(U("name"))) {
+				galaxy.setName(conversions::to_utf8string(galaxyObj[U("name")].as_string()));
+			}
+			if (galaxyObj.has_field(U("address"))) {
+				galaxy.setAddress(conversions::to_utf8string(galaxyObj[U("address")].as_string()));
+			}
+			if (galaxyObj.has_field(U("port"))) {
+				galaxy.setPort(galaxyObj[U("port")].as_integer());
+			}
+			if (galaxyObj.has_field(U("pingport"))) {
+				galaxy.setPingPort(galaxyObj[U("pingport")].as_integer());
+			}
+			if (galaxyObj.has_field(U("population"))) {
+				galaxy.setPopulation(galaxyObj[U("population")].as_integer());
+			}
+
+			galaxies.add(galaxy);
+		}
+
+		return true;
+
+	} catch (const json::json_exception& e) {
+		errorMessage = String("JSON parse error: ") + e.what();
+		return false;
+	}
+}
+
+Optional<Galaxy> SWGRealmsAPI::parseGalaxyFromJSON(const String& jsonStr) {
+	try {
+		auto jsonValue = json::value::parse(conversions::to_string_t(jsonStr.toCharArray()));
+
+		if (!jsonValue.is_object() || !jsonValue.has_field(U("galaxy"))) {
+			return Optional<Galaxy>();
+		}
+
+		auto galaxyObj = jsonValue[U("galaxy")];
+		if (!galaxyObj.is_object()) {
+			return Optional<Galaxy>();
+		}
+
+		uint32 galaxyID = 0;
+
+		if (galaxyObj.has_field(U("galaxy_id"))) {
+			galaxyID = galaxyObj[U("galaxy_id")].as_integer();
+		} else {
+			return Optional<Galaxy>();
+		}
+
+		Galaxy galaxy(galaxyID);
+
+		if (galaxyObj.has_field(U("name"))) {
+			galaxy.setName(conversions::to_utf8string(galaxyObj[U("name")].as_string()));
+		}
+		if (galaxyObj.has_field(U("address"))) {
+			galaxy.setAddress(conversions::to_utf8string(galaxyObj[U("address")].as_string()));
+		}
+		if (galaxyObj.has_field(U("port"))) {
+			galaxy.setPort(galaxyObj[U("port")].as_integer());
+		}
+		if (galaxyObj.has_field(U("pingport"))) {
+			galaxy.setPingPort(galaxyObj[U("pingport")].as_integer());
+		}
+		if (galaxyObj.has_field(U("population"))) {
+			galaxy.setPopulation(galaxyObj[U("population")].as_integer());
+		}
+
+		return Optional<Galaxy>(galaxy);
+
+	} catch (const json::json_exception& e) {
+		error() << "JSON parse error in parseGalaxyFromJSON: " << e.what();
+		return Optional<Galaxy>();
+	}
+}
+
+Vector<Galaxy> SWGRealmsAPI::getAuthorizedGalaxies(uint32 accountID) {
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/account/" << accountID << "/galaxies";
+
+	String errorMessage;
+	Reference<SimpleResult*> result = new SimpleResult();
+	Vector<Galaxy> galaxies;
+
+	if (apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "GET", "", errorMessage)) {
+		parseGalaxyListFromJSON(result->getRawJSON(), galaxies, errorMessage);
+	} else {
+		error() << "getGalaxyList failed for account " << accountID << ": " << errorMessage;
+	}
+
+	return galaxies;
+}
+
+Optional<Galaxy> SWGRealmsAPI::getGalaxyEntry(uint32 galaxyID) {
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID;
+
+	String errorMessage;
+	Reference<SimpleResult*> result = new SimpleResult();
+	if (!apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "GET", "", errorMessage)) {
+		error() << "getGalaxyEntry failed for galaxy " << galaxyID << ": " << errorMessage;
+		return Optional<Galaxy>();
+	}
+
+	return parseGalaxyFromJSON(result->getRawJSON());
 }
 
 #endif // WITH_SWGREALMS_API

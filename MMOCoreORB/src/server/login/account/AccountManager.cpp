@@ -562,6 +562,7 @@ Reference<Account*> AccountManager::getAccount(const String& accountName, bool f
 }
 #endif // WITH_SWGREALMS_API
 
+#ifndef WITH_SWGREALMS_API
 void AccountManager::expireSession(Reference<Account*> account, const String& sessionID) {
 	if (account == nullptr || sessionID.isEmpty()) {
 		return;
@@ -583,3 +584,4 @@ void AccountManager::expireSession(Reference<Account*> account, const String& se
 		logger.error() << e.getMessage();
 	}
 }
+#endif // !WITH_SWGREALMS_API

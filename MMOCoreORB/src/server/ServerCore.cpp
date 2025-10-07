@@ -742,6 +742,7 @@ void ServerCore::initialize() {
 			int galaxyID = configManager->getZoneGalaxyID();
 
 			try {
+#ifndef WITH_SWGREALMS_API
 				if (zonePort == 0) {
 					const String query = "SELECT port FROM galaxy WHERE galaxy_id = "
 								   + String::valueOf(galaxyID);
@@ -751,6 +752,21 @@ void ServerCore::initialize() {
 						zonePort = result->getInt(0);
 					}
 				}
+#else // WITH_SWGREALMS_API
+				if (zonePort == 0) {
+					auto swgRealmsAPI = SWGRealmsAPI::instance();
+
+					if (swgRealmsAPI != nullptr) {
+						auto galaxyOpt = swgRealmsAPI->getGalaxyEntry(galaxyID);
+
+						if (galaxyOpt.has_value()) {
+							zonePort = galaxyOpt.value().getPort();
+						} else {
+							error("Failed to load galaxy port for galaxy_id " + String::valueOf(galaxyID));
+						}
+					}
+				}
+#endif // WITH_SWGREALMS_API
 
 				database->instance()->executeStatement(
 						"DELETE FROM characters_dirty WHERE galaxy_id = "
