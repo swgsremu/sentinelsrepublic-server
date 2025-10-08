@@ -8,11 +8,12 @@
 
 #include "LoginClient.h"
 #include "ClientCore.h"
+#include "ClientProxy.h"
 
 LoginClient::LoginClient(const String& host, int port) {
 	packetCount.set(0);
 
-	client = new BaseClient(host, port);
+	client = new ClientProxy(host, port);
 
 	client->setLogging(true);
 	client->setLoggingName("LoginClient");

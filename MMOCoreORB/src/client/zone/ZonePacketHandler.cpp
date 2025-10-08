@@ -31,11 +31,16 @@ void ZonePacketHandler::handleMessage(Message* pack) {
 		}
 	case 02:
 		switch (opcode) {
+		case 0x1DB575CC:  // ClientCreateCharacterSuccess
+			handleClientCreateCharacterSuccess(pack);
+			break;
 		}
 		break;
 	case 03:
 		switch (opcode) {
-
+		case 0xDF333C6E:  // ClientCreateCharacterFailed
+			handleClientCreateCharacterFailed(pack);
+			break;
 		}
 		break;
 
@@ -94,18 +99,38 @@ void ZonePacketHandler::handleMessage(Message* pack) {
 void ZonePacketHandler::handleClientPermissionsMessage(Message* pack) {
 	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
 
-	info(true) << "    canLogin = " << pack->parseByte();
-	info(true) << "    canCreateRegularCharacter = " << pack->parseByte();
-	info(true) << "    canCreateJediCharacter = " << pack->parseByte();
-	info(true) << "    canSkipTutorial = " << pack->parseByte();
+	bool canLogin = pack->parseByte();
+	bool canCreateRegularCharacter = pack->parseByte();
+	bool canCreateJediCharacter = pack->parseByte();
+	bool canSkipTutorial = pack->parseByte();
+
+	info(true) << "    canLogin = " << canLogin;
+	info(true) << "    canCreateRegularCharacter = " << canCreateRegularCharacter;
+	info(true) << "    canCreateJediCharacter = " << canCreateJediCharacter;
+	info(true) << "    canSkipTutorial = " << canSkipTutorial;
 
 	BaseClient* client = (BaseClient*) pack->getClient();
 
-	if (zone->getCharacterID() == 0) {
-		client->error() << __FUNCTION__ << ": no character OID set in zone?";
-		throw Exception("ClientPermissionsMessage: Zone does not have a character OID");
+	// Check if we should create a character
+	bool shouldCreate = (zone->getCharacterID() == 0)
+	                    && ClientCore::shouldCreateCharacter()
+	                    && canCreateRegularCharacter;
+
+	if (shouldCreate) {
+		info(true) << "No character found - creating new character...";
+
+		BaseMessage* createChar = ClientCore::buildCreateCharacterPacket();
+		client->sendPacket(createChar);
+
+		// Wait for ClientCreateCharacterSuccess or ClientCreateCharacterFailed
+		// Success handler will send SelectCharacter automatically
+
+	} else if (zone->getCharacterID() == 0) {
+		client->error() << "No character OID and creation not enabled/permitted";
+		throw Exception("ClientPermissionsMessage: No character to select");
+
 	} else {
-		client->info(true) << __FUNCTION__ << ": Sending SelectCharacter(" << zone->getCharacterID() << ")";
+		info(true) << "Sending SelectCharacter(" << zone->getCharacterID() << ")";
 
 		BaseMessage* selectChar = new SelectCharacter(zone->getCharacterID());
 		client->sendPacket(selectChar);
@@ -285,4 +310,38 @@ void ZonePacketHandler::handleCmdSceneReady(Message* pack) {
 	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
 
 	zone->setSceneReady();
+}
+
+void ZonePacketHandler::handleClientCreateCharacterSuccess(Message* pack) {
+	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
+
+	uint64 newCharacterOID = pack->parseLong();
+
+	info(true) << "Character creation SUCCESS - OID: " << newCharacterOID;
+
+	zone->setCharacterCreated(newCharacterOID);
+
+	// Now send SelectCharacter with the new OID
+	BaseClient* client = (BaseClient*) pack->getClient();
+	info(true) << "Sending SelectCharacter(" << newCharacterOID << ")";
+
+	BaseMessage* selectChar = new SelectCharacter(newCharacterOID);
+	client->sendPacket(selectChar);
+}
+
+void ZonePacketHandler::handleClientCreateCharacterFailed(Message* pack) {
+	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
+
+	uint32 unicodeLength = pack->parseInt();
+	String uiFile;
+	pack->parseAscii(uiFile);
+	uint32 spacer = pack->parseInt();
+	String errorCode;
+	pack->parseAscii(errorCode);
+
+	error() << "Character creation FAILED";
+	error() << "  Error code: " << errorCode;
+	error() << "  UI file: " << uiFile;
+
+	zone->setCharacterCreationFailed();
 }

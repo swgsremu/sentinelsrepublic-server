@@ -135,7 +135,9 @@ public:
 		// Lock the account object
 		Locker alocker(account);
 
+#ifndef WITH_SWGREALMS_API
 		AccountManager::expireSession(account, sessionID);
+#endif
 		client->resetCharacters();
 
 		int galaxyID = zoneServer->getGalaxyID();

@@ -6,11 +6,12 @@
 #include "ClientCore.h"
 #include "ZonePacketHandler.h"
 #include "ZoneMessageProcessorTask.h"
+#include "ClientProxy.h"
 
 ZoneClient::ZoneClient(const String& address, int port) {
 	packetCount.set(0);
 
-	client = new BaseClient(address, port);
+	client = new ClientProxy(address, port);
 	client->setHandler(this);
 
 	client->setLogging(true);

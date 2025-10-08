@@ -81,7 +81,9 @@ namespace server {
 					return autoRegistration;
 				}
 
+#ifndef WITH_SWGREALMS_API
 				static void expireSession(Reference<Account*> account, const String& sessionID);
+#endif
 
 				static Reference<Account*> getAccount(uint32 accountID, bool forceSqlUpdate = false);
 

@@ -34,6 +34,11 @@ class Zone : public Thread, public Mutex, public Logger {
 	bool started;
 	bool sceneReady;
 
+	// Character creation state
+	bool characterCreated;
+	bool characterCreationFailed;
+	uint64 createdCharacterOID;
+
 public:
 	Zone(uint64 characterObjectID, uint32 account, const String& sessionID, const String& galaxyAddress, uint32 galaxyPort);
 	~Zone();
@@ -123,6 +128,27 @@ public:
 
 	bool isSceneReady() {
 		return sceneReady;
+	}
+
+	void setCharacterCreated(uint64 oid) {
+		characterCreated = true;
+		createdCharacterOID = oid;
+	}
+
+	void setCharacterCreationFailed() {
+		characterCreationFailed = true;
+	}
+
+	bool isCharacterCreated() const {
+		return characterCreated;
+	}
+
+	bool hasCharacterCreationFailed() const {
+		return characterCreationFailed;
+	}
+
+	uint64 getCreatedCharacterOID() const {
+		return createdCharacterOID;
 	}
 
 	JSONSerializationType collectStats();

@@ -28,6 +28,8 @@ public:
 	void handleUpdateContainmentMessage(Message* pack);
 	void handleClientPermissionsMessage(Message* pack);
 	void handleCmdSceneReady(Message* pack);
+	void handleClientCreateCharacterSuccess(Message* pack);
+	void handleClientCreateCharacterFailed(Message* pack);
 };
 
 #endif /* ZONEPACKETHANDLER_H_ */

@@ -10,23 +10,47 @@
 
 class ClientCreateCharacter : public BaseMessage {
 public:
-	ClientCreateCharacter(const UnicodeString& name) {
+	// Full constructor matching Core3 server parsing
+	ClientCreateCharacter(
+		const UnicodeString& characterName,
+		const String& templateName,
+		float scaleFactor,
+		const String& customAppearanceData,
+		const String& hairTemplateName,
+		const String& hairAppearanceData,
+		const String& profession,
+		const UnicodeString& biography,
+		bool useNewbieTutorial
+	) {
 		insertShort(12);
-		insertInt(STRING_HASHCODE("ClientCreateCharacter"));
+		insertInt(STRING_HASHCODE("ClientCreateCharacter")); // 0xB97F3074
 
-		insertAscii(""); // customization
-		insertUnicode(name); // name
-
-		insertAscii("object/creature/player/human_male.iff"); // Template File
-		insertAscii(""); // Starting Location
-		insertAscii(""); // Hair Object
-		insertAscii(""); // Hair Customization
-		insertAscii("crafting_artisan"); // profession
-		insertByte(0x00); // unknown byte
-		insertFloat(1.f); // Height
-		insertUnicode(""); // Biography
-		insertByte(0x00); // Tutorial Flag
+		insertAscii(customAppearanceData);    // Customization
+		insertUnicode(characterName);         // Name
+		insertAscii(templateName);            // Race template
+		insertAscii("");                      // Starting location (ignored by server)
+		insertAscii(hairTemplateName);        // Hair object
+		insertAscii(hairAppearanceData);      // Hair customization
+		insertAscii(profession);              // Profession
+		insertByte(0x00);                     // Unknown byte
+		insertFloat(scaleFactor);             // Height
+		insertUnicode(biography);             // Biography
+		insertByte(useNewbieTutorial ? 0x01 : 0x00);  // Tutorial flag
 	}
+
+	// Simple constructor for backward compatibility
+	ClientCreateCharacter(const UnicodeString& name)
+		: ClientCreateCharacter(
+			name,
+			"object/creature/player/human_male.iff",
+			1.0f,
+			"",
+			"",
+			"",
+			"crafting_artisan",
+			UnicodeString(""),
+			false  // skip tutorial
+		) {}
 };
 
 #endif /*CLIENTCREATECHARACTER_H_*/
