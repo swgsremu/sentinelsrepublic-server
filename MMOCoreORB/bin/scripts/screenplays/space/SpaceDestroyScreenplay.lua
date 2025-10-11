@@ -216,17 +216,17 @@ function SpaceDestroyScreenplay:enteredZone(pPlayer, nill, zoneNameHash)
 	return 0
 end
 
-function SpaceDestroyScreenplay:notifyDestroyedShip(pShipAgent, pPlayer)
+function SpaceDestroyScreenplay:notifyDestroyedShip(pPlayer, pShipAgent)
 	if (pShipAgent == nil or not SceneObject(pShipAgent):isShipAiAgent()) then
 		return 0
 	end
 
-	if (self.DEBUG_SPACE_DESTROY) then
-		print(self.className .. ":notifyDestroyedShip -- Called for Destructed ShipAgent Object: " .. ShipObject(pShipAgent):getShipName() .. " Destructor: " .. SceneObject(pPlayer):getDisplayedName())
-	end
-
 	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
 		return 1
+	end
+
+	if (self.DEBUG_SPACE_DESTROY) then
+		print(self.className .. ":notifyDestroyedShip -- Called for Destructed ShipAgent Object: " .. ShipObject(pShipAgent):getShipName() .. " Destructor: " .. SceneObject(pPlayer):getDisplayedName())
 	end
 
 	local playerID = SceneObject(pPlayer):getObjectID()
