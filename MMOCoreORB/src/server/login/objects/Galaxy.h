@@ -8,6 +8,9 @@
 #include "engine/engine.h"
 
 // #define USE_RANDOM_EXTRA_PORTS
+#ifdef USE_RANDOM_EXTRA_PORTS
+#include "conf/ConfigManager.h"
+#endif // USE_RANDOM_EXTRA_PORTS
 
 class Galaxy {
 	uint32 id = 0;
@@ -74,6 +77,9 @@ public:
 
 	void setPort(uint32 port) {
 		this->port = port;
+#ifdef USE_RANDOM_EXTRA_PORTS
+		extraPorts.add(port);
+#endif // USE_RANDOM_EXTRA_PORTS
 	}
 
 	void setPingPort(uint32 pingPort) {
@@ -107,6 +113,12 @@ public:
 	uint32 getPopulation() const {
 		return population;
 	}
+
+#ifdef USE_RANDOM_EXTRA_PORTS
+	void addPort(uint32 port) {
+		extraPorts.add(port);
+	}
+#endif // USE_RANDOM_EXTRA_PORTS
 
 	uint16 getRandomPort() const {
 #ifdef USE_RANDOM_EXTRA_PORTS

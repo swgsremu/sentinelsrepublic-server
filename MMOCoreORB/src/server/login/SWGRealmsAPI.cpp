@@ -1380,6 +1380,34 @@ bool SWGRealmsAPI::parseGalaxyListFromJSON(const String& jsonStr, Vector<Galaxy>
 			if (galaxyObj.has_field(U("port"))) {
 				galaxy.setPort(galaxyObj[U("port")].as_integer());
 			}
+#ifdef USE_RANDOM_EXTRA_PORTS
+			if (galaxyObj.has_field(U("extra_ports"))) {
+				try {
+					String extraPortStrings = conversions::to_utf8string(galaxyObj[U("extra_ports")].as_string());
+
+					if (!extraPortStrings.isEmpty()) {
+						int numPorts = 0;
+						StringTokenizer tokenizer(extraPortStrings);
+						tokenizer.setDelimiter(",");
+
+						while (tokenizer.hasMoreTokens() && numPorts < 256) {
+							try {
+								uint32 newPort = tokenizer.getIntToken();
+
+								if (newPort != 0) {
+									galaxy.addPort(newPort);
+									numPorts++;
+								}
+							} catch (Exception e) {
+								// Do nothing
+							}
+						}
+					}
+				} catch (Exception e) {
+					// Do Nothing
+				}
+			}
+#endif // USE_RANDOM_EXTRA_PORTS
 			if (galaxyObj.has_field(U("pingport"))) {
 				galaxy.setPingPort(galaxyObj[U("pingport")].as_integer());
 			}
