@@ -324,7 +324,7 @@ public:
 		for (int i = 0; i < targetVectorCopy.size(); ++i) {
 			auto targetEntry = targetVectorCopy.get(i);
 
-			if (targetEntry == nullptr || !targetEntry->isAttackableBy(agent)) {
+			if (targetEntry == nullptr || !targetEntry->isAttackableBy(agent) || !agent->isAggressiveTo(targetEntry)) {
 				continue;
 			}
 
