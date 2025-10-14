@@ -323,8 +323,13 @@ function SpaceAssassinateScreenplay:assignPatrols(pShipAgent)
 	end
 
 	local patrols = self.targetPatrols
+	local pointsTable = {}
 
-	ShipAiAgent(pShipAgent):assignFixedPatrolPointsTable(patrols)
+	for i = 1, #patrols, 1 do
+		table.insert(pointsTable, patrols[i].name)
+	end
+
+	ShipAiAgent(pShipAgent):assignFixedPatrolPointsTable(pointsTable)
 end
 
 function SpaceAssassinateScreenplay:despawnTargetShips(pPlayer)
