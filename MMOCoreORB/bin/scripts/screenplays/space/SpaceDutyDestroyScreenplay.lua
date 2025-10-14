@@ -619,24 +619,24 @@ function SpaceDutyDestroyScreenplay:notifyEnteredQuestArea(pActiveArea, pShip)
 end
 
 function SpaceDutyDestroyScreenplay:notifyBossShipDestroyed(pBossShip, pKillerShip)
-	if (pShipAgent == nil) then
+	if (pBossShip == nil) then
 		return 1
 	end
 
-	local missionOwnerID = ShipAiAgent(pShipAgent):getMissionOwnerID()
+	local missionOwnerID = ShipAiAgent(pBossShip):getMissionOwnerID()
 	local pPlayer = getSceneObject(missionOwnerID)
 
 	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
 		return 1
 	end
 
-	local agentID = SceneObject(pShipAgent):getObjectID()
+	local agentID = SceneObject(pBossShip):getObjectID()
 
 	-- Remove as Mission Object
 	CreatureObject(pPlayer):removeSpaceMissionObject(agentID, true)
 
 	if (self.DEBUG_SPACE_DUTY_DESTROY) then
-		print(self.className .. ":notifyBossShipDestroyed - Boss Ship Destoyed: " .. SceneObject(pShipAgent):getDisplayedName() .. " Quest Owner Name: " .. SceneObject(pPlayer):getDisplayedName())
+		print(self.className .. ":notifyBossShipDestroyed - Boss Ship Destoyed: " .. SceneObject(pBossShip):getDisplayedName() .. " Quest Owner Name: " .. SceneObject(pPlayer):getDisplayedName())
 	end
 
 	-- Destroy the area
