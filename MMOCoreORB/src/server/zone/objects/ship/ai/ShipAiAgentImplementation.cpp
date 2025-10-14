@@ -1113,17 +1113,17 @@ bool ShipAiAgentImplementation::generatePatrol(int totalPoints, float distance, 
 		}
 
 		const auto zoneNameHash = zone->getZoneName().hashCode();
-		int totalPoints = fixedPatrolPoints.size();
+		int fixedPointCount = fixedPatrolPoints.size();
 
 		// Add patrol points from the vector selected at spawn
-		for (int i = 0; i < totalPoints; i++) {
+		for (int i = 0; i < fixedPointCount; i++) {
 			const uint32 pointHash = fixedPatrolPoints.get(i);
 			SpacePatrolPoint patrolPoint = shipAgentTempMan->getSpacePatrolPoint(zoneNameHash, pointHash);
 
 			patrolCopy.add(patrolPoint);
 		}
 
-		patrolPoints.removeAll(totalPoints, totalPoints);
+		patrolPoints.removeAll(fixedPointCount, fixedPointCount);
 		patrolPoints.addAll(patrolCopy);
 	} else if (shipBitmask & ShipFlag::GUARD_PATROL) {
 		float minimumGuardPatrol = getMinimumGuardPatrol();

@@ -1,5 +1,6 @@
 includeFile("default.lua")
 includeFile("escort.lua")
+includeFile("attackableSpaceStation.lua")
 includeFile("spaceStations.lua")
 includeFile("turretship.lua")
 includeFile("waveAttack.lua")
@@ -36,6 +37,10 @@ bitmaskLookup = {
 
 	{WAVE_ATTACK, {
 		{MOVESPACE, "moveWaveattack"},
+	}},
+
+	{ATTACKABLE_SPACE_STATION, {
+		{IDLESPACE, "idleAttackablespacestation"},
 	}},
 
 	{TEST, {

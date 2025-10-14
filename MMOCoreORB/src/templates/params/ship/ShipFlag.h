@@ -9,18 +9,19 @@
 class ShipFlag {
 public:
 	enum {
-		ESCORT					= 0x000001,
-		FOLLOW					= 0x000002,
-		TURRETSHIP				= 0x000004,
-		GUARD_PATROL			= 0x000008,
-		RANDOM_PATROL			= 0x000010,
-		FIXED_PATROL			= 0x000020,
-		SQUADRON_PATROL			= 0x000040,
-		SQUADRON_FOLLOW			= 0x000080,
-		WAVE_ATTACK				= 0x000100,
-		DISABLED_INVULNERABLE	= 0x000200,
-		TEST 					= 0x000400,
-		LASTAIMASK 				= 0x000800, // keep this updated so we can loop through the masks
+		ESCORT						= 0x000001,
+		FOLLOW						= 0x000002,
+		TURRETSHIP					= 0x000004,
+		GUARD_PATROL				= 0x000008,
+		RANDOM_PATROL				= 0x000010,
+		FIXED_PATROL				= 0x000020,
+		SQUADRON_PATROL				= 0x000040,
+		SQUADRON_FOLLOW				= 0x000080,
+		WAVE_ATTACK					= 0x000100,
+		DISABLED_INVULNERABLE		= 0x000200,
+		ATTACKABLE_SPACE_STATION	= 0x000400,
+		TEST 						= 0x000800,
+		LASTAIMASK 					= 0x001000, // keep this updated so we can loop through the masks
 	};
 };
 

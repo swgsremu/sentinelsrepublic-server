@@ -25,7 +25,7 @@ spacestation_freedom = ShipAgent:new {
 	tauntDieChance = 0.1,
 
 	pvpBitmask = ATTACKABLE,
-	shipBitmask = TURRETSHIP,
+	shipBitmask = TURRETSHIP + ATTACKABLE_SPACE_STATION,
 	optionsBitmask = AIENABLED,
 
 	customShipAiMap = "",
