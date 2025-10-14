@@ -24,7 +24,8 @@ enum CheckTypeSpace {
 	CHECK_REFIRERATE,
 	CHECK_EVADEDELAYPAST,
 	CHECK_CHECKTARGETISVALID,
-	CHECK_ENGINESDISABLED,
+	CHECK_SHIPDISABLED,
+	CHECK_ENGINESPEED,
 	CHECK_EVADECHANCE,
 	CHECK_PROSPECTLOS,
 	CHECK_WEAPONS,
@@ -108,8 +109,11 @@ template<> bool CheckStopEvading::check(ShipAiAgent* agent) const;
 typedef _CheckSpace<int32, CHECK_CHECKTARGETISVALID> CheckTargetIsValid;
 template<> bool CheckTargetIsValid::check(ShipAiAgent* agent) const;
 
-typedef _CheckSpace<int32, CHECK_ENGINESDISABLED> CheckEnginesDisabled;
-template<> bool CheckEnginesDisabled::check(ShipAiAgent* agent) const;
+typedef _CheckSpace<int32, CHECK_SHIPDISABLED> CheckShipDisabled;
+template<> bool CheckShipDisabled::check(ShipAiAgent* agent) const;
+
+typedef _CheckSpace<int32, CHECK_ENGINESPEED> CheckEngineSpeed;
+template<> bool CheckEngineSpeed::check(ShipAiAgent* agent) const;
 
 typedef _CheckSpace<int32, CHECK_EVADECHANCE> CheckEvadeChance;
 template<> bool CheckEvadeChance::check(ShipAiAgent* agent) const;

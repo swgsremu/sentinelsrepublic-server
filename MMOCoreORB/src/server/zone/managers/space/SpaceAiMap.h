@@ -281,7 +281,8 @@ private:
 		_REGISTERSPACELEAF(CheckRefireRate);
 		_REGISTERSPACELEAF(CheckStopEvading);
 		_REGISTERSPACELEAF(CheckTargetIsValid);
-		_REGISTERSPACELEAF(CheckEnginesDisabled);
+		_REGISTERSPACELEAF(CheckShipDisabled);
+		_REGISTERSPACELEAF(CheckEngineSpeed);
 		_REGISTERSPACELEAF(CheckEvadeChance);
 		_REGISTERSPACELEAF(CheckRetreat);
 		_REGISTERSPACELEAF(CheckProspectLOS);

@@ -8,11 +8,16 @@ idleEscort = {
 addAiTemplate("idleEscort", idleEscort)
 
 moveEscort = {
-	{id="3162096793",	name="SequenceSpace",	pid="none"},
+	{id="3227698097",	name="AlwaysFailSpace",	pid="none"},
+	{id="2674448538",	name="SelectorSpace",	pid="3227698097"},
+	{id="2722319745",	name="SequenceSpace",	pid="2674448538"},
+	{id="2982140199",	name="IfSpace",	pid="2722319745"},
+	{id="3127822930",	name="CheckShipDisabled",	pid="2982140199"},
+	{id="726138919",	name="SetDisabledEngineSpeed",	pid="2722319745"},
+	{id="3162096793",	name="SequenceSpace",	pid="2674448538"},
 	{id="3119158273",	name="IfSpace",	pid="3162096793"},
 	{id="311662512",	name="CheckDestination",	pid="3119158273"},
-	{id="4219492080",	name="AlwaysFailSpace",	pid="3162096793"},
-	{id="145123387",	name="FindNextPosition",	pid="4219492080"}}
+	{id="145123387",	name="FindNextPosition",	pid="3162096793"}}
 addAiTemplate("moveEscort", moveEscort)
 
 rootEscort = {

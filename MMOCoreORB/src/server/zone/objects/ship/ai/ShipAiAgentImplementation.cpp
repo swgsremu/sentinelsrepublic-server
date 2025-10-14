@@ -641,6 +641,7 @@ void ShipAiAgentImplementation::runBehaviorTree() {
 
 #ifdef DEBUG_SHIP_AI
 		if (peekBlackboard("aiDebug") && readBlackboard("aiDebug") == true) {
+			printf("\n\n\n");
 			info(true) << getDisplayedName() << " - ID: " << getObjectID() << " runBehaviorTree -- called";
 		}
 #endif // DEBUG_SHIP_AI
