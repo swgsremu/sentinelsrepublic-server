@@ -77,6 +77,14 @@ void ClientCore::run() {
 			exit_result = 103;
 		} else {
 			info(true) << "Login flow test completed successfully!";
+
+			// Optional wait while connected (for load testing)
+			if (options.waitAfterZone > 0) {
+				info(true) << "Staying connected for " << options.waitAfterZone << " seconds...";
+				Thread::sleep(options.waitAfterZone * 1000);
+				info(true) << "Wait complete, proceeding to shutdown...";
+			}
+
 			exit_result = 0;
 		}
 
@@ -254,7 +262,26 @@ void ClientCore::logoutCharacter() {
 
 	info(true) << __FUNCTION__ << "(" << index << ")";
 
+	// Disconnect from zone to stop receiving new packets
 	zone->disconnect();
+
+	// Wait for already-queued tasks to complete processing
+	auto taskManager = Core::getTaskManager();
+	int maxIterations = 20; // 20 x 50ms = 1 second max
+
+	for (int i = 0; i < maxIterations; i++) {
+		int executing = taskManager->getExecutingTaskSize();
+		int scheduled = taskManager->getScheduledTaskSize();
+
+		if (executing == 0 && scheduled == 0) {
+			info(true) << "All tasks completed after " << (i * 50) << "ms";
+			break;
+		}
+
+		Thread::sleep(50);
+	}
+
+	info(true) << "Processed " << zone->getZoneClient()->getPacketCount() << " total zone packets";
 
 	delete zone;
 }
@@ -509,6 +536,7 @@ bool ClientCoreOptions::loadFromJSON(const String& filename) {
 		if (json.contains("characterFirstname")) characterFirstname = json["characterFirstname"];
 		if (json.contains("saveState")) saveState = json["saveState"];
 		if (json.contains("loginOnly")) loginOnly = json["loginOnly"];
+		if (json.contains("waitAfterZone")) waitAfterZone = json["waitAfterZone"];
 
 		// Load character creation options from nested object
 		if (json.contains("create_character")) {
@@ -583,6 +611,7 @@ void ClientCoreOptions::parse(int argc, char* argv[]) {
 		("options-json", po::value<std::string>(), "Load options from JSON file")
 		("generate-options-json", "Generate default options JSON to stdout and exit")
 		("env", po::value<std::string>(), "Environment file to load")
+		("wait-after-zone", po::value<int>(), "Seconds to stay connected to zone before shutdown")
 		("create-character", "Automatically create character if none exist")
 		("char-name", po::value<std::string>(), "Character name")
 		("char-race", po::value<std::string>(), "Race template (full IFF path or short name)")
@@ -732,6 +761,11 @@ void ClientCoreOptions::parse(int argc, char* argv[]) {
 		loginOnly = true;
 	}
 
+	// Get wait-after-zone
+	if (vm.count("wait-after-zone")) {
+		waitAfterZone = vm["wait-after-zone"].as<int>();
+	}
+
 	// Character creation options
 	if (vm.count("create-character")) {
 		createCharacter = true;
@@ -874,6 +908,7 @@ JSONSerializationType ClientCoreOptions::getAsJSON() const {
 	jsonData["characterFirstname"] = characterFirstname.toCharArray();
 	jsonData["saveState"] = saveState.toCharArray();
 	jsonData["loginOnly"] = loginOnly;
+	jsonData["waitAfterZone"] = waitAfterZone;
 
 	// Nested create_character object
 	JSONSerializationType createChar;

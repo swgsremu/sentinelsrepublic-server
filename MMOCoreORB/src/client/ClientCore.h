@@ -23,6 +23,7 @@ struct ClientCoreOptions {
 	String characterFirstname;
 	String saveState;
 	bool loginOnly = false;
+	int waitAfterZone = 0;  // Seconds to stay connected to zone before disconnect
 
 	// Character creation options
 	bool createCharacter = false;

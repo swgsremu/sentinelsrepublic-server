@@ -16,88 +16,128 @@ ZonePacketHandler::ZonePacketHandler(const String& s, Zone * z) : Logger(s) {
 	setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 }
 
+#define CASE_OPCODE(str) case STRING_HASHCODE(str): what = str
+
 void ZonePacketHandler::handleMessage(Message* pack) {
 	Locker lock(this);
 
 	sys::uint16 opcount = pack->parseShort();
 	sys::uint32 opcode = pack->parseInt();
 
+	String what;
+
 	switch (opcount) {
-	case 01:
+	case 1:
 		switch (opcode) {
-		case 0x43FD1C22: // CmdSceneReady
+		CASE_OPCODE("CmdSceneReady");
 			handleCmdSceneReady(pack);
 			break;
 		}
-	case 02:
+	case 2:
 		switch (opcode) {
-		case 0x1DB575CC:  // ClientCreateCharacterSuccess
+		CASE_OPCODE("ClientCreateCharacterSuccess");
 			handleClientCreateCharacterSuccess(pack);
 			break;
+		CASE_OPCODE("SceneEndBaselines");
+			break;
+		CASE_OPCODE("ChatPersistentMessageToClient");
+			break;
+		CASE_OPCODE("ChatServerStatus");
+			break;
+		CASE_OPCODE("ParametersMessage");
+			break;
+		CASE_OPCODE("ServerTimeMessage");
+			break;
+		CASE_OPCODE("ChatRoomList");
+			break;
 		}
 		break;
-	case 03:
+	case 3:
 		switch (opcode) {
-		case 0xDF333C6E:  // ClientCreateCharacterFailed
+		CASE_OPCODE("ClientCreateCharacterFailed");
 			handleClientCreateCharacterFailed(pack);
+			break;
+		CASE_OPCODE("UpdateCellPermissionMessage");
+			break;
+		CASE_OPCODE("ServerWeatherMessage");
+			break;
+		CASE_OPCODE("ChatOnGetFriendsList");
+			break;
+		CASE_OPCODE("ChatOnGetIgnoreList");
+			break;
+		CASE_OPCODE("ChatOnLeaveRoom");
+			break;
+		CASE_OPCODE("SceneDestroyObject");
 			break;
 		}
 		break;
 
-	case 04:
+	case 4:
 		switch (opcode) {
-
-		case 0xE00730E5:
+		CASE_OPCODE("ClientPermissionsMessage");
 			handleClientPermissionsMessage(pack);
 			break;
 
-		case 0x56CBDE9E:
+		CASE_OPCODE("UpdateContainmentMessage");
 			handleUpdateContainmentMessage(pack);
 			break;
 
-		case 0x6D2A6413: // chat system message
+		CASE_OPCODE("ChatSystemMessage");
 			handleChatSystemMessage(pack);
+			break;
+
+		CASE_OPCODE("UpdatePvpStatusMessage");
 			break;
 		}
 		break;
-	case 05:
+	case 5:
 		switch (opcode) {
-		case 0xFE89DDEA: // scene create
+		CASE_OPCODE("SceneCreateObjectByCrc");
 			handleSceneObjectCreateMessage(pack);
 			break;
 
-		case 0x68A75F0C: // baseline
+		CASE_OPCODE("BaselinesMessage");
 			handleBaselineMessage(pack);
 			break;
 
-		case 0x3C565CED: // instant msg
+		CASE_OPCODE("ChatInstantMessageToClient");
 			handleChatInstantMessageToClient(pack);
 			break;
 
-		case 0x80CE5E46: // objc
+		CASE_OPCODE("ObjControllerMessage");
 			handleObjectControllerMessage(pack);
 			break;
-		}
-		break;
-	case 8:
-		switch (opcode) {
+
+		CASE_OPCODE("DeltasMessage");
+			break;
+
+		CASE_OPCODE("ChatOnDestroyRoom");
+			break;
+
+		CASE_OPCODE("ChatOnEnteredRoom");
+			break;
 		}
 		break;
 	case 9:
 		switch (opcode) {
-		case 0x3AE6DFAE: // cmd start scene
+		CASE_OPCODE("CmdStartScene");
 			handleCmdStartScene(pack);
 			break;
 		}
-	break;
-	default:
-		//error("unhandled operand count" + pack->toString());
 		break;
 	}
+
+	if (what.isEmpty()) {
+		uint32 count = unknownOpcodes.contains(opcode) ? unknownOpcodes.get(opcode) : 0;
+		unknownOpcodes.put(opcode, count + 1);
+		what = "unknown";
+	}
+
+	debug() << __FUNCTION__ << ": " << what << "(opcount=" << opcount << ", opcode=0x" << uppercase << hex << opcode << ")";
 }
 
 void ZonePacketHandler::handleClientPermissionsMessage(Message* pack) {
-	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
+	info(true) << __FUNCTION__;
 
 	bool canLogin = pack->parseByte();
 	bool canCreateRegularCharacter = pack->parseByte();
@@ -138,7 +178,7 @@ void ZonePacketHandler::handleClientPermissionsMessage(Message* pack) {
 }
 
 void ZonePacketHandler::handleCmdStartScene(Message* pack) {
-	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
+	info(true) << __FUNCTION__;
 
 	BaseClient* client = (BaseClient*) pack->getClient();
 
@@ -240,16 +280,16 @@ void ZonePacketHandler::handleChatInstantMessageToClient(Message* pack) {
 }
 
 void ZonePacketHandler::handleChatSystemMessage(Message* pack) {
-	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
+	info(true) << __FUNCTION__;
 
 	BaseClient* client = (BaseClient*) pack->getClient();
 
 	uint8 type = pack->parseByte();
 
-	info(true) << "type=" << type;
-
 	UnicodeString message;
 	pack->parseUnicode(message);
+
+	info(true) << "type=" << type << "; len=" << message.length();
 
 	StringTokenizer lines(message.toString());
 	lines.setDelimeter("\n");
@@ -307,13 +347,13 @@ void ZonePacketHandler::handleUpdateContainmentMessage(Message* pack) {
 }
 
 void ZonePacketHandler::handleCmdSceneReady(Message* pack) {
-	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
+	info(true) << __FUNCTION__;
 
 	zone->setSceneReady();
 }
 
 void ZonePacketHandler::handleClientCreateCharacterSuccess(Message* pack) {
-	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
+	info(true) << __FUNCTION__;
 
 	uint64 newCharacterOID = pack->parseLong();
 
@@ -330,7 +370,7 @@ void ZonePacketHandler::handleClientCreateCharacterSuccess(Message* pack) {
 }
 
 void ZonePacketHandler::handleClientCreateCharacterFailed(Message* pack) {
-	info(true) << __FUNCTION__ << " packet#" << zone->getZoneClient()->getPacketCount();
+	info(true) << __FUNCTION__;
 
 	uint32 unicodeLength = pack->parseInt();
 	String uiFile;

@@ -11,6 +11,7 @@ class Zone;
 
 class ZonePacketHandler : public Mutex, public Logger {
 	Zone* zone;
+	VectorMap<uint32, uint32> unknownOpcodes;  // opcode -> count
 
 public:
 	ZonePacketHandler(const String& s, Zone * z);
@@ -30,6 +31,10 @@ public:
 	void handleCmdSceneReady(Message* pack);
 	void handleClientCreateCharacterSuccess(Message* pack);
 	void handleClientCreateCharacterFailed(Message* pack);
+
+	const VectorMap<uint32, uint32>& getUnknownOpcodes() const {
+		return unknownOpcodes;
+	}
 };
 
 #endif /* ZONEPACKETHANDLER_H_ */
