@@ -17,6 +17,13 @@ SpaceInspectScreenplay = SpaceQuestLogic:new {
 	sideQuestType = "",
 
 	DEBUG_SPACE_INSPECT = false,
+
+	-- Screenplay Specific Variables
+
+	inspectTargets = {},
+	inspectCargo = "",
+
+	targetLocation = {},
 }
 
 registerScreenPlay("SpaceInspectScreenplay", false)
@@ -54,13 +61,11 @@ function SpaceInspectScreenplay:startQuest(pPlayer, pNpc)
 
 	-- Check if the player is in the proper zone already
 	if (playerZoneHash == spaceQuestHash and not SpaceHelpers:isInYacht(pPlayer)) then
-		-- Complete the quest task 0
-		SpaceHelpers:completeSpaceQuestTask(pPlayer, self.questType, self.questName, 0, false)
+		-- Activate the quest task 0
+		SpaceHelpers:activateSpaceQuestTask(pPlayer, self.questType, self.questName, 0, false)
 
-		-- Activate quest task 1
-		SpaceHelpers:activateSpaceQuestTask(pPlayer, self.questType, self.questName, 1, true)
-
-		createEvent(2000, self.className, "setupEscort", pPlayer, "")
+		-- Setup the inspection for the player
+		createEvent(1000, self.className, "setupInspection", pPlayer, "")
 	end
 
 	-- Create inital observer for player entering Zone and to handle failing quest
@@ -88,10 +93,21 @@ function SpaceInspectScreenplay:completeQuest(pPlayer, notifyClient)
 	-- Complete the Journal Quest
 	SpaceHelpers:completeSpaceQuest(pPlayer, self.questType, self.questName, notifyBool)
 
+	-- Remove any target waypoints
+	SpaceHelpers:clearQuestWaypoint(pPlayer, self.className)
+
 	-- Remove the zone entry observer
 	dropObserver(ZONESWITCHED, self.className, "enteredZone", pPlayer)
 
-	self:cleanUpQuestData(SceneObject(pPlayer):getObjectID())
+	if (self.sideQuest and (self.sideQuestSplitType == self.SIDE_QUEST_SPLIT_TYPES.COMPLETION)) then
+		local alertMessage = "@spacequest/" .. self.questType .. "/" .. self.questName .. ":split_quest_alert"
+
+		-- Split Quest Alert
+		createEvent(self.sideQuestDelay * 1000, "SpaceHelpers", "sendQuestAlert", pPlayer, alertMessage)
+
+		-- Trigger Sidequest
+		createEvent(self.sideQuestDelay * 1050, self.sideQuestType .. "_" .. self.sideQuestName, "startQuest", pPlayer, "")
+	end
 end
 
 function SpaceInspectScreenplay:failQuest(pPlayer, notifyClient)
@@ -116,10 +132,10 @@ function SpaceInspectScreenplay:failQuest(pPlayer, notifyClient)
 	-- Remove any patrol points
 	SpaceHelpers:clearQuestWaypoint(pPlayer, self.className)
 
-	-- Remove the zone entry observer
+	-- Remove the zone entry and inspect observer
 	dropObserver(ZONESWITCHED, self.className, "enteredZone", pPlayer)
-
-	self:cleanUpQuestData(SceneObject(pPlayer):getObjectID())
+	dropObserver(INSPECTEDSHIP, self.className, "inspectedShip", pPlayer)
+	dropObserver(SHIPDOCKED, self.className, "dockedShip", pPlayer)
 
 	-- Fail the parent quest
 	if (self.parentQuestType ~= "") then
@@ -132,27 +148,191 @@ function SpaceInspectScreenplay:failQuest(pPlayer, notifyClient)
 	end
 end
 
-function SpaceInspectScreenplay:cleanUpQuestData(playerID)
-	-- Delete the stored escorted ship ID
-	deleteData(playerID .. ":" .. self.className .. ":escortID:")
+function SpaceInspectScreenplay:setupInspection(pPlayer)
+	if (pPlayer == nil) then
+		return
+	end
 
-	-- Delete player location data
-	deleteData(playerID .. ":" .. self.className .. ":location:")
+	local pGhost = CreatureObject(pPlayer):getPlayerObject()
 
-	-- Delete Start point
-	deleteData(playerID .. self.className .. ":startPoint:")
+	if (pGhost == nil) then
+		self:failQuest(pPlayer, "true")
+		return
+	end
 
-	-- Delete the distance warnings
-	deleteData(playerID .. ":" .. self.className .. ":distanceWarnings:")
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local inspectionLocation = self.targetLocation
 
-	-- Kill Count Tracking
-	deleteData(playerID .. ":" .. self.className .. ":" .. ":EscortKillCount:")
+	-- Give inspecion waypoint
+	local waypointID = PlayerObject(pGhost):addWaypoint(self.questZone, "@spacequest/inspect/" .. self.questName .. ":quest_location_t", "", inspectionLocation.x, inspectionLocation.z, inspectionLocation.y, WAYPOINT_SPACE, true, true, WAYPOINTQUESTTASK)
+
+	local pWaypoint = getSceneObject(waypointID)
+
+	if (pWaypoint ~= nil) then
+		WaypointObject(pWaypoint):setQuestDetails("@spacequest/" .. self.questType .. "/" .. self.questName .. ":quest_location_d")
+	end
+
+	-- Store the waypointID on the player
+	setQuestStatus(playerID .. ":" .. self.className .. ":waypointID", waypointID)
+
+	-- Complete task 0
+	SpaceHelpers:completeSpaceQuestTask(pPlayer, self.questType, self.questName, 0, false)
+
+	-- Activate the quest task 1
+	SpaceHelpers:activateSpaceQuestTask(pPlayer, self.questType, self.questName, 1, true)
+
+	if (not hasObserver(INSPECTEDSHIP, self.className, "inspectedShip", pPlayer)) then
+		createObserver(INSPECTEDSHIP, self.className, "inspectedShip", pPlayer, 1)
+	end
 end
 
+function SpaceInspectScreenplay:veryifyShipTargetAndCargo(pTargetShip, cargoHashString)
+	if (pTargetShip == nil) then
+		return false
+	end
 
+	local isValid = false
 
+	local targetShipName = ShipAiAgent(pTargetShip):getShipAgentTemplateName()
 
+	if (self.DEBUG_SPACE_INSPECT) then
+		print(self.className .. ":veryifyShipTarget called -- QuestType: " .. self.questType .. " Quest Name: " .. self.questName .. " Target Ship Name: " .. targetShipName .. " cargoHash: " .. cargoHashString)
+	end
 
+	local inspectTargets = self.inspectTargets
 
+	for i = 1, #inspectTargets, 1 do
+		local targetShip = inspectTargets[i]
 
+		if (targetShipName ~= targetShip) then
+			goto continue
+		end
 
+		isValid = true
+
+		::continue::
+	end
+
+	local targetCargoHash = getHashCode(self.inspectCargo)
+	local cargoHash = tonumber(cargoHashString)
+
+	if (self.DEBUG_SPACE_INSPECT) then
+		print(self.className .. ":veryifyShipTarget called -- Target Cargo Hash: " .. targetCargoHash)
+	end
+
+	if (not isValid or targetCargoHash ~= cargoHash) then
+		return false
+	end
+
+	if (self.DEBUG_SPACE_INSPECT) then
+		print(self.className .. ":veryifyShipTarget called -- Returning true")
+	end
+
+	return true
+end
+
+--[[
+
+		Space Inspect Observers
+
+--]]
+
+function SpaceInspectScreenplay:enteredZone(pPlayer, nill, zoneNameHash)
+	if (pPlayer == nil) then
+		return 0
+	end
+
+	if (not SpaceHelpers:isSpaceQuestActive(pPlayer, self.questType, self.questName)) then
+		return 1
+	end
+
+	local pGhost = CreatureObject(pPlayer):getPlayerObject()
+
+	if (pGhost == nullptr) then
+		return 0
+	end
+
+	if (SpaceHelpers:isInYacht(pPlayer)) then
+		return 0
+	end
+
+	local playerID = SceneObject(pPlayer):getObjectID()
+	local spaceQuestHash = getHashCode(self.questZone)
+
+	if (self.DEBUG_SPACE_INSPECT) then
+		print(self.className .. ":enteredZone called -- QuestType: " .. self.questType .. " Quest Name: " .. self.questName .. " Player Zone Hash: " .. zoneNameHash .. " questZone hash: " .. spaceQuestHash)
+	end
+
+	-- Player is in the correct zone
+	if (zoneNameHash == spaceQuestHash and not SpaceHelpers:isSpaceQuestTaskComplete(pPlayer, self.questType, self.questName, 0)) then
+		-- Activate the quest task 0
+		SpaceHelpers:activateSpaceQuestTask(pPlayer, self.questType, self.questName, 0, false)
+
+		-- Setup the inspection for the player
+		createEvent(1000, self.className, "setupInspection", pPlayer, "")
+
+		return 0
+	elseif (zoneNameHash ~= spaceQuestHash and SpaceHelpers:isSpaceQuestTaskComplete(pPlayer, self.questType, self.questName, 0)) then
+		createEvent(2000, self.className, "failQuest", pPlayer, "true")
+
+		return 1
+	end
+
+	return 0
+end
+
+function SpaceInspectScreenplay:inspectedShip(pPlayer, pTargetShip, cargoHash)
+	if (pPlayer == nil or pTargetShip == nil) then
+		return 1
+	end
+
+	if (self.DEBUG_SPACE_INSPECT) then
+		print(self.className .. ":inspectedShip called -- QuestType: " .. self.questType .. " Quest Name: " .. self.questName)
+	end
+
+	if (not self:veryifyShipTargetAndCargo(pTargetShip, cargoHash)) then
+		return 0
+	end
+
+	-- Complete task 1
+	SpaceHelpers:completeSpaceQuestTask(pPlayer, self.questType, self.questName, 1, false)
+
+	-- Activate the quest task 2
+	SpaceHelpers:activateSpaceQuestTask(pPlayer, self.questType, self.questName, 2, true)
+
+	SpaceHelpers:sendQuestUpdate(pPlayer, "@space/quest:inspect_found_cargo") -- "\\#00ff00 This is the cargo you're looking for. Use the '/dock' command to retrieve it! \\#pcontrast3"
+
+	-- Create observer for the player docking with the ship
+	if (not hasObserver(SHIPDOCKED, self.className, "dockedShip", pPlayer)) then
+		createObserver(SHIPDOCKED, self.className, "dockedShip", pPlayer)
+	end
+
+	return 1
+end
+
+function SpaceInspectScreenplay:dockedShip(pPlayer, pTargetShip, cargoHash)
+	if (pPlayer == nil or pTargetShip == nil) then
+		return 1
+	end
+
+	local targetShipName = SceneObject(pTargetShip):getObjectName()
+
+	if (self.DEBUG_SPACE_INSPECT) then
+		print(self.className .. ":inspectedShip called -- QuestType: " .. self.questType .. " Quest Name: " .. self.questName)
+	end
+
+	if (not self:veryifyShipTargetAndCargo(pTargetShip, cargoHash)) then
+		return 0
+	end
+
+	-- Complete task 2
+	SpaceHelpers:completeSpaceQuestTask(pPlayer, self.questType, self.questName, 2, false)
+
+	-- Send quest update for retrieval of cargo
+	SpaceHelpers:sendQuestUpdate(pPlayer, "@space/quest:inspect_recovered_cargo") -- "You recovered the cargo!"
+
+	-- Complete the quest
+	createEvent(1000, self.className, "completeQuest", pPlayer, "true")
+
+	return 1
+end

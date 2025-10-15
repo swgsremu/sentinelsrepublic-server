@@ -634,6 +634,7 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	luaEngine->setGlobalInt("SHIPDOCKED", ObserverEventType::SHIPDOCKED);
 	luaEngine->setGlobalInt("SHIPDISABLED", ObserverEventType::SHIPDISABLED);
 	luaEngine->setGlobalInt("SHIPDESTROYED", ObserverEventType::SHIPDESTROYED);
+	luaEngine->setGlobalInt("INSPECTEDSHIP", ObserverEventType::INSPECTEDSHIP);
 
 	luaEngine->setGlobalInt("UPRIGHT", CreaturePosture::UPRIGHT);
 	luaEngine->setGlobalInt("PRONE", CreaturePosture::PRONE);

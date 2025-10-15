@@ -20,7 +20,7 @@ function SpaceDeliveryScreenplay:startQuest(pPlayer, pNpc)
 		return
 	end
 
-	if (self.DEBUG_SPACE_INSPECT) then
+	if (self.DEBUG_SPACE_DELIVERY) then
 		print(self.className .. ":startQuest called -- QuestType: " .. self.questType .. " Quest Name: " .. self.questName)
 	end
 
@@ -44,7 +44,7 @@ function SpaceDeliveryScreenplay:startQuest(pPlayer, pNpc)
 		-- Activate quest task 1
 		SpaceHelpers:activateSpaceQuestTask(pPlayer, self.questType, self.questName, 1, true)
 
-		createEvent(2000, self.className, "setupEscort", pPlayer, "")
+
 	end
 
 	-- Create inital observer for player entering Zone and to handle failing quest
@@ -59,7 +59,7 @@ function SpaceDeliveryScreenplay:completeQuest(pPlayer, notifyClient)
 		return
 	end
 
-	if (self.DEBUG_SPACE_INSPECT) then
+	if (self.DEBUG_SPACE_DELIVERY) then
 		print(self.className .. ":completeQuest called -- QuestType: " .. self.questType .. " Quest Name: " .. self.questName)
 	end
 
@@ -84,7 +84,7 @@ function SpaceDeliveryScreenplay:failQuest(pPlayer, notifyClient)
 		return
 	end
 
-	if (self.DEBUG_SPACE_INSPECT) then
+	if (self.DEBUG_SPACE_DELIVERY) then
 		print(self.className .. ":failQuest called -- QuestType: " .. self.questType .. " Quest Name: " .. self.questName)
 	end
 

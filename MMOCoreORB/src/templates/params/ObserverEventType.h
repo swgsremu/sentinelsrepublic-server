@@ -109,7 +109,7 @@ public:
 		SQUADRON,					// ManagedObject arg1 = ShipAiAgent, long arg2 = 0
 		ENTEREDPOBSHIP,				// ManagedObject arg1 = player who entered the ship, long arg2 = 0
 		DESTROYEDSHIP,				// ManagedObject arg1 = shipAgent that was destroyed long arg2 = 0 used when a player destroys any ship
-		SHIPDOCKED,					// ManagedObject arg1 = PlayerShip that docked with agent, long arg2 = 0
+		SHIPDOCKED,					// ManagedObject arg1 = PlayerShip that docked with agent, long arg2 = cargo string hashCode
 		SHIPDISABLED,				// ManagedObject arg1 = playerShip that disabled agent, long arg2 = 0
 		SHIPDESTROYED,				// ManagedObject arg1 = player who destroyed the ship agent long arg2 = 0 used when a player destroys any ship
 		INSPECTEDSHIP,				// ManagedObject arg1 = shipAgent that was inspected by player long arg2 = cargo string hashCode

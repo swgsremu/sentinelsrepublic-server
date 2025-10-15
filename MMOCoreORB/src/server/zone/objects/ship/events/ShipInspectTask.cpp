@@ -46,7 +46,7 @@ void ShipInspectTask::run() {
 	playerShip->sendMembersBaseMessage(new PlayClientEffectLoc("clienteffect/ship_inspect_end.cef", "", shipPosition.getX(), shipPosition.getZ(), shipPosition.getY()), true);
 
 	auto group = player->getGroup();
-	const auto cargoString = playerShip->getCargoString();
+	const auto cargoString = targetShip->getCargoString();
 
 	// Ship does not have any cargo
 	if (cargoString.isEmpty()) {

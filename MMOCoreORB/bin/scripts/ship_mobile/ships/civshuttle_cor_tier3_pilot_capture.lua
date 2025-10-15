@@ -30,6 +30,8 @@ civshuttle_cor_tier3_pilot_capture = ShipAgent:new {
 	conversationTemplate = "",
 	conversationMobile = "",
 	conversationMessage = "", --Too Far Message
+
+	cargoString = "cor_priv_tier3_capture_pilot",
 }
 
 ShipAgentTemplates:addShipAgentTemplate(civshuttle_cor_tier3_pilot_capture, "civshuttle_cor_tier3_pilot_capture")

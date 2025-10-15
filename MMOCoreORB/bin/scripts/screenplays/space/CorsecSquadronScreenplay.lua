@@ -350,8 +350,17 @@ inspect_corellia_privateer_15 = SpaceInspectScreenplay:new {
 
 	questZone = "space_lok",
 
+	creditReward = 0,
+
 	sideQuest = false,
 	sideQuestType = "",
+
+	-- Screenplay Specific Variables
+
+	inspectTargets = {"nym_cannon_ship_tier2"},
+	inspectCargo = "shipment_orders",
+
+	targetLocation = {x = 3719, z = -2284, y = -1151},
 }
 
 registerScreenPlay("inspect_corellia_privateer_15", true)
@@ -681,17 +690,100 @@ inspect_corellia_privateer_tier3_2 = SpaceInspectScreenplay:new {
 	questName = "corellia_privateer_tier3_2",
 	questType = "inspect",
 
-	questZone = "space_corellia",
+	questZone = "space_dathomir",
 
-	creditReward = 100,
+	creditReward = 0,
 
-	sideQuest = false,
-	sideQuestType = "",
+	sideQuest = true,
+	sideQuestType = "survival",
+	sideQuestName = "corellia_privateer_tier3_2_a",
+	sideQuestSplitType = SpaceQuestLogic.SIDE_QUEST_SPLIT_TYPES.COMPLETION,
+
+	-- Screenplay Specific Variables
+
+	inspectTargets = {"civshuttle_cor_tier3_pilot_capture"},
+	inspectCargo = "cor_priv_tier3_capture_pilot",
+
+	targetLocation = {x = -50, z = 1375, y = 1510},
+}
+
+registerScreenPlay("inspect_corellia_privateer_tier3_2", true)
+
+survival_corellia_privateer_tier3_2_a = SpaceSurvivalScreenplay:new {
+	className = "survival_corellia_privateer_tier3_2_a",
+
+	questName = "corellia_privateer_tier3_2_a",
+	questType = "survival",
+
+	questZone = "space_endor",
+
+	creditReward = 0,
+
+	sideQuest = true,
+	sideQuestType = "escort",
+	sideQuestName = "corellia_privateer_tier3_2_b",
+	sideQuestSplitType = SpaceQuestLogic.SIDE_QUEST_SPLIT_TYPES.COMPLETION,
+
+	sideQuestDelay = 4, -- Time in seconds to wait to trigger side quest
+
+	parentQuest = "inspect_corellia_privateer_tier3_2",
+	parentQuestType = "inspect",
+	parentQuestName = "corellia_privateer_tier3_2",
 
 	-- Screenplay Specific Variables
 }
 
-registerScreenPlay("inspect_corellia_privateer_tier3_2", true)
+registerScreenPlay("survival_corellia_privateer_tier3_2_a", true)
+
+delivery_corellia_privateer_tier3_2_b = SpaceDeliveryScreenplay:new {
+	className = "delivery_corellia_privateer_tier3_2_b",
+
+	questName = "corellia_privateer_tier3_2_b",
+	questType = "delivery",
+
+	questZone = "space_endor",
+
+	sideQuest = true,
+	sideQuestType = "destroy_surpriseattack",
+	sideQuestName = "corellia_privateer_tier3_2_c",
+	sideQuestSplitType = SpaceQuestLogic.SIDE_QUEST_SPLIT_TYPES.COMPLETION,
+
+	sideQuestDelay = 5, -- Time in seconds to wait to trigger side quest
+
+	parentQuest = "survival_corellia_privateer_tier3_2_a",
+	parentQuestType = "survival",
+	parentQuestName = "corellia_privateer_tier3_2_a",
+
+	-- Screenplay Specific Variables
+}
+
+registerScreenPlay("delivery_corellia_privateer_tier3_2_b", true)
+
+destroy_surpriseattack_corellia_privateer_tier3_2_c = SpaceSurpriseAttackScreenplay:new {
+	className = "destroy_surpriseattack_corellia_privateer_tier3_2_c",
+
+	questName = "corellia_privateer_tier3_2_c",
+	questType = "destroy_surpriseattack",
+
+	questZone = "space_endor",
+
+	sideQuest = false,
+	sideQuestType = "",
+
+	parentQuest = "delivery_corellia_privateer_tier3_2_b",
+	parentQuestType = "delivery",
+	parentQuestName = "corellia_privateer_tier3_2_b",
+
+	-- Screenplay Specific Variables
+
+	surpriseAttackShips = {
+		zone = "space_endor",
+		spawns = {{count = 4, shipName = "scavenger_hunter_tier3"}},
+		total = 4,
+	},
+}
+
+registerScreenPlay("destroy_surpriseattack_corellia_privateer_tier3_2_c", true)
 
 delivery_corellia_privateer_tier3_3 = SpaceDeliveryScreenplay:new {
 	className = "delivery_corellia_privateer_tier3_3",
@@ -810,6 +902,9 @@ CorsecSquadronScreenplay = ScreenPlay:new {
 	TIER3_QUEST_STRING_1_SIDE2 = {type = "escort", name = "corellia_privateer_tier3_1_b"},
 	TIER3_QUEST_STRING_1_SIDE3 = {type = "destroy_surpriseattack", name = "corellia_privateer_tier3_1_c"},
 	TIER3_QUEST_STRING_2 = {type = "inspect", name = "corellia_privateer_tier3_2"},
+	TIER3_QUEST_STRING_2_SIDE1 = {type = "survival", name = "corellia_privateer_tier3_2_a"},
+	TIER3_QUEST_STRING_2_SIDE2 = {type = "delivery", name = "corellia_privateer_tier3_2_b"},
+	TIER3_QUEST_STRING_2_SIDE3 = {type = "destroy_surpriseattack", name = "corellia_privateer_tier3_2_c"},
 	TIER3_QUEST_STRING_3 = {type = "delivery", name = "corellia_privateer_tier3_3"},
 	TIER3_QUEST_STRING_4 = {type = "assassinate", name = "corellia_privateer_tier3_4"},
 	TIER3_QUEST_STRING_4_SIDE = {type = "survival", name = "corellia_privateer_tier3_4_a"},
@@ -941,6 +1036,9 @@ function CorsecSquadronScreenplay:resetRamnaQuests(pPlayer)
 	escort_corellia_privateer_tier3_1_b:failQuest(pPlayer, "false")
 	destroy_surpriseattack_corellia_privateer_tier3_1_c:failQuest(pPlayer, "false")
 	inspect_corellia_privateer_tier3_2:failQuest(pPlayer, "false")
+	survival_corellia_privateer_tier3_2_a:failQuest(pPlayer, "false")
+	delivery_corellia_privateer_tier3_2_b:failQuest(pPlayer, "false")
+	destroy_surpriseattack_corellia_privateer_tier3_2_c:failQuest(pPlayer, "false")
 	delivery_corellia_privateer_tier3_3:failQuest(pPlayer, "false")
 	assassinate_corellia_privateer_tier3_4:failQuest(pPlayer, "false")
 	survival_corellia_privateer_tier3_4_a:failQuest(pPlayer, "false")
@@ -959,6 +1057,15 @@ function CorsecSquadronScreenplay:resetRamnaQuests(pPlayer)
 
 	SpaceHelpers:failSpaceQuest(pPlayer, self.TIER3_QUEST_STRING_2.type, self.TIER3_QUEST_STRING_2.name, false)
 	SpaceHelpers:clearSpaceQuest(pPlayer, self.TIER3_QUEST_STRING_2.type, self.TIER3_QUEST_STRING_2.name, false)
+
+	SpaceHelpers:failSpaceQuest(pPlayer, self.TIER3_QUEST_STRING_2_SIDE1.type, self.TIER3_QUEST_STRING_2_SIDE1.name, false)
+	SpaceHelpers:clearSpaceQuest(pPlayer, self.TIER3_QUEST_STRING_2_SIDE1.type, self.TIER3_QUEST_STRING_2_SIDE1.name, false)
+
+	SpaceHelpers:failSpaceQuest(pPlayer, self.TIER3_QUEST_STRING_2_SIDE2.type, self.TIER3_QUEST_STRING_2_SIDE2.name, false)
+	SpaceHelpers:clearSpaceQuest(pPlayer, self.TIER3_QUEST_STRING_2_SIDE2.type, self.TIER3_QUEST_STRING_2_SIDE2.name, false)
+
+	SpaceHelpers:failSpaceQuest(pPlayer, self.TIER3_QUEST_STRING_2_SIDE3.type, self.TIER3_QUEST_STRING_2_SIDE3.name, false)
+	SpaceHelpers:clearSpaceQuest(pPlayer, self.TIER3_QUEST_STRING_2_SIDE3.type, self.TIER3_QUEST_STRING_2_SIDE3.name, false)
 
 	SpaceHelpers:failSpaceQuest(pPlayer, self.TIER3_QUEST_STRING_3.type, self.TIER3_QUEST_STRING_3.name, false)
 	SpaceHelpers:clearSpaceQuest(pPlayer, self.TIER3_QUEST_STRING_3.type, self.TIER3_QUEST_STRING_3.name, false)
