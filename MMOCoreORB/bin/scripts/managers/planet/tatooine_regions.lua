@@ -193,19 +193,19 @@ tatooine_regions = {
 	{"@tatooine_region_names:anchorhead_easy_newbie", 0, -5350, {CIRCLE, 500}, SPAWNAREA, {"tatooine_anchorhead_easy_newbie"}, 64},
 	{"@tatooine_region_names:anchorhead_medium_newbie", 0, -5350, {RING, 500, 900}, SPAWNAREA, {"tatooine_anchorhead_medium_newbie"}, 64},
 	{"@tatooine_region_names:bestine_medium_newbie", -1216, -3660, {CIRCLE, 1200}, SPAWNAREA, {"tatooine_bestine_easy_newbie"}, 64},
-	{"@tatooine_region_names:bestine_easy_newbie", -1212, -3676, {CIRCLE, 650}, SPAWNAREA, {"tatooine_bestine_medium_newbie"}, 64},
+	{"@tatooine_region_names:bestine_easy_newbie", -1212, -3676, {RING, 400, 650}, SPAWNAREA, {"tatooine_bestine_medium_newbie"}, 64}, -- SR MOD: Minimize spawns near cities
 	{"@tatooine_region_names:mos_eisley_medium_newbie", 3400, -4775, {RING, 800, 1400}, SPAWNAREA, {"tatooine_mos_eisley_medium_newbie"}, 64},
-	{"@tatooine_region_names:mos_eisley_easy_newbie", 3496, -4784, {CIRCLE, 800}, SPAWNAREA, {"tatooine_mos_eisley_easy_newbie"},64},
+	{"@tatooine_region_names:mos_eisley_easy_newbie", 3496, -4784, {RING, 550, 800}, SPAWNAREA, {"tatooine_mos_eisley_easy_newbie"},64}, -- SR MOD: Minimize spawns near cities
 	{"@tatooine_region_names:mos_eisley_se_medium", 630, -7692, {RECTANGLE, 6750, -2100}, SPAWNAREA, {"tatooine_mos_eisley_se_medium"} ,256},
 	{"@tatooine_region_names:mos_eisley_se_hard", -2909, -7700, {RECTANGLE, 7841, 930}, SPAWNAREA, {"tatooine_mos_eisley_se_hard"} ,256},
 	{"@tatooine_region_names:mos_eisley_easy_newbie_sw", 2408, -5992, {RECTANGLE, 3346, -5012}, SPAWNAREA, {"tatooine_mos_eisley_easy_newbie_sw"} ,256},
-	{"@tatooine_region_names:mos_entha_easy_newbie", 1490, 3165, {CIRCLE, 800}, SPAWNAREA, {"tatooine_mos_entha_easy_newbie"}, 64},
+	{"@tatooine_region_names:mos_entha_easy_newbie", 1490, 3165, {RING, 500, 800}, SPAWNAREA, {"tatooine_mos_entha_easy_newbie"}, 64}, -- SR MOD: Minimize spawns near cities
 	{"@tatooine_region_names:mos_entha_medium_newbie", 1490, 3165, {RING, 800, 1500}, SPAWNAREA, {"tatooine_mos_entha_medium_newbie"}, 64},
 	{"@tatooine_region_names:mos_entha_medium", -2895, 940, {RECTANGLE, 900, 5350}, SPAWNAREA, {"tatooine_mos_entha_medium"}, 64},
 	{"@tatooine_region_names:mos_entha_weequay", -2419, 1909, {CIRCLE, 250}, SPAWNAREA, {"tatooine_mos_entha_weequay"}, 16},
 	{"@tatooine_region_names:wayfar_easy_newbie", -5195, -6535, {CIRCLE, 600}, SPAWNAREA, {"tatooine_wayfar_easy_newbie"}, 64},
 	{"@tatooine_region_names:wayfar_medium_newbie", -5195, -6535, {RING, 600, 1000}, SPAWNAREA, {"tatooine_wayfar_medium_newbie"}, 64},
-	{"@tatooine_region_names:mos_espa_easy_newbie", -2950, 2222, {CIRCLE, 900}, SPAWNAREA, {"tatooine_mos_espa_easy_newbie"}, 64},
+	{"@tatooine_region_names:mos_espa_easy_newbie", -2950, 2222, {RING, 550, 900}, SPAWNAREA, {"tatooine_mos_espa_easy_newbie"}, 64}, -- SR MOD: Minimize spawns near cities
 	{"@tatooine_region_names:mos_espa_medium_newbie", -2950, 2222, {RING, 900, 1600}, SPAWNAREA, {"tatooine_mos_espa_medium_newbie"}, 64},
 	{"@tatooine_region_names:mos_taike_easy_newbie", 3835, 2350, {CIRCLE, 600}, SPAWNAREA, {"tatooine_mos_taike_easy_newbie"}, 64},
 	{"@tatooine_region_names:mos_taike_medium_newbie", 3835, 2350, {RING, 600, 1100}, SPAWNAREA, {"tatooine_mos_taike_medium_newbie"}, 64},
