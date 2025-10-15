@@ -61,7 +61,6 @@
 
 
 // #define DEBUG_SHIP_AI
-// #define DEBUG_FINDNEXTPOSITION
 // #define DEBUG_SHIP_DESPAWN
 // #define DEBUG_SHIP_AI_CLIENT_MESSAGES
 
@@ -828,6 +827,16 @@ void ShipAiAgentImplementation::setNextFollowPosition() {
 	addPatrolPoint(point);
 }
 
+void ShipAiAgentImplementation::setNextSquadronPosition() {
+	if (squadron == nullptr || squadron->getSquadronIndex(asShipAiAgent()) == -1) {
+		return;
+	}
+
+	SpacePatrolPoint point = squadron->getPosition(asShipAiAgent());
+	patrolPoints.removeAll();
+	patrolPoints.add(point);
+}
+
 void ShipAiAgentImplementation::setNextAttackPosition() {
 	auto targetShip = getTargetShipObject().get();
 
@@ -986,7 +995,13 @@ int ShipAiAgentImplementation::setDestination() {
 		info() << "Patrol points have overflowed. Total points: " << patrolPoints.size();
 		clearPatrolPoints();
 	}
-
+/*
+	if (isSquadronMember() && isSquadronTransform()) {
+		setNextSquadronPosition();
+		setSquadronTransform();
+		return patrolPoints.size();
+	}
+*/
 	switch (movementState) {
 		case ShipAiAgent::OBLIVIOUS:
 		case ShipAiAgent::WATCHING:
@@ -994,7 +1009,7 @@ int ShipAiAgentImplementation::setDestination() {
 			break;
 		}
 		case ShipAiAgent::FOLLOWING:
-		case ShipAiAgent::FOLLOW_FORMATION:{
+		case ShipAiAgent::FOLLOW_FORMATION: {
 			setNextFollowPosition();
 			break;
 		}
@@ -1018,14 +1033,52 @@ int ShipAiAgentImplementation::setDestination() {
 		}
 	};
 
+	setNextTransform();
+	return patrolPoints.size();
+}
+
+void ShipAiAgentImplementation::setNextTransform() {
+	if (squadron != nullptr && (isSquadronTransform() || isSquadronLeader())) {
+		return setSquadronTransform();
+	}
+
+	Vector3 position = getNextPosition().getWorldPosition();
+	float speed = getNextSpeed();
+	int type = getTransformType();
+
+	shipTransform.setNextTransform(position, speed, type);
+	movementCount += 1;
+}
+
+void ShipAiAgentImplementation::setSquadronTransform() {
+	if (squadron == nullptr || squadron->getSquadronIndex(asShipAiAgent()) == -1) {
+		return;
+	}
+
+	Vector3 position = squadron->getPosition(asShipAiAgent());
+	float speed = squadron->getSpeed(asShipAiAgent());
+	int type = getTransformType();
+
+	if (isSquadronMember()) {
+		type = SpaceTransformType::FORM;
+	}
+
+	shipTransform.setNextTransform(position, speed, type);
 	movementCount += 1;
 
-	const auto& nextPosition = getNextPosition().getWorldPosition();
-	float speedMax = escortSpeed > 0.f ? escortSpeed : VELOCITY_MAX;
-	int transformType = getTransformType();
+	if (isSquadronLeader()){
+		squadron->updateSquadron();
+	}
+}
 
-	shipTransform.setNextTransform(nextPosition, speedMax, transformType);
-	return patrolPoints.size();
+float ShipAiAgentImplementation::getNextSpeed() {
+	float speed = getActualMaxSpeed();
+
+	if (escortSpeed > 0.f) {
+		speed = Math::min(escortSpeed, speed);
+	}
+
+	return speed;
 }
 
 bool ShipAiAgentImplementation::setDisabledEngineSpeed() {
@@ -2148,6 +2201,34 @@ void ShipAiAgentImplementation::assignToSquadron(ShipAiAgent* squadronAgent) {
 	addShipFlag(ShipFlag::SQUADRON_FOLLOW);
 }
 
+bool ShipAiAgentImplementation::isSquadronLeader() {
+	return squadron != nullptr ? squadron->isSquadronLeader(asShipAiAgent()) : false;
+}
+
+bool ShipAiAgentImplementation::isSquadronMember() {
+	return squadron != nullptr ? squadron->isSquadronMember(asShipAiAgent()) : false;
+}
+
+bool ShipAiAgentImplementation::isSquadronTransform() {
+	switch (movementState) {
+		case ShipAiAgent::OBLIVIOUS:
+		case ShipAiAgent::WATCHING:
+		case ShipAiAgent::PATROLLING: {
+			return true;
+		}
+		case ShipAiAgent::ATTACKING:
+		case ShipAiAgent::FLEEING:
+		case ShipAiAgent::LEASHING:
+		case ShipAiAgent::EVADING:
+		case ShipAiAgent::PATHING_HOME:
+		case ShipAiAgent::FOLLOWING:
+		case ShipAiAgent::FOLLOW_FORMATION:
+		default: {
+			return false;
+		}
+	}
+}
+
 void ShipAiAgentImplementation::handleException(const Exception& ex, const String& context) {
 	auto numExceptions = SpaceAiMap::instance()->countExceptions.increment();
 	auto consoleToo = (numExceptions - 1) % ConfigManager::instance()->getAiAgentConsoleThrottle() == 0;
@@ -2252,9 +2333,6 @@ void ShipAiAgentImplementation::sendDebugMessage() {
 
 void ShipAiAgentImplementation::sendDebugPath() {
 #ifdef DEBUG_SHIP_AI_CLIENT_MESSAGES
-	if (!peekBlackboard("aiDebugPathMessage") || readBlackboard("aiDebugPathMessage") == false) {
-		return;
-	}
 
 	auto data = ShipManager::instance()->getCollisionData(asShipObject());
 
