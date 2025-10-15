@@ -68,6 +68,8 @@ protected:
 	uint32 conversationMobile;
 	uint32 conversationMessage; // Too Far Message
 
+	String cargoString;
+
 public:
 	ShipAgentTemplate();
 
@@ -226,6 +228,10 @@ public:
 
 	inline uint32 getConversationMessage() const {
 		return conversationMessage;
+	}
+
+	inline String getCargoString() const {
+		return cargoString;
 	}
 };
 

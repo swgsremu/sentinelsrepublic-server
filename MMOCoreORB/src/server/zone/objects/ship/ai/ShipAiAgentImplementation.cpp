@@ -350,6 +350,8 @@ void ShipAiAgentImplementation::loadTemplateData(ShipAgentTemplate* agentTemp) {
 			setEngineRollAccelerationRate(engineRollAccel, false);
 		}
 	}
+
+	setCargoString(agentTemplate->getCargoString());
 }
 
 void ShipAiAgentImplementation::initializeTransientMembers() {
