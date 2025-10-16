@@ -37,6 +37,8 @@ public:
 	int notifyObserverEvent(unsigned int eventType, Observable* observable, ManagedObject* arg1, long long arg2);
 
 	// Mutators
+	void updateSquadron();
+
 	void addSquadronShip(ShipAiAgent* shipAgent);
 
 	void dropSquadronShip(ShipAiAgent* shipAgent);
@@ -44,8 +46,6 @@ public:
 	void setFormationType(int type, float radius = -1.f);
 
 	void setRandomFormation();
-
-	void updateSquadron();
 
 	// Accessors
 	int getSquadronIndex(ShipAiAgent* shipAgent) const;

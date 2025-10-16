@@ -10,6 +10,8 @@
 
 #include "SquadronObserver.h"
 
+// #define DEBUG_SQUADRONS
+
 SquadronObserver::SquadronObserver() {
 	setLoggingName("SquadronObserver");
 	setRandomFormation();
@@ -36,6 +38,56 @@ SquadronObserver::~SquadronObserver() {
 
 int SquadronObserver::notifyObserverEvent(uint32 eventType, Observable* observable, ManagedObject* arg1, int64 arg2) {
 	return 0;
+}
+
+void SquadronObserver::updateSquadron() {
+	Locker lock(&mutex);
+
+	auto leader = getSquadronLeader();
+
+	if (leader == nullptr || !leader->isShipLaunched() || leader->isDisabled()) {
+		return;
+	}
+
+#ifdef DEBUG_SQUADRONS
+	info(true) << "SquadronObserver:" << __FUNCTION__ << "() -- Squadron Leader: " << leader->getShipName() << " ID: " << leader->getObjectID();
+#endif // DEBUG_SQUADRONS
+
+	const auto& lMatrix = *leader->getConjugateMatrix();
+	const auto& lTransform = leader->getNextTransform();
+
+	for (int i = squadronAgents.size(); 0 < --i;) {
+		auto shipAgent = squadronAgents.get(i);
+
+		if (shipAgent == nullptr || !shipAgent->isShipLaunched() || shipAgent->isDisabled()) {
+			continue;
+		}
+
+		Locker sLock(shipAgent, leader);
+
+		const auto& sTransform = shipAgent->getCurrentTransform();
+		const auto& sVelocity = sTransform.getVelocity();
+		const auto& formation = squadronData.getFormation(i);
+
+		Vector3 fPosition = SpaceMath::getGlobalVector(formation, lMatrix);
+		Vector3 tPosition = fPosition + leader->getPosition();
+		Vector3 velocity = tPosition - shipAgent->getPosition();
+
+		float errorScale = leader->getNextDistance() / Math::max(shipAgent->getCurrentSpeed(), 1.f) * 0.5f;
+		Vector3 position = (velocity * errorScale) + fPosition + lTransform.getPosition();
+
+		float intersection = sVelocity.dotProduct(velocity);
+		float speed = Math::max((intersection * 0.5f) + leader->getCurrentSpeed(), 0.f);
+
+		squadronData.setPosition(i, position);
+		squadronData.setSpeed(i, speed);
+	}
+
+	const auto& nextPosition =  leader->getNextPosition().getWorldPosition();
+	float nextSpeed = (getFormationSpeed() + leader->getActualMaxSpeed()) * 0.5f;
+
+	squadronData.setPosition(0, nextPosition);
+	squadronData.setSpeed(0, nextSpeed);
 }
 
 void SquadronObserver::addSquadronShip(ShipAiAgent* shipAgent) {
@@ -164,51 +216,3 @@ float SquadronObserver::getSpeed(ShipAiAgent* shipAgent) const {
 	Locker lock(&mutex);
 	return squadronData.getSpeed(squadronAgents.find(shipAgent));
 }
-
-void SquadronObserver::updateSquadron() {
-	Locker lock(&mutex);
-
-	auto leader = getSquadronLeader();
-
-	if (leader == nullptr || !leader->isShipLaunched() || leader->isDisabled()) {
-		return;
-	}
-
-	const auto& lMatrix = *leader->getConjugateMatrix();
-	const auto& lTransform = leader->getNextTransform();
-
-	for (int i = squadronAgents.size(); 0 < --i;) {
-		auto shipAgent = squadronAgents.get(i);
-
-		if (shipAgent == nullptr || !shipAgent->isShipLaunched() || shipAgent->isDisabled()) {
-			continue;
-		}
-
-		Locker sLock(shipAgent, leader);
-
-		const auto& sTransform = shipAgent->getCurrentTransform();
-		const auto& sVelocity = sTransform.getVelocity();
-		const auto& formation = squadronData.getFormation(i);
-
-		Vector3 fPosition = SpaceMath::getGlobalVector(formation, lMatrix);
-		Vector3 tPosition = fPosition + leader->getPosition();
-		Vector3 velocity = tPosition - shipAgent->getPosition();
-
-		float errorScale = leader->getNextDistance() / Math::max(shipAgent->getCurrentSpeed(), 1.f) * 0.5f;
-		Vector3 position = (velocity * errorScale) + fPosition + lTransform.getPosition();
-
-		float intersection = sVelocity.dotProduct(velocity);
-		float speed = Math::max((intersection * 0.5f) + leader->getCurrentSpeed(), 0.f);
-
-		squadronData.setPosition(i, position);
-		squadronData.setSpeed(i, speed);
-	}
-
-	const auto& nextPosition =  leader->getNextPosition().getWorldPosition();
-	float nextSpeed = (getFormationSpeed() + leader->getActualMaxSpeed()) * 0.5f;
-
-	squadronData.setPosition(0, nextPosition);
-	squadronData.setSpeed(0, nextSpeed);
-}
-
-

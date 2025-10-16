@@ -1068,6 +1068,10 @@ void ShipAiAgentImplementation::setSquadronTransform() {
 
 	if (isSquadronLeader()){
 		squadron->updateSquadron();
+
+#ifdef DEBUG_SHIP_AI_CLIENT_MESSAGES
+		sendDebugPath();
+#endif // DEBUG_SHIP_AI_CLIENT_MESSAGES
 	}
 }
 
@@ -1119,7 +1123,10 @@ void ShipAiAgentImplementation::updateTransform(bool lightUpdate) {
 
 #ifdef DEBUG_SHIP_AI_CLIENT_MESSAGES
 	sendDebugMessage();
-	sendDebugPath();
+
+	if (squadron == nullptr) {
+		sendDebugPath();
+	}
 #endif // DEBUG_SHIP_AI_CLIENT_MESSAGES
 
 	shipTransform.updateTransform(asShipObject(), lightUpdate, notifyClient);
@@ -2340,7 +2347,6 @@ void ShipAiAgentImplementation::sendDebugPath() {
 		return;
 	}
 
-	const Vector3& homePosition = homeLocation.getWorldPosition();
 	const Vector3& nextPosition = shipTransform.getNextTransform().getPosition();
 	const Vector3& position = getPosition();
 	const Matrix4& rotation = *getConjugateMatrix();

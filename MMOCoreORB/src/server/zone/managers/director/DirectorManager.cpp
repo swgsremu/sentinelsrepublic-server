@@ -110,6 +110,7 @@
 #include "server/zone/objects/area/space/SpaceActiveArea.h"
 #include "server/zone/objects/area/areashapes/SphereAreaShape.h"
 #include "server/zone/packets/ui/CreateClientPathMessage.h"
+#include "server/zone/objects/ship/squadron/ShipSquadronFormation.h"
 
 int DirectorManager::DEBUG_MODE = 0;
 int DirectorManager::ERROR_CODE = NO_ERROR;
@@ -816,11 +817,18 @@ void DirectorManager::initializeLuaEngine(Lua* luaEngine) {
 	luaEngine->setGlobalInt("SHIP_AI_GUARD_PATROL", ShipFlag::GUARD_PATROL);
 	luaEngine->setGlobalInt("SHIP_AI_RANDOM_PATROL", ShipFlag::RANDOM_PATROL);
 	luaEngine->setGlobalInt("SHIP_AI_FIXED_PATROL", ShipFlag::FIXED_PATROL);
-	luaEngine->setGlobalInt("SHIP_AI_SQUADRON_PATROL", ShipFlag::SQUADRON_PATROL);
-	luaEngine->setGlobalInt("SHIP_AI_SQUADRON_FOLLOW", ShipFlag::SQUADRON_FOLLOW);
 	luaEngine->setGlobalInt("SHIP_AI_WAVE_ATTACK", ShipFlag::WAVE_ATTACK);
 	luaEngine->setGlobalInt("SHIP_AI_DISABLED_INVULNERABLE", ShipFlag::DISABLED_INVULNERABLE);
 	luaEngine->setGlobalInt("SHIP_AI_ATTACKABLE_SPACE_STATION", ShipFlag::ATTACKABLE_SPACE_STATION);
+
+	// Squad Formations
+	luaEngine->setGlobalInt("SHIP_SQUADRON_FORM_NONE", ShipSquadronFormation::Type::NONE);
+	luaEngine->setGlobalInt("SHIP_SQUADRON_FORM_LINE", ShipSquadronFormation::Type::LINE);
+	luaEngine->setGlobalInt("SHIP_SQUADRON_FORM_WALL", ShipSquadronFormation::Type::WALL);
+	luaEngine->setGlobalInt("SHIP_SQUADRON_FORM_WEDGE", ShipSquadronFormation::Type::WEDGE);
+
+	luaEngine->setGlobalInt("SHIP_SPAWN_SINGLE", 1);
+	luaEngine->setGlobalInt("SHIP_SPAWN_SQUADRON", 2);
 
 	// ShipComponents
 	luaEngine->setGlobalInt("SHIP_REACTOR", Components::REACTOR);

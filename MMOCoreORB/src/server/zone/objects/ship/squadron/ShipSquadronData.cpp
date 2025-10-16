@@ -1,6 +1,8 @@
 #include "server/zone/objects/ship/ShipObject.h"
 #include "ShipSquadronData.h"
 
+// #define DEBUG_SQUADRONS
+
 ShipSquadronData::ShipSquadronData(ShipObject* ship) : Object() {
 	formationRadius = ShipSquadronFormation::NONE;
 	formationType = ShipSquadronFormation::NONE;
