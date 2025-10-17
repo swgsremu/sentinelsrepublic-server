@@ -2170,13 +2170,13 @@ void ShipAiAgentImplementation::tauntPlayer(CreatureObject* player, const String
 	}
 }
 
-void ShipAiAgentImplementation::createSquadron() {
+void ShipAiAgentImplementation::createSquadron(int formationType) {
 	if (squadron != nullptr) {
 		squadron->dropSquadronShip(asShipAiAgent());
 		squadron = nullptr;
 	}
 
-	squadron = new SquadronObserver(asShipAiAgent());
+	squadron = new SquadronObserver(asShipAiAgent(), formationType);
 
 	addShipFlag(ShipFlag::SQUADRON_FOLLOW);
 }

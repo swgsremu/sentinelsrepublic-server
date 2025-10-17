@@ -28,6 +28,17 @@ SquadronObserver::SquadronObserver(ShipAiAgent* shipAgent) {
 #endif // DEBUG_SQUADRONS
 }
 
+SquadronObserver::SquadronObserver(ShipAiAgent* shipAgent, int formationType) {
+	setLoggingName("SquadronObserver");
+	setFormationType(formationType);
+
+	addSquadronShip(shipAgent);
+
+#ifdef DEBUG_SQUADRONS
+	info(true) << "SquadronObserver:" << __FUNCTION__ << "() -- CONSTRUCTOR New Squadron Size: " << squadronAgents.size() << " Formation Type: " << squadronData.getFormationType() << " Formation Radius: " << squadronData.getFormationRadius();
+#endif // DEBUG_SQUADRONS
+}
+
 SquadronObserver::~SquadronObserver() {
 	squadronAgents.removeAll();
 
@@ -48,10 +59,6 @@ void SquadronObserver::updateSquadron() {
 	if (leader == nullptr || !leader->isShipLaunched() || leader->isDisabled()) {
 		return;
 	}
-
-#ifdef DEBUG_SQUADRONS
-	info(true) << "SquadronObserver:" << __FUNCTION__ << "() -- Squadron Leader: " << leader->getShipName() << " ID: " << leader->getObjectID();
-#endif // DEBUG_SQUADRONS
 
 	const auto& lMatrix = *leader->getConjugateMatrix();
 	const auto& lTransform = leader->getNextTransform();
