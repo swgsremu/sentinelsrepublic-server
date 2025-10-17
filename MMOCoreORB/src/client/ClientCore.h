@@ -9,8 +9,13 @@
 #include "server/login/objects/GalaxyList.h"
 
 class Zone;
+class ActionBase;
 
 struct ClientCoreOptions {
+	// Saved for action parsing
+	int argc = 0;
+	char** argv = nullptr;
+
 	String username;
 	String password;
 	String loginHost;
@@ -45,15 +50,27 @@ struct ClientCoreOptions {
 	String toString() const;
 	String toStringData() const;
 
+	int parseArgs(int index, int argc, char** argv);
+	const JSONSerializationType& getJSON() const { return jsonConfig; }
+	bool hasJSON() const { return jsonLoaded; }
+
 private:
+	JSONSerializationType jsonConfig;
+	bool jsonLoaded = false;
 	void loadEnvFile(const String& filename);
 	int parseLogLevel(const String& levelStr);
 	String resolveFileReference(const String& value);
 };
 
 class ClientCore : public Core, public Logger {
+public:
 	ClientCoreOptions options;
+	Reference<class LoginSession*> loginSession;
 	Zone* zone;
+	VectorMap<String, String> vars;
+	Vector<ActionBase*> actions;
+
+private:
 	Time overallStartTime;
 	Optional<Galaxy> selectedGalaxy;
 
@@ -144,6 +161,31 @@ public:
 
 	bool loginCharacter(Reference<class LoginSession*>& loginSession);
 	void logoutCharacter();
+
+	void parseArgumentsIntoActions(int argc, char** argv, Vector<ActionBase*>& actionsOut);
+	void parseJSONIntoActions(const JSONSerializationType& jsonActions, Vector<ActionBase*>& actionsOut);
+	void executeActions();
+	void setVar(const String& key, const String& value) {
+		vars.put(key, value);
+	}
+
+	String getVar(const String& key) const {
+		return vars.contains(key) ? vars.get(key) : "";
+	}
+
+	String substituteVars(const String& input) const {
+		String result = input;
+
+		for (int i = 0; i < vars.size(); i++) {
+			String key = vars.elementAt(i).getKey();
+			String value = vars.elementAt(i).getValue();
+			String pattern = "{" + key + "}";
+
+			result = result.replaceAll(pattern, value);
+		}
+
+		return result;
+	}
 
 private:
 	void saveStateToFile(const String& filename, class LoginSession* loginSession);

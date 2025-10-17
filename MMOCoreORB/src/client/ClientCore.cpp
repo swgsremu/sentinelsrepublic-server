@@ -11,6 +11,8 @@
 #include "ClientCore.h"
 
 #include "client/login/LoginSession.h"
+#include "client/ActionBase.h"
+#include "client/ActionManager.h"
 #include "server/zone/packets/charcreation/ClientCreateCharacter.h"
 
 int exit_result = 1;
@@ -39,64 +41,218 @@ void ClientCore::initialize() {
 	info(true) << __PRETTY_FUNCTION__ << " start";
 }
 
-void ClientCore::run() {
-	info(true) << "initialized";
+void ClientCore::parseJSONIntoActions(const JSONSerializationType& jsonActions, Vector<ActionBase*>& actions) {
+	bool hasLoginAccount = false;
+	bool hasConnectToZone = false;
 
-	Reference<LoginSession*> loginSession;
-	bool loginSuccess = loginCharacter(loginSession);
-
-	if (!loginSuccess) {
-		info(true) << "Failed to login character.";
-		exit_result = 101;
-
-		if (!options.saveState.isEmpty()) {
-			saveStateToFile(options.saveState, loginSession);
-		}
-		return;
-	}
-
-	if (options.loginOnly) {
-		info(true) << "Login-only mode: skipping zone connection";
-
-		if (!options.saveState.isEmpty()) {
-			saveStateToFile(options.saveState, loginSession);
+	for (auto& actionConfig : jsonActions) {
+		if (!actionConfig.contains("action")) {
+			error() << "JSON action missing 'action' field";
+			continue;
 		}
 
-		exit_result = 0;
-		return;
+		String actionName = String(actionConfig["action"].get<std::string>().c_str());
+		ActionBase* action = ActionManager::createAction(actionName.toCharArray());
+
+		if (action == nullptr) {
+			error() << "Unknown action type: " << actionName;
+			continue;
+		}
+
+		// Track connector actions
+		if (actionName == "loginAccount") {
+			hasLoginAccount = true;
+		}
+		if (actionName == "connectToZone") {
+			hasConnectToZone = true;
+		}
+
+		// Auto-insert connectToZone before first zone action
+		if (action->needsZone() && !hasConnectToZone) {
+			ActionBase* connector = ActionManager::createAction("connectToZone");
+			if (connector != nullptr) {
+				actions.add(connector);
+				hasConnectToZone = true;
+				info(true) << "Auto-inserted connectToZone before " << actionName;
+			}
+		}
+
+		// Parse action-specific config with variable substitution
+		// Note: Variable substitution happens at string level for simplicity
+		// Convert JSON to string, substitute, parse back
+		String configStr = actionConfig.dump().c_str();
+		String substituted = substituteVars(configStr);
+
+		JSONSerializationType substitutedConfig;
+		try {
+			substitutedConfig = JSONSerializationType::parse(substituted.toCharArray());
+		} catch (...) {
+			// If parse fails, use original (no variables to substitute)
+			substitutedConfig = actionConfig;
+		}
+
+		action->parseJSON(substitutedConfig);
+		actions.add(action);
 	}
 
-	info(true) << "Waiting for zone connection...";
+	// Always ensure loginAccount at position 0
+	if (!hasLoginAccount) {
+		ActionBase* login = ActionManager::createAction("loginAccount");
+		if (login != nullptr) {
+			Vector<ActionBase*> temp;
+			temp.add(login);
+			for (int k = 0; k < actions.size(); k++) {
+				temp.add(actions.get(k));
+			}
+			actions = temp;
+			info(true) << "Auto-inserted loginAccount at start";
+		}
+	}
+}
 
-	if (zone != nullptr && zone->waitForSceneReady(ClientCore::getZoneTimeout() * 1000)) {
-		info(true) << "Zone connection established and scene loaded!";
+void ClientCore::parseArgumentsIntoActions(int argc, char** argv, Vector<ActionBase*>& actions) {
+	bool hasLoginAccount = false;
+	bool hasConnectToZone = false;
 
-		// Check if character creation failed
-		if (zone->hasCharacterCreationFailed()) {
-			error() << "Character creation failed - see errors above";
-			exit_result = 103;
-		} else {
-			info(true) << "Login flow test completed successfully!";
+	for (int i = 1; i < argc; ) {
+		int consumed = 0;
 
-			// Optional wait while connected (for load testing)
-			if (options.waitAfterZone > 0) {
-				info(true) << "Staying connected for " << options.waitAfterZone << " seconds...";
-				Thread::sleep(options.waitAfterZone * 1000);
-				info(true) << "Wait complete, proceeding to shutdown...";
+		// First: ClientCoreOptions gets first shot
+		consumed = options.parseArgs(i, argc, argv);
+		if (consumed > 0) {
+			i += consumed;
+			continue;
+		}
+
+		// Second: Try each registered action type
+		Vector<String> actionNames = ActionManager::listActions();
+		for (int j = 0; j < actionNames.size(); j++) {
+			ActionBase* action = ActionManager::createAction(actionNames.get(j).toCharArray());
+			if (action == nullptr) continue;
+
+			consumed = action->parseArgs(i, argc, argv);
+
+			if (consumed > 0) {
+				// This action claimed the args
+
+				// Track connector actions
+				if (strcmp(action->getName(), "loginAccount") == 0) {
+					hasLoginAccount = true;
+				}
+				if (strcmp(action->getName(), "connectToZone") == 0) {
+					hasConnectToZone = true;
+				}
+
+				// Auto-insert connectToZone before first zone action
+				if (action->needsZone() && !hasConnectToZone) {
+					ActionBase* connector = ActionManager::createAction("connectToZone");
+					if (connector != nullptr) {
+						actions.add(connector);
+						hasConnectToZone = true;
+						info(true) << "Auto-inserted connectToZone before " << action->getName();
+					}
+				}
+
+				actions.add(action);
+				i += consumed;
+				break;
 			}
 
-			exit_result = 0;
+			delete action;  // Didn't want this arg
 		}
 
+		if (consumed == 0) {
+			i++;
+		}
+	}
+
+	// Always ensure loginAccount at position 0
+	if (!hasLoginAccount) {
+		ActionBase* login = ActionManager::createAction("loginAccount");
+		if (login != nullptr) {
+			// Vector doesn't have insert, so we need to prepend manually
+			Vector<ActionBase*> temp;
+			temp.add(login);
+			for (int k = 0; k < actions.size(); k++) {
+				temp.add(actions.get(k));
+			}
+			actions = temp;
+			info(true) << "Auto-inserted loginAccount at start";
+		}
+	}
+
+	// If --create-character was in options, add that action
+	if (options.createCharacter && !hasConnectToZone) {
+		ActionBase* create = ActionManager::createAction("createCharacter");
+		if (create != nullptr) {
+			// Need to auto-insert connectToZone first
+			ActionBase* connector = ActionManager::createAction("connectToZone");
+			if (connector != nullptr) {
+				actions.add(connector);
+				info(true) << "Auto-inserted connectToZone for character creation";
+			}
+			actions.add(create);
+			info(true) << "Added createCharacter action from options";
+		}
+	}
+
+	// If not login-only mode and no zone connection requested, add connectToZone
+	// This maintains backward compatibility with old behavior
+	if (!options.loginOnly && !hasConnectToZone) {
+		ActionBase* connector = ActionManager::createAction("connectToZone");
+		if (connector != nullptr) {
+			actions.add(connector);
+			info(true) << "Auto-inserted connectToZone (default behavior, not login-only)";
+		}
+	}
+}
+
+void ClientCore::executeActions() {
+	for (int i = 0; i < actions.size(); i++) {
+		ActionBase* action = actions.get(i);
+
+		info(true) << "Running action: " << action->getName();
+		action->run(*this);
+
+		if (!action->isOK()) {
+			error() << action->getName() << " failed: " << action->getError();
+			exit_result = 100 + action->getErrorCode();
+
+			// Mark remaining actions as skipped
+			for (int j = i + 1; j < actions.size(); j++) {
+				actions.get(j)->setSkipped();
+			}
+
+			break;
+		}
+	}
+}
+
+void ClientCore::run() {
+	info(true) << "Core3Client starting";
+
+	if (options.hasJSON() && options.getJSON().contains("actions")) {
+		parseJSONIntoActions(options.getJSON()["actions"], actions);
 	} else {
-		error() << "Timeout waiting for zone connection";
+		parseArgumentsIntoActions(options.argc, options.argv, actions);
+	}
 
-		if (zone != nullptr && zone->hasCharacterCreationFailed()) {
-			error() << "Character creation failed - see errors above";
-			exit_result = 103;
-		} else {
-			exit_result = 102;
-		}
+	if (actions.size() == 0) {
+		error() << "No actions to execute";
+		exit_result = 100;
+		return;
+	}
+
+	executeActions();
+
+	if (exit_result == 1) {
+		exit_result = 0;
+	}
+
+	if (options.waitAfterZone > 0 && zone != nullptr && zone->isSceneReady()) {
+		info(true) << "Staying connected for " << options.waitAfterZone << " seconds...";
+		Thread::sleep(options.waitAfterZone * 1000);
+		info(true) << "Wait complete, proceeding to shutdown...";
 	}
 
 	if (!options.saveState.isEmpty()) {
@@ -105,7 +261,16 @@ void ClientCore::run() {
 
 	info(true) << "Shutting down...";
 
-	logoutCharacter();
+	if (zone != nullptr && zone->isStarted()) {
+		logoutCharacter();
+	}
+	if (loginSession != nullptr && loginSession->isConnected()) {
+		loginSession->cleanup();
+	}
+
+	for (int i = 0; i < actions.size(); i++) {
+		delete actions.get(i);
+	}
 }
 
 bool ClientCore::loginCharacter(Reference<LoginSession*>& loginSession) {
@@ -299,6 +464,9 @@ void ClientCore::saveStateToFile(const String& filename, LoginSession* loginSess
 		jsonData["@timestamp"] = now.getFormattedTimeFull().toCharArray();
 		jsonData["time_msecs"] = now.getMiliTime();
 
+		// Exit code
+		jsonData["exitCode"] = exit_result;
+
 		// Login stats
 		if (loginSession != nullptr) {
 			jsonData["loginStats"] = loginSession->collectStats();
@@ -448,6 +616,22 @@ void ClientCore::saveStateToFile(const String& filename, LoginSession* loginSess
 		// Runtime options
 		jsonData["runtimeOptions"] = options.getAsJSON();
 
+		// Actions array (new format)
+		JSONSerializationType actionsArray = JSONSerializationType::array();
+		for (int i = 0; i < actions.size(); i++) {
+			actionsArray.push_back(actions.get(i)->toJSON());
+		}
+		jsonData["actions"] = actionsArray;
+
+		// Variables map
+		if (vars.size() > 0) {
+			JSONSerializationType varsObj;
+			for (int i = 0; i < vars.size(); i++) {
+				varsObj[vars.elementAt(i).getKey().toCharArray()] = vars.elementAt(i).getValue().toCharArray();
+			}
+			jsonData["variables"] = varsObj;
+		}
+
 		// Write to file
 		std::ofstream file(filename.toCharArray());
 		if (file.is_open()) {
@@ -523,6 +707,10 @@ bool ClientCoreOptions::loadFromJSON(const String& filename) {
 		JSONSerializationType json;
 		file >> json;
 
+		// Save full JSON for action parsing
+		jsonConfig = json;
+		jsonLoaded = true;
+
 		// Load all options from JSON
 		if (json.contains("username")) username = json["username"];
 		if (json.contains("password")) password = resolveFileReference(String(json["password"].get<std::string>().c_str()));
@@ -563,7 +751,15 @@ bool ClientCoreOptions::loadFromJSON(const String& filename) {
 	}
 }
 
+int ClientCoreOptions::parseArgs(int index, int argc, char** argv) {
+	return 0;
+}
+
 void ClientCoreOptions::parse(int argc, char* argv[]) {
+	// Save for action parsing
+	this->argc = argc;
+	this->argv = argv;
+
 	namespace po = boost::program_options;
 
 	// First pass to get --env option

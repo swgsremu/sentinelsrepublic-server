@@ -39,6 +39,9 @@ class Zone : public Thread, public Mutex, public Logger {
 	bool characterCreationFailed;
 	uint64 createdCharacterOID;
 
+	String lastError;
+	uint16 lastErrorCode;
+
 public:
 	Zone(uint64 characterObjectID, uint32 account, const String& sessionID, const String& galaxyAddress, uint32 galaxyPort);
 	~Zone();
@@ -149,6 +152,28 @@ public:
 
 	uint64 getCreatedCharacterOID() const {
 		return createdCharacterOID;
+	}
+
+	bool isConnected() const {
+		return client != nullptr && client->getClient() != nullptr && client->getClient()->isAvailable();
+	}
+
+	const String& getLastError() const {
+		return lastError;
+	}
+
+	uint16 getLastErrorCode() const {
+		return lastErrorCode;
+	}
+
+	void setError(const String& msg, uint16 code) {
+		lastError = msg;
+		lastErrorCode = code;
+	}
+
+	void clearError() {
+		lastError = "";
+		lastErrorCode = 0;
 	}
 
 	JSONSerializationType collectStats();

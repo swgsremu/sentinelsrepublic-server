@@ -28,6 +28,9 @@ Zone::Zone(uint64 characterObjectID, uint32 account, const String& sessionID, co
 	characterCreationFailed = false;
 	createdCharacterOID = 0;
 
+	lastError = "";
+	lastErrorCode = 0;
+
 	setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 
 	info(true) << "Zone created for character " << characterObjectID << " with sessionID: " << sessionID;

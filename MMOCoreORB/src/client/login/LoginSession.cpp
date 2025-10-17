@@ -22,6 +22,8 @@ LoginSession::LoginSession(const String& username, const String& password) : Log
 
 	accountID = 0;
 	sessionID = "";
+	lastError = "";
+	lastErrorCode = 0;
 	loginStartTime.updateToCurrentTime();
 	setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 }
@@ -73,20 +75,37 @@ void LoginSession::run() {
 	bool timedOut = !sessionFinalized.timedWait(this, &timeout);
 	unlock();
 
-	login->disconnect();
+	if (timedOut) {
+		setError("Login timeout waiting for server response", 1);
+		info(true) << "Login process timed out.";
+	} else if (accountID == 0) {
+		setError("Login failed - no account ID received", 2);
+		info(true) << "Login process failed.";
+	} else {
+		info(true) << "Login process completed successfully.";
+	}
+}
 
-	loginThread->stop();
+void LoginSession::cleanup() {
+	info(true) << "Cleaning up login session...";
 
-	// DatagramServiceClient doesn't do this for us so we'll do it directly
-	Socket* socket = login->getClient()->getSocket();
-	if (socket != nullptr) {
-		socket->shutdown(SHUT_RDWR);
-		socket->close();
+	if (login != nullptr) {
+		login->disconnect();
 	}
 
-	loginThread = nullptr;
+	if (loginThread != nullptr) {
+		loginThread->stop();
 
-	info(true) << "Login process completed.";
+		Socket* socket = login->getClient()->getSocket();
+		if (socket != nullptr) {
+			socket->shutdown(SHUT_RDWR);
+			socket->close();
+		}
+
+		loginThread = nullptr;
+	}
+
+	info(true) << "Login session cleanup complete.";
 }
 
 JSONSerializationType LoginSession::collectStats() {

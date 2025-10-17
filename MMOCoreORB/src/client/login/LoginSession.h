@@ -35,6 +35,9 @@ class LoginSession : public Mutex, public Runnable, public Logger, public Object
 
 	Time loginStartTime;
 
+	String lastError;
+	uint16 lastErrorCode;
+
 public:
 	LoginSession(const String& username, const String& password);
 
@@ -117,6 +120,34 @@ public:
 	const VectorMap<uint32, Galaxy>& getGalaxies() const {
 		return galaxies;
 	}
+
+	bool isConnected() const {
+		return loginThread != nullptr && login != nullptr;
+	}
+
+	bool isLoggedIn() const {
+		return accountID != 0;
+	}
+
+	const String& getLastError() const {
+		return lastError;
+	}
+
+	uint16 getLastErrorCode() const {
+		return lastErrorCode;
+	}
+
+	void setError(const String& msg, uint16 code) {
+		lastError = msg;
+		lastErrorCode = code;
+	}
+
+	void clearError() {
+		lastError = "";
+		lastErrorCode = 0;
+	}
+
+	void cleanup();
 
 	JSONSerializationType collectStats();
 };
