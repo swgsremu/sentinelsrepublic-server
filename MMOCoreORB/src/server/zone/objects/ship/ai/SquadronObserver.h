@@ -29,8 +29,8 @@ private:
 
 public:
 	SquadronObserver();
-
 	SquadronObserver(ShipAiAgent* shipAgent);
+	SquadronObserver(ShipAiAgent* shipAgent, int formationType);
 
 	~SquadronObserver();
 

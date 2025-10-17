@@ -616,7 +616,7 @@ class ShipAiAgent extends FighterShipObject {
 	public native void tauntPlayer(CreatureObject player, final string message);
 
 	@preLocked
-	public native void createSquadron();
+	public native void createSquadron(int formationType = -1);
 
 	@preLocked
 	public native void dropFromSquadron();

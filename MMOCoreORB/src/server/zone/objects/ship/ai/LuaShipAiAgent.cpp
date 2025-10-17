@@ -611,10 +611,16 @@ int LuaShipAiAgent::clearPatrolPoints(lua_State* L) {
 }
 
 int LuaShipAiAgent::createSquadron(lua_State* L) {
+	int formationType = -1;
+
+	if ((lua_gettop(L) - 1) >= 1) {
+		formationType = lua_tointeger(L, -1);
+	}
+
 	// Lock the ship agent
 	Locker lock(realObject);
 
-	realObject->createSquadron();
+	realObject->createSquadron(formationType);
 
 	return 0;
 }
