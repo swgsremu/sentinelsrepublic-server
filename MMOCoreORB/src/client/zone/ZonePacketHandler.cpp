@@ -151,30 +151,17 @@ void ZonePacketHandler::handleClientPermissionsMessage(Message* pack) {
 
 	BaseClient* client = (BaseClient*) pack->getClient();
 
-	// Check if we should create a character
-	bool shouldCreate = (zone->getCharacterID() == 0)
-	                    && ClientCore::shouldCreateCharacter()
-	                    && canCreateRegularCharacter;
-
-	if (shouldCreate) {
-		info(true) << "No character found - creating new character...";
-
-		BaseMessage* createChar = ClientCore::buildCreateCharacterPacket();
-		client->sendPacket(createChar);
-
-		// Wait for ClientCreateCharacterSuccess or ClientCreateCharacterFailed
-		// Success handler will send SelectCharacter automatically
-
-	} else if (zone->getCharacterID() == 0) {
-		client->error() << "No character OID and creation not enabled/permitted";
+	// Character creation is now handled by CreateCharacterAction
+	// This handler just selects the character that was already created
+	if (zone->getCharacterID() == 0) {
+		client->error() << "No character OID provided";
 		throw Exception("ClientPermissionsMessage: No character to select");
-
-	} else {
-		info(true) << "Sending SelectCharacter(" << zone->getCharacterID() << ")";
-
-		BaseMessage* selectChar = new SelectCharacter(zone->getCharacterID());
-		client->sendPacket(selectChar);
 	}
+
+	info(true) << "Sending SelectCharacter(" << zone->getCharacterID() << ")";
+
+	BaseMessage* selectChar = new SelectCharacter(zone->getCharacterID());
+	client->sendPacket(selectChar);
 }
 
 void ZonePacketHandler::handleCmdStartScene(Message* pack) {

@@ -17,6 +17,192 @@
 
 int exit_result = 1;
 
+// ClientCoreOptions constructor - does ALL parsing
+ClientCoreOptions::ClientCoreOptions(int argc, char** argv) {
+	namespace po = boost::program_options;
+
+	// 1. Initialize config with defaults
+	config = {
+		{"username", ""},
+		{"password", ""},
+		{"loginHost", "127.0.0.1"},
+		{"loginPort", 44453},
+		{"clientVersion", "20050408-18:00"},
+		{"loginTimeout", 10},
+		{"zoneTimeout", 30},
+		{"logLevel", static_cast<int>(Logger::INFO)},
+		{"characterOid", 0},
+		{"characterFirstname", ""},
+		{"saveState", ""},
+		{"loginOnly", false},
+		{"waitAfterZone", 0},
+		{"actions", JSONSerializationType::array()}
+	};
+
+	// 2. First pass to get --env option
+	po::options_description env_desc("Environment");
+	env_desc.add_options()
+		("env", po::value<std::string>(), "Environment file to load");
+
+	po::variables_map env_vm;
+	po::store(po::command_line_parser(argc, argv).options(env_desc).allow_unregistered().run(), env_vm);
+	po::notify(env_vm);
+
+	// Load .env files
+	if (env_vm.count("env")) {
+		loadEnvFile(env_vm["env"].as<std::string>().c_str());
+	} else {
+		loadEnvFile(".env");
+		loadEnvFile(".env-core3client");
+	}
+
+	// 3. Quick scan for --options-json (overrides everything)
+	bool jsonLoaded = false;
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "--options-json") == 0 && i+1 < argc) {
+			std::ifstream file(argv[i+1]);
+			if (file.is_open()) {
+				JSONSerializationType json;
+				file >> json;
+
+				// Merge JSON into config (JSON takes priority over defaults)
+				for (auto it = json.begin(); it != json.end(); ++it) {
+					config[it.key()] = it.value();
+				}
+				jsonLoaded = true;
+			}
+			break;
+		}
+	}
+
+	// 4. Parse global options from command line (overrides JSON)
+	po::options_description desc("Options");
+	desc.add_options()
+		("help,h", "Show help message")
+		("list-actions", "List all available actions and exit")
+		("username,u", po::value<std::string>(), "Username for login")
+		("password,p", po::value<std::string>(), "Password for login")
+		("login-host", po::value<std::string>(), "Login server hostname")
+		("login-port", po::value<int>(), "Login server port")
+		("client-version", po::value<std::string>(), "Client version string")
+		("login-timeout", po::value<int>(), "Login timeout in seconds")
+		("zone-timeout", po::value<int>(), "Zone timeout in seconds")
+		("log-level", po::value<std::string>(), "Log level (0-5 or fatal/error/warning/log/info/debug)")
+		("character-oid", po::value<uint64>(), "Character object ID to select")
+		("character-firstname", po::value<std::string>(), "Character first name to select")
+		("save-state", po::value<std::string>(), "Save login state to JSON file")
+		("login-only", "Only perform login, skip zone connection")
+		("options-json", po::value<std::string>(), "Load options from JSON file")
+		("generate-options-json", "Generate default options JSON to stdout and exit")
+		("env", po::value<std::string>(), "Environment file to load")
+		("wait-after-zone", po::value<int>(), "Seconds to stay connected to zone before shutdown");
+
+	po::variables_map vm;
+	auto parsed = po::command_line_parser(argc, argv).options(desc).allow_unregistered().run();
+	po::store(parsed, vm);
+	po::notify(vm);
+
+	// Get args that boost didn't recognize (for action parsing)
+	std::vector<std::string> unrecognized = po::collect_unrecognized(parsed.options, po::include_positional);
+	Vector<String> unrecognizedArgs;
+	for (const auto& arg : unrecognized) {
+		unrecognizedArgs.add(String(arg.c_str()));
+	}
+
+	if (vm.count("help")) {
+		std::cout << desc << std::endl;
+		std::cout << std::endl;
+		std::cout << "Actions:" << std::endl;
+		Vector<String> actionNames = ActionManager::listActions();
+		for (int i = 0; i < actionNames.size(); i++) {
+			ActionBase* action = ActionManager::createAction(actionNames.get(i).toCharArray());
+			if (action != nullptr) {
+				String helpText = action->getHelpText();
+				if (!helpText.isEmpty()) {
+					std::cout << "  " << helpText.toCharArray() << std::endl;
+				}
+				delete action;
+			}
+		}
+		exit(0);
+	}
+
+	if (vm.count("list-actions")) {
+		std::cout << "Actions:" << std::endl;
+		Vector<String> actionNames = ActionManager::listActions();
+		for (int i = 0; i < actionNames.size(); i++) {
+			ActionBase* action = ActionManager::createAction(actionNames.get(i).toCharArray());
+			if (action != nullptr) {
+				String helpText = action->getHelpText();
+				if (!helpText.isEmpty()) {
+					std::cout << "  " << helpText.toCharArray() << std::endl;
+				}
+				delete action;
+			}
+		}
+		exit(0);
+	}
+
+	// Apply environment variables (if not already set by JSON/CLI)
+	if (config["username"].get<std::string>().empty()) {
+		const char* envUser = getenv("CORE3_CLIENT_USERNAME");
+		if (envUser) config["username"] = envUser;
+	}
+	if (config["password"].get<std::string>().empty()) {
+		const char* envPass = getenv("CORE3_CLIENT_PASSWORD");
+		if (envPass) config["password"] = resolveFileReference(String(envPass)).toCharArray();
+	}
+	if (config["loginHost"].get<std::string>() == "127.0.0.1") {
+		const char* envHost = getenv("CORE3_CLIENT_LOGINHOST");
+		if (envHost) config["loginHost"] = envHost;
+	}
+	if (config["loginPort"].get<int>() == 44453) {
+		const char* envPort = getenv("CORE3_CLIENT_LOGINPORT");
+		if (envPort) config["loginPort"] = Integer::valueOf(envPort);
+	}
+
+	// Apply command line options (highest priority)
+	if (vm.count("username")) config["username"] = vm["username"].as<std::string>();
+	if (vm.count("password")) config["password"] = resolveFileReference(String(vm["password"].as<std::string>().c_str())).toCharArray();
+	if (vm.count("login-host")) config["loginHost"] = vm["login-host"].as<std::string>();
+	if (vm.count("login-port")) config["loginPort"] = vm["login-port"].as<int>();
+	if (vm.count("client-version")) config["clientVersion"] = vm["client-version"].as<std::string>();
+	if (vm.count("login-timeout")) config["loginTimeout"] = vm["login-timeout"].as<int>();
+	if (vm.count("zone-timeout")) config["zoneTimeout"] = vm["zone-timeout"].as<int>();
+	if (vm.count("log-level")) config["logLevel"] = parseLogLevel(String(vm["log-level"].as<std::string>().c_str()));
+	if (vm.count("character-oid")) config["characterOid"] = vm["character-oid"].as<uint64>();
+	if (vm.count("character-firstname")) config["characterFirstname"] = vm["character-firstname"].as<std::string>();
+	if (vm.count("save-state")) config["saveState"] = vm["save-state"].as<std::string>();
+	if (vm.count("login-only")) config["loginOnly"] = true;
+	if (vm.count("wait-after-zone")) config["waitAfterZone"] = vm["wait-after-zone"].as<int>();
+
+	// Handle --generate-options-json after all config is loaded
+	if (vm.count("generate-options-json")) {
+		JSONSerializationType output = config;
+		if (output.contains("password")) {
+			output["password"] = "***";
+		}
+		std::cout << output.dump(2) << std::endl;
+		exit(0);
+	}
+
+	// Validate required fields
+	if (config["username"].get<std::string>().empty()) {
+		throw Exception("ERROR: Please provide --username or set CORE3_CLIENT_USERNAME environment variable");
+	}
+	if (config["password"].get<std::string>().empty()) {
+		throw Exception("ERROR: Please provide --password or set CORE3_CLIENT_PASSWORD environment variable");
+	}
+
+	// 5. Parse actions - JSON first, then CLI args can add more
+	if (jsonLoaded && config.contains("actions") && config["actions"].is_array()) {
+		parseJSONIntoActions(config["actions"]);
+	}
+
+	// Always run action arg parsing (even if empty) for auto-insertion logic
+	parseArgumentsIntoActions(unrecognizedArgs);
+}
+
 ClientCore::ClientCore(const ClientCoreOptions& opts) : Core("log/core3client.log", "client3"), Logger("CoreClient") {
 	options = opts;
 	zone = nullptr;
@@ -25,14 +211,27 @@ ClientCore::ClientCore(const ClientCoreOptions& opts) : Core("log/core3client.lo
 
 	Core::initializeProperties("Client3");
 
-	// Fill in missing values from client3.lua
-	options.updateWithProperties();
+	// Fill in missing values from client3.lua properties
+	if (options.config["loginHost"].get<std::string>().empty() || options.config["loginHost"].get<std::string>() == "127.0.0.1") {
+		String prop = Core::getProperty("Client3.LoginHost", "127.0.0.1");
+		if (!prop.isEmpty()) options.config["loginHost"] = prop.toCharArray();
+	}
+	if (options.config["loginPort"].get<int>() == 0 || options.config["loginPort"].get<int>() == 44453) {
+		int prop = Core::getIntProperty("Client3.LoginPort", 44453);
+		if (prop != 44453) options.config["loginPort"] = prop;
+	}
 
-	// Override with user-provided values (higher priority)
-	options.saveToProperties();
+	// Override properties with user values (higher priority)
+	if (!options.config["loginHost"].get<std::string>().empty()) {
+		Core::setProperty("Client3.LoginHost", String(options.config["loginHost"].get<std::string>().c_str()));
+	}
+	if (options.config["loginPort"].get<int>() != 0) {
+		Core::setProperty("Client3.LoginPort", String::valueOf(options.config["loginPort"].get<int>()));
+	}
 
-	setLogLevel(static_cast<LogLevel>(options.logLevel));
-	info(true) << "Log level set to: " << Logger::getLogType(static_cast<LogLevel>(options.logLevel)) << "(" << options.logLevel << ")";
+	int logLevel = options.get<int>("/logLevel", Logger::INFO);
+	setLogLevel(static_cast<LogLevel>(logLevel));
+	info(true) << "Log level set to: " << Logger::getLogType(static_cast<LogLevel>(logLevel)) << "(" << logLevel << ")";
 
 	info(true) << "Current options: " << options;
 }
@@ -41,13 +240,13 @@ void ClientCore::initialize() {
 	info(true) << __PRETTY_FUNCTION__ << " start";
 }
 
-void ClientCore::parseJSONIntoActions(const JSONSerializationType& jsonActions, Vector<ActionBase*>& actions) {
+void ClientCoreOptions::parseJSONIntoActions(const JSONSerializationType& jsonActions) {
 	bool hasLoginAccount = false;
 	bool hasConnectToZone = false;
 
 	for (auto& actionConfig : jsonActions) {
 		if (!actionConfig.contains("action")) {
-			error() << "JSON action missing 'action' field";
+			System::err << "JSON action missing 'action' field" << endl;
 			continue;
 		}
 
@@ -55,7 +254,7 @@ void ClientCore::parseJSONIntoActions(const JSONSerializationType& jsonActions, 
 		ActionBase* action = ActionManager::createAction(actionName.toCharArray());
 
 		if (action == nullptr) {
-			error() << "Unknown action type: " << actionName;
+			System::err << "Unknown action type: " << actionName << endl;
 			continue;
 		}
 
@@ -73,25 +272,11 @@ void ClientCore::parseJSONIntoActions(const JSONSerializationType& jsonActions, 
 			if (connector != nullptr) {
 				actions.add(connector);
 				hasConnectToZone = true;
-				info(true) << "Auto-inserted connectToZone before " << actionName;
 			}
 		}
 
-		// Parse action-specific config with variable substitution
-		// Note: Variable substitution happens at string level for simplicity
-		// Convert JSON to string, substitute, parse back
-		String configStr = actionConfig.dump().c_str();
-		String substituted = substituteVars(configStr);
-
-		JSONSerializationType substitutedConfig;
-		try {
-			substitutedConfig = JSONSerializationType::parse(substituted.toCharArray());
-		} catch (...) {
-			// If parse fails, use original (no variables to substitute)
-			substitutedConfig = actionConfig;
-		}
-
-		action->parseJSON(substitutedConfig);
+		// Parse action-specific config (no variable substitution at parse time)
+		action->parseJSON(actionConfig);
 		actions.add(action);
 	}
 
@@ -105,35 +290,71 @@ void ClientCore::parseJSONIntoActions(const JSONSerializationType& jsonActions, 
 				temp.add(actions.get(k));
 			}
 			actions = temp;
-			info(true) << "Auto-inserted loginAccount at start";
 		}
 	}
 }
 
-void ClientCore::parseArgumentsIntoActions(int argc, char** argv, Vector<ActionBase*>& actions) {
+void ClientCoreOptions::parseArgumentsIntoActions(const Vector<String>& args) {
+	// Check what actions already exist (from JSON parsing)
 	bool hasLoginAccount = false;
 	bool hasConnectToZone = false;
 
-	for (int i = 1; i < argc; ) {
-		int consumed = 0;
+	for (int i = 0; i < actions.size(); i++) {
+		if (strcmp(actions.get(i)->getName(), "loginAccount") == 0) {
+			hasLoginAccount = true;
+		}
+		if (strcmp(actions.get(i)->getName(), "connectToZone") == 0) {
+			hasConnectToZone = true;
+		}
+	}
 
-		// First: ClientCoreOptions gets first shot
-		consumed = options.parseArgs(i, argc, argv);
-		if (consumed > 0) {
-			i += consumed;
-			continue;
+	for (int i = 0; i < args.size(); ) {
+		bool consumed = false;
+		int consumedCount = 0;
+
+		// First: Offer arg to existing actions in the array (in order)
+		for (int j = 0; j < actions.size(); j++) {
+			// Build argc/argv for this action's parseArgs call
+			int remainingArgc = args.size() - i + 1;
+			char** remainingArgv = new char*[remainingArgc];
+			remainingArgv[0] = const_cast<char*>("core3client");
+			for (int k = 0; k < args.size() - i; k++) {
+				remainingArgv[k + 1] = const_cast<char*>(args.get(i + k).toCharArray());
+			}
+
+			consumedCount = actions.get(j)->parseArgs(1, remainingArgc, remainingArgv);
+			delete[] remainingArgv;
+
+			if (consumedCount > 0) {
+				consumed = true;
+				i += consumedCount;
+				break;
+			}
 		}
 
-		// Second: Try each registered action type
+		if (consumed) {
+			continue;  // Arg was consumed by existing action
+		}
+
+		// Second: Try creating new action from registered types
 		Vector<String> actionNames = ActionManager::listActions();
 		for (int j = 0; j < actionNames.size(); j++) {
 			ActionBase* action = ActionManager::createAction(actionNames.get(j).toCharArray());
 			if (action == nullptr) continue;
 
-			consumed = action->parseArgs(i, argc, argv);
+			// Build argc/argv for this action's parseArgs call
+			int remainingArgc = args.size() - i + 1;
+			char** remainingArgv = new char*[remainingArgc];
+			remainingArgv[0] = const_cast<char*>("core3client");
+			for (int k = 0; k < args.size() - i; k++) {
+				remainingArgv[k + 1] = const_cast<char*>(args.get(i + k).toCharArray());
+			}
 
-			if (consumed > 0) {
-				// This action claimed the args
+			consumedCount = action->parseArgs(1, remainingArgc, remainingArgv);
+			delete[] remainingArgv;
+
+			if (consumedCount > 0) {
+				consumed = true;
 
 				// Track connector actions
 				if (strcmp(action->getName(), "loginAccount") == 0) {
@@ -149,19 +370,24 @@ void ClientCore::parseArgumentsIntoActions(int argc, char** argv, Vector<ActionB
 					if (connector != nullptr) {
 						actions.add(connector);
 						hasConnectToZone = true;
-						info(true) << "Auto-inserted connectToZone before " << action->getName();
 					}
 				}
 
 				actions.add(action);
-				i += consumed;
+				i += consumedCount;
 				break;
 			}
 
 			delete action;  // Didn't want this arg
 		}
 
-		if (consumed == 0) {
+		if (!consumed) {
+			// Unrecognized arg - error and exit if it looks like an option
+			if (args.get(i).charAt(0) == '-') {
+				System::err << "ERROR: Unrecognized option: " << args.get(i) << endl;
+				System::err << "Use --help to see available options" << endl;
+				exit(1);
+			}
 			i++;
 		}
 	}
@@ -170,46 +396,28 @@ void ClientCore::parseArgumentsIntoActions(int argc, char** argv, Vector<ActionB
 	if (!hasLoginAccount) {
 		ActionBase* login = ActionManager::createAction("loginAccount");
 		if (login != nullptr) {
-			// Vector doesn't have insert, so we need to prepend manually
 			Vector<ActionBase*> temp;
 			temp.add(login);
 			for (int k = 0; k < actions.size(); k++) {
 				temp.add(actions.get(k));
 			}
 			actions = temp;
-			info(true) << "Auto-inserted loginAccount at start";
-		}
-	}
-
-	// If --create-character was in options, add that action
-	if (options.createCharacter && !hasConnectToZone) {
-		ActionBase* create = ActionManager::createAction("createCharacter");
-		if (create != nullptr) {
-			// Need to auto-insert connectToZone first
-			ActionBase* connector = ActionManager::createAction("connectToZone");
-			if (connector != nullptr) {
-				actions.add(connector);
-				info(true) << "Auto-inserted connectToZone for character creation";
-			}
-			actions.add(create);
-			info(true) << "Added createCharacter action from options";
 		}
 	}
 
 	// If not login-only mode and no zone connection requested, add connectToZone
 	// This maintains backward compatibility with old behavior
-	if (!options.loginOnly && !hasConnectToZone) {
+	if (!config["loginOnly"].get<bool>() && !hasConnectToZone) {
 		ActionBase* connector = ActionManager::createAction("connectToZone");
 		if (connector != nullptr) {
 			actions.add(connector);
-			info(true) << "Auto-inserted connectToZone (default behavior, not login-only)";
 		}
 	}
 }
 
 void ClientCore::executeActions() {
-	for (int i = 0; i < actions.size(); i++) {
-		ActionBase* action = actions.get(i);
+	for (int i = 0; i < options.actions.size(); i++) {
+		ActionBase* action = options.actions.get(i);
 
 		info(true) << "Running action: " << action->getName();
 		action->run(*this);
@@ -219,8 +427,8 @@ void ClientCore::executeActions() {
 			exit_result = 100 + action->getErrorCode();
 
 			// Mark remaining actions as skipped
-			for (int j = i + 1; j < actions.size(); j++) {
-				actions.get(j)->setSkipped();
+			for (int j = i + 1; j < options.actions.size(); j++) {
+				options.actions.get(j)->setSkipped();
 			}
 
 			break;
@@ -231,13 +439,7 @@ void ClientCore::executeActions() {
 void ClientCore::run() {
 	info(true) << "Core3Client starting";
 
-	if (options.hasJSON() && options.getJSON().contains("actions")) {
-		parseJSONIntoActions(options.getJSON()["actions"], actions);
-	} else {
-		parseArgumentsIntoActions(options.argc, options.argv, actions);
-	}
-
-	if (actions.size() == 0) {
+	if (options.actions.size() == 0) {
 		error() << "No actions to execute";
 		exit_result = 100;
 		return;
@@ -249,14 +451,16 @@ void ClientCore::run() {
 		exit_result = 0;
 	}
 
-	if (options.waitAfterZone > 0 && zone != nullptr && zone->isSceneReady()) {
-		info(true) << "Staying connected for " << options.waitAfterZone << " seconds...";
-		Thread::sleep(options.waitAfterZone * 1000);
+	int waitAfterZone = options.get<int>("/waitAfterZone", 0);
+	if (waitAfterZone > 0 && zone != nullptr && zone->isSceneReady()) {
+		info(true) << "Staying connected for " << waitAfterZone << " seconds...";
+		Thread::sleep(waitAfterZone * 1000);
 		info(true) << "Wait complete, proceeding to shutdown...";
 	}
 
-	if (!options.saveState.isEmpty()) {
-		saveStateToFile(options.saveState, loginSession);
+	std::string saveState = options.get<std::string>("/saveState", "");
+	if (!saveState.empty()) {
+		saveStateToFile(String(saveState.c_str()), loginSession);
 	}
 
 	info(true) << "Shutting down...";
@@ -268,30 +472,26 @@ void ClientCore::run() {
 		loginSession->cleanup();
 	}
 
-	for (int i = 0; i < actions.size(); i++) {
-		delete actions.get(i);
+	for (int i = 0; i < options.actions.size(); i++) {
+		delete options.actions.get(i);
 	}
 }
 
 bool ClientCore::loginCharacter(Reference<LoginSession*>& loginSession) {
 	try {
-		info(true) << "Logging in as: " << options.username;
+		String username = String(options.config["username"].get<std::string>().c_str());
+		String password = String(options.config["password"].get<std::string>().c_str());
 
-		loginSession = new LoginSession(options.username, options.password);
+		info(true) << "Logging in as: " << username;
+
+		loginSession = new LoginSession(username, password);
 		loginSession->run();
 
 		auto numCharacters = loginSession->getCharacterListSize();
 
 		if (numCharacters == 0) {
-			// Check if we should create a character
-			if (options.createCharacter) {
-				info(true) << __FUNCTION__ << ": No characters found - will attempt creation in zone";
-				// Continue with zone connection with characterID=0
-				// ZonePacketHandler will handle creation
-			} else {
-				info(true) << __FUNCTION__ << ": No characters found and character creation not enabled";
-				return false;
-			}
+			info(true) << __FUNCTION__ << ": No characters found";
+			return false;
 		}
 
 		Optional<const CharacterListEntry&> character;
@@ -299,16 +499,19 @@ bool ClientCore::loginCharacter(Reference<LoginSession*>& loginSession) {
 		uint32 galaxyId = 0;
 
 		if (numCharacters > 0) {
-			if (options.characterOid != 0) {
-				character = loginSession->selectCharacterByOID(options.characterOid);
+			uint64 characterOid = options.get<uint64>("/characterOid", 0);
+			std::string characterFirstname = options.get<std::string>("/characterFirstname", "");
+
+			if (characterOid != 0) {
+				character = loginSession->selectCharacterByOID(characterOid);
 				if (!character) {
-					info(true) << "ERROR: Character with OID " << options.characterOid << " not found";
+					info(true) << "ERROR: Character with OID " << characterOid << " not found";
 					return false;
 				}
-			} else if (!options.characterFirstname.isEmpty()) {
-				character = loginSession->selectCharacterByFirstname(options.characterFirstname);
+			} else if (!characterFirstname.empty()) {
+				character = loginSession->selectCharacterByFirstname(String(characterFirstname.c_str()));
 				if (!character) {
-					info(true) << "ERROR: Character with firstname '" << options.characterFirstname << "' not found";
+					info(true) << "ERROR: Character with firstname '" << characterFirstname << "' not found";
 					return false;
 				}
 			} else {
@@ -324,16 +527,6 @@ bool ClientCore::loginCharacter(Reference<LoginSession*>& loginSession) {
 			galaxyId = character->getGalaxyID();
 
 			info(true) << "Selected character: " << *character;
-		} else {
-			// No characters - will create in zone
-			// Use first available galaxy
-			auto galaxyList = loginSession->getGalaxies();
-			if (galaxyList.size() == 0) {
-				error() << "No galaxies available";
-				return false;
-			}
-			galaxyId = galaxyList.get(0).getID();
-			info(true) << "No character selected - will create new character";
 		}
 
 		uint32 acc = loginSession->getAccountID();
@@ -352,7 +545,8 @@ bool ClientCore::loginCharacter(Reference<LoginSession*>& loginSession) {
 			throw Exception("Invalid galaxy, missing IP address.");
 		}
 
-		if (!options.loginOnly) {
+		bool loginOnly = options.get<bool>("/loginOnly", false);
+		if (!loginOnly) {
 			zone = new Zone(objid, acc, sessionID, galaxy.getAddress(), galaxy.getPort());
 			zone->start();
 		}
@@ -362,63 +556,6 @@ bool ClientCore::loginCharacter(Reference<LoginSession*>& loginSession) {
 	}
 
 	return true;
-}
-
-BaseMessage* ClientCore::buildCreateCharacterPacket() {
-	Core* instance = Core::getCoreInstance();
-	if (!instance) {
-		throw Exception("Cannot build character creation packet: No ClientCore instance");
-	}
-
-	ClientCore* clientCore = static_cast<ClientCore*>(instance);
-	auto& opts = clientCore->options;
-
-	// Generate default name if not provided
-	String charName = opts.createCharName;
-	if (charName.isEmpty()) {
-		charName = opts.username + String::valueOf(System::random(9999));
-	}
-
-	// Default race if not provided
-	String race = opts.createCharRace;
-	if (race.isEmpty()) {
-		race = "object/creature/player/human_male.iff";
-	}
-
-	// Default profession if not provided
-	String profession = opts.createCharProfession;
-	if (profession.isEmpty()) {
-		profession = "crafting_artisan";
-	}
-
-	// Clamp height
-	float height = opts.createCharHeight;
-	if (height < 0.7f || height > 1.5f) {
-		clientCore->warning("Height " + String::valueOf(height) + " out of range, clamping to 1.0");
-		height = 1.0f;
-	}
-
-	UnicodeString unicodeName(charName.toCharArray());
-	UnicodeString unicodeBio(opts.createCharBiography.toCharArray());
-
-	clientCore->info(true) << "Creating character:";
-	clientCore->info(true) << "  Name: " << charName;
-	clientCore->info(true) << "  Race: " << race;
-	clientCore->info(true) << "  Profession: " << profession;
-	clientCore->info(true) << "  Height: " << height;
-	clientCore->info(true) << "  Skip Tutorial: " << opts.createCharSkipTutorial;
-
-	return new ClientCreateCharacter(
-		unicodeName,
-		race,
-		height,
-		opts.createCharCustomization,
-		opts.createCharHairTemplate,
-		opts.createCharHairCustomization,
-		profession,
-		unicodeBio,
-		!opts.createCharSkipTutorial  // Note: inverted
-	);
 }
 
 void ClientCore::logoutCharacter() {
@@ -507,80 +644,8 @@ void ClientCore::saveStateToFile(const String& filename, LoginSession* loginSess
 				charactersArray.push_back(charObj);
 			}
 
-			// Add newly created character if applicable
-			if (zone != nullptr && zone->isCharacterCreated()) {
-				JSONSerializationType newCharObj;
-				newCharObj["name"] = options.createCharName.toCharArray();
-				newCharObj["oid"] = zone->getCreatedCharacterOID();
-				newCharObj["galaxyId"] = selectedGalaxy ? selectedGalaxy->getID() : 0;
-				newCharObj["source"] = "created";
-
-				// Include creation parameters
-				JSONSerializationType creationParams;
-				creationParams["race"] = options.createCharRace.toCharArray();
-				creationParams["profession"] = options.createCharProfession.toCharArray();
-				creationParams["height"] = options.createCharHeight;
-				creationParams["skipTutorial"] = options.createCharSkipTutorial;
-				newCharObj["creationParams"] = creationParams;
-
-				charactersArray.push_back(newCharObj);
-			}
-
-			jsonData["characters"] = charactersArray;
-		}
-
-		// Character creation state
-		JSONSerializationType charCreation;
-		charCreation["attempted"] = options.createCharacter;
-
-		if (options.createCharacter) {
-			if (zone != nullptr && zone->isCharacterCreated()) {
-				charCreation["success"] = true;
-				charCreation["characterOid"] = zone->getCreatedCharacterOID();
-				charCreation["characterName"] = options.createCharName.toCharArray();
-
-				// Echo back what was requested
-				JSONSerializationType requestedParams;
-				requestedParams["name"] = options.createCharName.toCharArray();
-				requestedParams["race"] = options.createCharRace.isEmpty()
-					? "object/creature/player/human_male.iff"
-					: options.createCharRace.toCharArray();
-				requestedParams["profession"] = options.createCharProfession.isEmpty()
-					? "crafting_artisan"
-					: options.createCharProfession.toCharArray();
-				requestedParams["height"] = options.createCharHeight;
-				requestedParams["customization"] = options.createCharCustomization.toCharArray();
-				requestedParams["hairTemplate"] = options.createCharHairTemplate.toCharArray();
-				requestedParams["hairCustomization"] = options.createCharHairCustomization.toCharArray();
-				requestedParams["biography"] = options.createCharBiography.toCharArray();
-				requestedParams["skipTutorial"] = options.createCharSkipTutorial;
-				charCreation["requestedParams"] = requestedParams;
-
-			} else if (zone != nullptr && zone->hasCharacterCreationFailed()) {
-				charCreation["success"] = false;
-				charCreation["error"] = "Character creation failed - see server errors";
-
-				// Still include what was attempted
-				JSONSerializationType attemptedParams;
-				attemptedParams["name"] = options.createCharName.toCharArray();
-				attemptedParams["race"] = options.createCharRace.isEmpty()
-					? "object/creature/player/human_male.iff"
-					: options.createCharRace.toCharArray();
-				attemptedParams["profession"] = options.createCharProfession.isEmpty()
-					? "crafting_artisan"
-					: options.createCharProfession.toCharArray();
-				attemptedParams["height"] = options.createCharHeight;
-				charCreation["attemptedParams"] = attemptedParams;
-
-			} else {
-				charCreation["success"] = false;
-				charCreation["error"] = "Character creation not completed (may have timed out or never reached zone server)";
-			}
-		} else {
-			charCreation["success"] = nullptr;  // N/A
-		}
-
-		jsonData["characterCreation"] = charCreation;
+		jsonData["characters"] = charactersArray;
+	}
 
 		// Zone stats
 		if (zone != nullptr) {
@@ -618,8 +683,8 @@ void ClientCore::saveStateToFile(const String& filename, LoginSession* loginSess
 
 		// Actions array (new format)
 		JSONSerializationType actionsArray = JSONSerializationType::array();
-		for (int i = 0; i < actions.size(); i++) {
-			actionsArray.push_back(actions.get(i)->toJSON());
+		for (int i = 0; i < options.actions.size(); i++) {
+			actionsArray.push_back(options.actions.get(i)->toJSON());
 		}
 		jsonData["actions"] = actionsArray;
 
@@ -697,343 +762,6 @@ void ClientCoreOptions::loadEnvFile(const String& filename) {
 	}
 }
 
-bool ClientCoreOptions::loadFromJSON(const String& filename) {
-	try {
-		std::ifstream file(filename.toCharArray());
-		if (!file.is_open()) {
-			return false;
-		}
-
-		JSONSerializationType json;
-		file >> json;
-
-		// Save full JSON for action parsing
-		jsonConfig = json;
-		jsonLoaded = true;
-
-		// Load all options from JSON
-		if (json.contains("username")) username = json["username"];
-		if (json.contains("password")) password = resolveFileReference(String(json["password"].get<std::string>().c_str()));
-		if (json.contains("loginHost")) loginHost = json["loginHost"];
-		if (json.contains("loginPort")) loginPort = json["loginPort"];
-		if (json.contains("loginTimeout")) loginTimeout = json["loginTimeout"];
-		if (json.contains("zoneTimeout")) zoneTimeout = json["zoneTimeout"];
-		if (json.contains("clientVersion")) clientVersion = json["clientVersion"];
-		if (json.contains("logLevel")) logLevel = json["logLevel"];
-		if (json.contains("characterOid")) characterOid = json["characterOid"];
-		if (json.contains("characterFirstname")) characterFirstname = json["characterFirstname"];
-		if (json.contains("saveState")) saveState = json["saveState"];
-		if (json.contains("loginOnly")) loginOnly = json["loginOnly"];
-		if (json.contains("waitAfterZone")) waitAfterZone = json["waitAfterZone"];
-
-		// Load character creation options from nested object
-		if (json.contains("create_character")) {
-			auto& createChar = json["create_character"];
-			if (createChar.contains("enabled")) createCharacter = createChar["enabled"];
-			if (createChar.contains("name")) createCharName = createChar["name"];
-			if (createChar.contains("race")) createCharRace = createChar["race"];
-			if (createChar.contains("profession")) createCharProfession = createChar["profession"];
-			if (createChar.contains("height")) createCharHeight = createChar["height"];
-			if (createChar.contains("customization")) createCharCustomization = createChar["customization"];
-			if (createChar.contains("biography")) createCharBiography = createChar["biography"];
-			if (createChar.contains("skipTutorial")) createCharSkipTutorial = createChar["skipTutorial"];
-
-			if (createChar.contains("hair")) {
-				auto& hair = createChar["hair"];
-				if (hair.contains("template")) createCharHairTemplate = hair["template"];
-				if (hair.contains("customization")) createCharHairCustomization = hair["customization"];
-			}
-		}
-
-		return true;
-	} catch (const std::exception& e) {
-		return false;
-	}
-}
-
-int ClientCoreOptions::parseArgs(int index, int argc, char** argv) {
-	return 0;
-}
-
-void ClientCoreOptions::parse(int argc, char* argv[]) {
-	// Save for action parsing
-	this->argc = argc;
-	this->argv = argv;
-
-	namespace po = boost::program_options;
-
-	// First pass to get --env option
-	po::options_description env_desc("Environment");
-	env_desc.add_options()
-		("env", po::value<std::string>(), "Environment file to load");
-
-	po::variables_map env_vm;
-	po::store(po::command_line_parser(argc, argv).options(env_desc).allow_unregistered().run(), env_vm);
-	po::notify(env_vm);
-
-	// Load .env files
-	if (env_vm.count("env")) {
-		loadEnvFile(env_vm["env"].as<std::string>().c_str());
-	} else {
-		loadEnvFile(".env");
-		loadEnvFile(".env-core3client");
-	}
-
-	// Load options from JSON file if specified in environment
-	if (env_vm.count("options-json")) {
-		String jsonFile = env_vm["options-json"].as<std::string>().c_str();
-		if (!loadFromJSON(jsonFile)) {
-			System::err << "Error: Failed to load options from JSON file: " << jsonFile << endl;
-			exit(1);
-		}
-	}
-
-	// Full options parsing
-	po::options_description desc("Options");
-	desc.add_options()
-		("help,h", "Show help message")
-		("username,u", po::value<std::string>(), "Username for login")
-		("password,p", po::value<std::string>(), "Password for login")
-		("login-host", po::value<std::string>(), "Login server hostname")
-		("login-port", po::value<int>(), "Login server port")
-		("client-version", po::value<std::string>(), "Client version string")
-		("login-timeout", po::value<int>(), "Login timeout in seconds")
-		("zone-timeout", po::value<int>(), "Zone timeout in seconds")
-		("log-level", po::value<std::string>(), "Log level (0-5 or fatal/error/warning/log/info/debug)")
-		("character-oid", po::value<uint64>(), "Character object ID to select")
-		("character-firstname", po::value<std::string>(), "Character first name to select")
-		("save-state", po::value<std::string>(), "Save login state to JSON file")
-		("login-only", "Only perform login, skip zone connection")
-		("options-json", po::value<std::string>(), "Load options from JSON file")
-		("generate-options-json", "Generate default options JSON to stdout and exit")
-		("env", po::value<std::string>(), "Environment file to load")
-		("wait-after-zone", po::value<int>(), "Seconds to stay connected to zone before shutdown")
-		("create-character", "Automatically create character if none exist")
-		("char-name", po::value<std::string>(), "Character name")
-		("char-race", po::value<std::string>(), "Race template (full IFF path or short name)")
-		("char-profession", po::value<std::string>(), "Starting profession")
-		("char-height", po::value<float>(), "Character height (0.7-1.5)")
-		("char-customization", po::value<std::string>(), "Appearance customization string")
-		("char-hair-template", po::value<std::string>(), "Hair template")
-		("char-hair-customization", po::value<std::string>(), "Hair customization")
-		("char-biography", po::value<std::string>(), "Character biography");
-
-	po::variables_map vm;
-	po::store(po::parse_command_line(argc, argv, desc), vm);
-	po::notify(vm);
-
-	// Load options from JSON file if specified on command line (before processing other options)
-	if (vm.count("options-json")) {
-		String jsonFile = vm["options-json"].as<std::string>().c_str();
-		if (!loadFromJSON(jsonFile)) {
-			System::err << "Error: Failed to load options from JSON file: " << jsonFile << endl;
-			exit(1);
-		}
-	}
-
-	if (vm.count("help")) {
-		std::cout << desc << std::endl;
-		exit(0);
-	}
-
-	// Generate default options JSON and exit
-	if (vm.count("generate-options-json")) {
-		ClientCoreOptions defaults;
-		std::cout << defaults.getAsJSON().dump(2) << std::endl;
-		exit(0);
-	}
-
-	// Get username from command line or environment
-	if (vm.count("username")) {
-		username = vm["username"].as<std::string>().c_str();
-	} else {
-		const char* envUser = getenv("CORE3_CLIENT_USERNAME");
-		if (envUser) {
-			username = envUser;
-		} else if (username.isEmpty()) {
-			throw Exception("ERROR: Please provide --username or set CORE3_CLIENT_USERNAME environment variable");
-		}
-	}
-
-	// Get password from command line or environment
-	if (vm.count("password")) {
-		password = resolveFileReference(vm["password"].as<std::string>().c_str());
-	} else {
-		const char* envPass = getenv("CORE3_CLIENT_PASSWORD");
-		if (envPass) {
-			password = resolveFileReference(envPass);
-		} else if (password.isEmpty()) {
-			throw Exception("ERROR: Please provide --password or set CORE3_CLIENT_PASSWORD environment variable");
-		}
-	}
-
-	// Get login host from command line or environment
-	if (vm.count("login-host")) {
-		loginHost = vm["login-host"].as<std::string>().c_str();
-	} else {
-		const char* envHost = getenv("CORE3_CLIENT_LOGINHOST");
-		if (envHost) {
-			loginHost = envHost;
-		}
-	}
-
-	// Get login port from command line or environment
-	if (vm.count("login-port")) {
-		loginPort = vm["login-port"].as<int>();
-	} else {
-		const char* envPort = getenv("CORE3_CLIENT_LOGINPORT");
-		if (envPort) {
-			loginPort = Integer::valueOf(envPort);
-		}
-	}
-
-	// Get client version from command line or environment
-	if (vm.count("client-version")) {
-		clientVersion = vm["client-version"].as<std::string>().c_str();
-	} else {
-		const char* envVersion = getenv("CORE3_CLIENT_VERSION");
-		if (envVersion) {
-			clientVersion = envVersion;
-		}
-	}
-
-	// Get login timeout from command line or environment
-	if (vm.count("login-timeout")) {
-		loginTimeout = vm["login-timeout"].as<int>();
-	} else {
-		const char* envTimeout = getenv("CORE3_CLIENT_LOGIN_TIMEOUT");
-		if (envTimeout) {
-			loginTimeout = Integer::valueOf(envTimeout);
-		}
-	}
-
-	// Get zone timeout from command line or environment
-	if (vm.count("zone-timeout")) {
-		zoneTimeout = vm["zone-timeout"].as<int>();
-	} else {
-		const char* envTimeout = getenv("CORE3_CLIENT_ZONE_TIMEOUT");
-		if (envTimeout) {
-			zoneTimeout = Integer::valueOf(envTimeout);
-		}
-	}
-
-	// Get log level from command line or environment
-	if (vm.count("log-level")) {
-		logLevel = parseLogLevel(vm["log-level"].as<std::string>().c_str());
-	} else {
-		const char* envLevel = getenv("CORE3_CLIENT_LOG_LEVEL");
-		if (envLevel) {
-			logLevel = parseLogLevel(envLevel);
-		}
-	}
-
-	// Get character OID from command line or environment
-	if (vm.count("character-oid")) {
-		characterOid = vm["character-oid"].as<uint64>();
-	} else {
-		const char* envOid = getenv("CORE3_CLIENT_CHARACTER_OID");
-		if (envOid) {
-			characterOid = UnsignedLong::valueOf(envOid);
-		}
-	}
-
-	// Get character firstname from command line or environment
-	if (vm.count("character-firstname")) {
-		characterFirstname = vm["character-firstname"].as<std::string>().c_str();
-	} else {
-		const char* envName = getenv("CORE3_CLIENT_CHARACTER_FIRSTNAME");
-		if (envName) {
-			characterFirstname = envName;
-		}
-	}
-
-	// Get save-state filename
-	if (vm.count("save-state")) {
-		saveState = vm["save-state"].as<std::string>().c_str();
-	}
-
-	// Get login-only flag
-	if (vm.count("login-only")) {
-		loginOnly = true;
-	}
-
-	// Get wait-after-zone
-	if (vm.count("wait-after-zone")) {
-		waitAfterZone = vm["wait-after-zone"].as<int>();
-	}
-
-	// Character creation options
-	if (vm.count("create-character")) {
-		createCharacter = true;
-	}
-
-	if (vm.count("char-name")) {
-		createCharName = vm["char-name"].as<std::string>().c_str();
-	}
-
-	if (vm.count("char-race")) {
-		createCharRace = vm["char-race"].as<std::string>().c_str();
-	}
-
-	if (vm.count("char-profession")) {
-		createCharProfession = vm["char-profession"].as<std::string>().c_str();
-	}
-
-	if (vm.count("char-height")) {
-		createCharHeight = vm["char-height"].as<float>();
-	}
-
-	if (vm.count("char-customization")) {
-		createCharCustomization = vm["char-customization"].as<std::string>().c_str();
-	}
-
-	if (vm.count("char-hair-template")) {
-		createCharHairTemplate = vm["char-hair-template"].as<std::string>().c_str();
-	}
-
-	if (vm.count("char-hair-customization")) {
-		createCharHairCustomization = vm["char-hair-customization"].as<std::string>().c_str();
-	}
-
-	if (vm.count("char-biography")) {
-		createCharBiography = vm["char-biography"].as<std::string>().c_str();
-	}
-}
-
-void ClientCoreOptions::updateWithProperties() {
-	if (loginHost.isEmpty()) {
-		loginHost = Core::getProperty("Client3.LoginHost", "127.0.0.1");
-	}
-
-	if (loginPort == 0) {
-		loginPort = Core::getIntProperty("Client3.LoginPort", 44453);
-	}
-
-	if (clientVersion.isEmpty()) {
-		clientVersion = Core::getProperty("Client3.ClientVersion", "20050408-18:00");
-	}
-
-	if (loginTimeout == 0) {
-		loginTimeout = Core::getIntProperty("Client3.LoginTimeout", 10);
-	}
-
-	if (zoneTimeout == 0) {
-		zoneTimeout = Core::getIntProperty("Client3.ZoneTimeout", 30);
-	}
-
-	if (logLevel == -1) {
-		logLevel = Core::getIntProperty("Client3.LogLevel", static_cast<int>(Logger::INFO));
-	}
-
-	if (characterOid == 0) {
-		characterOid = Core::getLongProperty("Client3.CharacterOid", 0);
-	}
-
-	if (characterFirstname.isEmpty()) {
-		characterFirstname = Core::getProperty("Client3.CharacterFirstname", "");
-	}
-}
-
 int ClientCoreOptions::parseLogLevel(const String& levelStr) {
 	String level = levelStr.toLowerCase();
 
@@ -1052,78 +780,16 @@ int ClientCoreOptions::parseLogLevel(const String& levelStr) {
 	}
 }
 
-void ClientCoreOptions::saveToProperties() {
-	if (!loginHost.isEmpty()) {
-		Core::setProperty("Client3.LoginHost", loginHost);
-	}
-
-	if (loginPort != 0) {
-		Core::setProperty("Client3.LoginPort", String::valueOf(loginPort));
-	}
-
-	if (!clientVersion.isEmpty()) {
-		Core::setProperty("Client3.ClientVersion", clientVersion);
-	}
-
-	if (loginTimeout != 0) {
-		Core::setProperty("Client3.LoginTimeout", String::valueOf(loginTimeout));
-	}
-
-	if (zoneTimeout != 0) {
-		Core::setProperty("Client3.ZoneTimeout", String::valueOf(zoneTimeout));
-	}
-
-	if (logLevel != -1) {
-		Core::setIntProperty("Client3.LogLevel", logLevel);
-	}
-
-	if (characterOid != 0) {
-		Core::setLongProperty("Client3.CharacterOid", characterOid);
-	}
-
-	if (!characterFirstname.isEmpty()) {
-		Core::setProperty("Client3.CharacterFirstname", characterFirstname);
-	}
-}
-
 String ClientCoreOptions::toString() const {
 	return getAsJSON().dump().c_str();
 }
 
 JSONSerializationType ClientCoreOptions::getAsJSON() const {
-	JSONSerializationType jsonData;
-	jsonData["username"] = username.toCharArray();
-	jsonData["password"] = "***";
-	jsonData["loginHost"] = loginHost.toCharArray();
-	jsonData["loginPort"] = loginPort;
-	jsonData["clientVersion"] = clientVersion.toCharArray();
-	jsonData["loginTimeout"] = loginTimeout;
-	jsonData["zoneTimeout"] = zoneTimeout;
-	jsonData["logLevel"] = logLevel;
-	jsonData["characterOid"] = characterOid;
-	jsonData["characterFirstname"] = characterFirstname.toCharArray();
-	jsonData["saveState"] = saveState.toCharArray();
-	jsonData["loginOnly"] = loginOnly;
-	jsonData["waitAfterZone"] = waitAfterZone;
-
-	// Nested create_character object
-	JSONSerializationType createChar;
-	createChar["enabled"] = createCharacter;
-	createChar["name"] = createCharName.toCharArray();
-	createChar["race"] = createCharRace.toCharArray();
-	createChar["profession"] = createCharProfession.toCharArray();
-	createChar["height"] = createCharHeight;
-	createChar["customization"] = createCharCustomization.toCharArray();
-
-	JSONSerializationType hair;
-	hair["template"] = createCharHairTemplate.toCharArray();
-	hair["customization"] = createCharHairCustomization.toCharArray();
-	createChar["hair"] = hair;
-
-	createChar["biography"] = createCharBiography.toCharArray();
-	createChar["skipTutorial"] = createCharSkipTutorial;
-	jsonData["create_character"] = createChar;
-
+	// Return a copy with password masked
+	JSONSerializationType jsonData = config;
+	if (jsonData.contains("password")) {
+		jsonData["password"] = "***";
+	}
 	return jsonData;
 }
 
@@ -1133,8 +799,7 @@ String ClientCoreOptions::toStringData() const {
 
 int main(int argc, char* argv[]) {
 	try {
-		ClientCoreOptions opts;
-		opts.parse(argc, argv);
+		ClientCoreOptions opts(argc, argv);
 
 		StackTrace::setBinaryName("core3client");
 

@@ -62,14 +62,17 @@ public:
 			// Select character based on options
 			Optional<const CharacterListEntry&> character;
 
-			if (core.options.characterOid != 0) {
-				character = core.loginSession->selectCharacterByOID(core.options.characterOid);
+			uint64 characterOidOption = core.options.get<uint64>("/characterOid", 0);
+			std::string characterFirstnameOption = core.options.get<std::string>("/characterFirstname", "");
+
+			if (characterOidOption != 0) {
+				character = core.loginSession->selectCharacterByOID(characterOidOption);
 				if (!character) {
 					result.setError("Character OID not found in account", 2);
 					return;
 				}
-			} else if (!core.options.characterFirstname.isEmpty()) {
-				character = core.loginSession->selectCharacterByFirstname(core.options.characterFirstname);
+			} else if (!characterFirstnameOption.empty()) {
+				character = core.loginSession->selectCharacterByFirstname(String(characterFirstnameOption.c_str()));
 				if (!character) {
 					result.setError("Character firstname not found in account", 3);
 					return;
@@ -89,20 +92,9 @@ public:
 
 			info() << "Selected character: " << character->getFirstName() << " (OID: " << characterOid << ")";
 		} else {
-			// No characters - will create in zone (if createCharacter flag is set)
-			if (!core.options.createCharacter) {
-				result.setError("No characters on account and character creation not enabled", 5);
-				return;
-			}
-
-			// Use first available galaxy
-			auto& galaxyMap = core.loginSession->getGalaxies();
-			if (galaxyMap.size() == 0) {
-				result.setError("No galaxies available", 6);
-				return;
-			}
-			galaxyId = galaxyMap.get(0).getID();
-			info() << "No characters - will create new character on galaxy " << galaxyId;
+			// No characters available - CreateCharacterAction handles creation
+			result.setError("No characters on account", 5);
+			return;
 		}
 
 		// Get galaxy info
@@ -180,7 +172,7 @@ public:
 	}
 
 	String getHelpText() const override {
-		return "connectToZone: Connect to zone server (auto-inserted before zone actions)";
+		return "";  // Auto-inserted, no user-facing options
 	}
 
 	// Factory function for static registration

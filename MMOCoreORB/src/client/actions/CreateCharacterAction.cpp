@@ -44,9 +44,43 @@ public:
 	int parseArgs(int index, int argc, char** argv) override {
 		// Check for --create-character flag
 		if (strcmp(argv[index], "--create-character") == 0) {
-			// Parsed by ClientCoreOptions, just consume the flag
 			return 1;
 		}
+
+		// Parse character creation options
+		if (strcmp(argv[index], "--char-name") == 0 && index + 1 < argc) {
+			characterName = argv[index + 1];
+			return 2;
+		}
+		if (strcmp(argv[index], "--char-race") == 0 && index + 1 < argc) {
+			race = argv[index + 1];
+			return 2;
+		}
+		if (strcmp(argv[index], "--char-profession") == 0 && index + 1 < argc) {
+			profession = argv[index + 1];
+			return 2;
+		}
+		if (strcmp(argv[index], "--char-height") == 0 && index + 1 < argc) {
+			height = Float::valueOf(argv[index + 1]);
+			return 2;
+		}
+		if (strcmp(argv[index], "--char-customization") == 0 && index + 1 < argc) {
+			customization = argv[index + 1];
+			return 2;
+		}
+		if (strcmp(argv[index], "--char-hair-template") == 0 && index + 1 < argc) {
+			hairTemplate = argv[index + 1];
+			return 2;
+		}
+		if (strcmp(argv[index], "--char-hair-customization") == 0 && index + 1 < argc) {
+			hairCustomization = argv[index + 1];
+			return 2;
+		}
+		if (strcmp(argv[index], "--char-biography") == 0 && index + 1 < argc) {
+			biography = argv[index + 1];
+			return 2;
+		}
+
 		return 0;
 	}
 
@@ -96,20 +130,20 @@ public:
 			return;
 		}
 
-		// Get character parameters from options if not set via JSON/CLI
-		String charName = characterName.isEmpty() ? core.options.createCharName : characterName;
-		String charRace = race.isEmpty() ? core.options.createCharRace : race;
-		String charProfession = profession.isEmpty() ? core.options.createCharProfession : profession;
-		float charHeight = (height == 1.0f && core.options.createCharHeight != 1.0f)
-			? core.options.createCharHeight : height;
-		String charCustomization = customization.isEmpty() ? core.options.createCharCustomization : customization;
-		String charHairTemplate = hairTemplate.isEmpty() ? core.options.createCharHairTemplate : hairTemplate;
-		String charHairCustomization = hairCustomization.isEmpty() ? core.options.createCharHairCustomization : hairCustomization;
-		String charBiography = biography.isEmpty() ? core.options.createCharBiography : biography;
+		// Use configured values or defaults
+		String charName = characterName;
+		String charRace = race;
+		String charProfession = profession;
+		float charHeight = height;
+		String charCustomization = customization;
+		String charHairTemplate = hairTemplate;
+		String charHairCustomization = hairCustomization;
+		String charBiography = biography;
 
 		// Generate default name if not provided
 		if (charName.isEmpty()) {
-			charName = core.options.username + String::valueOf(System::random(9999));
+			String username = String(core.options.config["username"].get<std::string>().c_str());
+			charName = username + String::valueOf(System::random(9999));
 		}
 
 		// Default race if not provided

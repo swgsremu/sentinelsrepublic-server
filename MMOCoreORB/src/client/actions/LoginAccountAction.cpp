@@ -40,10 +40,13 @@ public:
 	}
 
 	void run(ClientCore& core) override {
-		info() << "Authenticating account: " << core.options.username;
+		String username = String(core.options.config["username"].get<std::string>().c_str());
+		String password = String(core.options.config["password"].get<std::string>().c_str());
+
+		info() << "Authenticating account: " << username;
 
 		// Create and run login session
-		core.loginSession = new LoginSession(core.options.username, core.options.password);
+		core.loginSession = new LoginSession(username, password);
 		core.loginSession->run();
 
 		// Check if authentication succeeded
@@ -108,7 +111,7 @@ public:
 	}
 
 	String getHelpText() const override {
-		return "loginAccount: Authenticate to login server (auto-inserted, uses --username/--password)";
+		return "";  // Auto-inserted, no user-facing options
 	}
 
 	// Factory function for static registration

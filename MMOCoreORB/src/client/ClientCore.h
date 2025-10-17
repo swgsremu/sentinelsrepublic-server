@@ -12,54 +12,40 @@ class Zone;
 class ActionBase;
 
 struct ClientCoreOptions {
-	// Saved for action parsing
-	int argc = 0;
-	char** argv = nullptr;
+	// Single source of truth
+	JSONSerializationType config;
+	Vector<ActionBase*> actions;
 
-	String username;
-	String password;
-	String loginHost;
-	int loginPort = 0;
-	String clientVersion;
-	int loginTimeout = 0;
-	int zoneTimeout = 0;
-	int logLevel = -1;
-	uint64 characterOid = 0;
-	String characterFirstname;
-	String saveState;
-	bool loginOnly = false;
-	int waitAfterZone = 0;  // Seconds to stay connected to zone before disconnect
+	// Constructor does ALL parsing
+	ClientCoreOptions() = default;
+	ClientCoreOptions(int argc, char** argv);
 
-	// Character creation options
-	bool createCharacter = false;
-	String createCharName;
-	String createCharRace;
-	String createCharProfession;
-	float createCharHeight = 1.0f;
-	String createCharCustomization;
-	String createCharHairTemplate;
-	String createCharHairCustomization;
-	String createCharBiography;
-	bool createCharSkipTutorial = true;
+	// Generic accessor with defaults
+	template<typename T>
+	T get(const char* path, T defaultVal = T()) const {
+		try {
+			return config.at(JSONSerializationType::json_pointer(path)).get<T>();
+		} catch (...) {
+			return defaultVal;
+		}
+	}
 
-	void parse(int argc, char* argv[]);
-	void updateWithProperties();
-	void saveToProperties();
-	bool loadFromJSON(const String& filename);
+	// Setter
+	void set(const char* path, const JSONSerializationType& val) {
+		config[JSONSerializationType::json_pointer(path)] = val;
+	}
+
+	// Utility methods
 	JSONSerializationType getAsJSON() const;
 	String toString() const;
 	String toStringData() const;
 
-	int parseArgs(int index, int argc, char** argv);
-	const JSONSerializationType& getJSON() const { return jsonConfig; }
-	bool hasJSON() const { return jsonLoaded; }
-
 private:
-	JSONSerializationType jsonConfig;
-	bool jsonLoaded = false;
 	void loadEnvFile(const String& filename);
 	int parseLogLevel(const String& levelStr);
 	String resolveFileReference(const String& value);
+	void parseArgumentsIntoActions(const Vector<String>& args);
+	void parseJSONIntoActions(const JSONSerializationType& jsonActions);
 };
 
 class ClientCore : public Core, public Logger {
@@ -68,7 +54,6 @@ public:
 	Reference<class LoginSession*> loginSession;
 	Zone* zone;
 	VectorMap<String, String> vars;
-	Vector<ActionBase*> actions;
 
 private:
 	Time overallStartTime;
@@ -79,8 +64,9 @@ public:
 		Core* instance = Core::getCoreInstance();
 		if (instance) {
 			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			if (clientCore && clientCore->options.logLevel != -1) {
-				return clientCore->options.logLevel;
+			if (clientCore) {
+				int level = clientCore->options.get<int>("/logLevel", -1);
+				if (level != -1) return level;
 			}
 		}
 		return Core::getIntProperty("Client3.LogLevel", Logger::INFO);
@@ -90,8 +76,9 @@ public:
 		Core* instance = Core::getCoreInstance();
 		if (instance) {
 			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			if (clientCore && !clientCore->options.loginHost.isEmpty()) {
-				return clientCore->options.loginHost;
+			if (clientCore) {
+				std::string host = clientCore->options.get<std::string>("/loginHost", "");
+				if (!host.empty()) return String(host.c_str());
 			}
 		}
 		return Core::getProperty("Client3.LoginHost", "127.0.0.1");
@@ -101,8 +88,9 @@ public:
 		Core* instance = Core::getCoreInstance();
 		if (instance) {
 			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			if (clientCore && clientCore->options.loginPort != 0) {
-				return clientCore->options.loginPort;
+			if (clientCore) {
+				int port = clientCore->options.get<int>("/loginPort", 0);
+				if (port != 0) return port;
 			}
 		}
 		return Core::getIntProperty("Client3.LoginPort", 44453);
@@ -112,8 +100,9 @@ public:
 		Core* instance = Core::getCoreInstance();
 		if (instance) {
 			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			if (clientCore && !clientCore->options.clientVersion.isEmpty()) {
-				return clientCore->options.clientVersion;
+			if (clientCore) {
+				std::string ver = clientCore->options.get<std::string>("/clientVersion", "");
+				if (!ver.empty()) return String(ver.c_str());
 			}
 		}
 		return Core::getProperty("Client3.ClientVersion", "20050408-18:00");
@@ -123,8 +112,9 @@ public:
 		Core* instance = Core::getCoreInstance();
 		if (instance) {
 			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			if (clientCore && clientCore->options.loginTimeout != 0) {
-				return clientCore->options.loginTimeout;
+			if (clientCore) {
+				int timeout = clientCore->options.get<int>("/loginTimeout", 0);
+				if (timeout != 0) return timeout;
 			}
 		}
 		return Core::getIntProperty("Client3.LoginTimeout", 10);
@@ -134,23 +124,13 @@ public:
 		Core* instance = Core::getCoreInstance();
 		if (instance) {
 			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			if (clientCore && clientCore->options.zoneTimeout != 0) {
-				return clientCore->options.zoneTimeout;
+			if (clientCore) {
+				int timeout = clientCore->options.get<int>("/zoneTimeout", 0);
+				if (timeout != 0) return timeout;
 			}
 		}
 		return Core::getIntProperty("Client3.ZoneTimeout", 30);
 	}
-
-	static bool shouldCreateCharacter() {
-		Core* instance = Core::getCoreInstance();
-		if (instance) {
-			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			return clientCore && clientCore->options.createCharacter;
-		}
-		return false;
-	}
-
-	static class BaseMessage* buildCreateCharacterPacket();
 
 public:
 	ClientCore(const ClientCoreOptions& opts);
@@ -162,9 +142,8 @@ public:
 	bool loginCharacter(Reference<class LoginSession*>& loginSession);
 	void logoutCharacter();
 
-	void parseArgumentsIntoActions(int argc, char** argv, Vector<ActionBase*>& actionsOut);
-	void parseJSONIntoActions(const JSONSerializationType& jsonActions, Vector<ActionBase*>& actionsOut);
 	void executeActions();
+
 	void setVar(const String& key, const String& value) {
 		vars.put(key, value);
 	}
