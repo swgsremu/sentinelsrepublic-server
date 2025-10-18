@@ -295,7 +295,7 @@ function SpaceSpawnerScreenPlay:populateSpawns()
 		-- Spawn a squadron
 		if (spawnType == SHIP_SPAWN_SQUADRON) then
 			for j = 1, totalSpawns, 1 do
-				createEvent(getRandomNumber(2, 30) * 1000, self.screenplayName, "spawnShipSquadron", nil, tostring(i))
+				--createEvent(getRandomNumber(2, 30) * 1000, self.screenplayName, "spawnShipSquadron", nil, tostring(i))
 			end
 		else
 			-- Spawn the single ships
