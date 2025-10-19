@@ -54,7 +54,7 @@ public:
 	ClientCoreOptions options;
 	Reference<class LoginSession*> loginSession;
 	Zone* zone;
-	VectorMap<String, String> vars;
+	JSONSerializationType vars;  // Unified storage for dynamic data (async responses, user vars, etc.)
 	uint64 selectedCharacterOid;  // Which character we're playing as (set by zoneInCharacter, confirmed by server)
 	uint64 targetCharacterOid;    // Target character for operations (set by selectContext)
 	uint32 targetGalaxyId;        // Target galaxy (set by selectContext)
@@ -64,74 +64,61 @@ private:
 	Optional<Galaxy> selectedGalaxy;
 
 public:
-	static int getLogLevel() {
+	static ClientCore* getCoreInstance() {
 		Core* instance = Core::getCoreInstance();
-		if (instance) {
-			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			if (clientCore) {
-				int level = clientCore->options.get<int>("/logLevel", -1);
-				if (level != -1) return level;
-			}
+		return (instance != nullptr) ? static_cast<ClientCore*>(instance) : nullptr;
+	}
+
+	static int getLogLevel() {
+		ClientCore* clientCore = getCoreInstance();
+		if (clientCore != nullptr) {
+			int level = clientCore->options.get<int>("/logLevel", -1);
+			if (level != -1) return level;
 		}
 		return Core::getIntProperty("Client3.LogLevel", Logger::INFO);
 	}
 
 	static String getLoginHost() {
-		Core* instance = Core::getCoreInstance();
-		if (instance) {
-			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			if (clientCore) {
-				std::string host = clientCore->options.get<std::string>("/loginHost", "");
-				if (!host.empty()) return String(host.c_str());
-			}
+		ClientCore* clientCore = getCoreInstance();
+		if (clientCore != nullptr) {
+			std::string host = clientCore->options.get<std::string>("/loginHost", "");
+			if (!host.empty()) return String(host.c_str());
 		}
 		return Core::getProperty("Client3.LoginHost", "127.0.0.1");
 	}
 
 	static int getLoginPort() {
-		Core* instance = Core::getCoreInstance();
-		if (instance) {
-			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			if (clientCore) {
-				int port = clientCore->options.get<int>("/loginPort", 0);
-				if (port != 0) return port;
-			}
+		ClientCore* clientCore = getCoreInstance();
+		if (clientCore != nullptr) {
+			int port = clientCore->options.get<int>("/loginPort", 0);
+			if (port != 0) return port;
 		}
 		return Core::getIntProperty("Client3.LoginPort", 44453);
 	}
 
 	static String getClientVersion() {
-		Core* instance = Core::getCoreInstance();
-		if (instance) {
-			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			if (clientCore) {
-				std::string ver = clientCore->options.get<std::string>("/clientVersion", "");
-				if (!ver.empty()) return String(ver.c_str());
-			}
+		ClientCore* clientCore = getCoreInstance();
+		if (clientCore != nullptr) {
+			std::string ver = clientCore->options.get<std::string>("/clientVersion", "");
+			if (!ver.empty()) return String(ver.c_str());
 		}
 		return Core::getProperty("Client3.ClientVersion", "20050408-18:00");
 	}
 
 	static int getLoginTimeout() {
-		Core* instance = Core::getCoreInstance();
-		if (instance) {
-			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			if (clientCore) {
-				int timeout = clientCore->options.get<int>("/loginTimeout", 0);
-				if (timeout != 0) return timeout;
-			}
+		ClientCore* clientCore = getCoreInstance();
+		if (clientCore != nullptr) {
+			int timeout = clientCore->options.get<int>("/loginTimeout", 0);
+			if (timeout != 0) return timeout;
 		}
 		return Core::getIntProperty("Client3.LoginTimeout", 10);
 	}
 
 	static int getZoneTimeout() {
-		Core* instance = Core::getCoreInstance();
-		if (instance) {
-			ClientCore* clientCore = static_cast<ClientCore*>(instance);
-			if (clientCore) {
-				int timeout = clientCore->options.get<int>("/zoneTimeout", 0);
-				if (timeout != 0) return timeout;
-			}
+		ClientCore* clientCore = getCoreInstance();
+		if (clientCore != nullptr) {
+			int timeout = clientCore->options.get<int>("/zoneTimeout", 0);
+			if (timeout != 0) return timeout;
 		}
 		return Core::getIntProperty("Client3.ZoneTimeout", 30);
 	}
@@ -145,23 +132,70 @@ public:
 
 	void executeActions();
 
-	void setVar(const String& key, const String& value) {
-		vars.put(key, value);
+	// ===== Variable Storage (JSON-backed) =====
+
+	template<typename T>
+	void setVar(const String& path, T value) {
+		String jsonPath = "/" + path;
+		vars[JSONSerializationType::json_pointer(jsonPath.toCharArray())] = value;
 	}
 
-	String getVar(const String& key) const {
-		return vars.contains(key) ? vars.get(key) : "";
+	// String specialization (convert to std::string for JSON)
+	void setVar(const String& path, const String& value) {
+		String jsonPath = "/" + path;
+		vars[JSONSerializationType::json_pointer(jsonPath.toCharArray())] = value.toCharArray();
+	}
+
+	template<typename T>
+	T getVar(const String& path, T defaultVal = T()) const {
+		try {
+			String jsonPath = "/" + path;
+			return vars.at(JSONSerializationType::json_pointer(jsonPath.toCharArray())).get<T>();
+		} catch (...) {
+			return defaultVal;
+		}
+	}
+
+	// String specialization (JSON uses std::string)
+	String getVar(const String& path, const String& defaultVal) const {
+		try {
+			String jsonPath = "/" + path;
+			std::string val = vars.at(JSONSerializationType::json_pointer(jsonPath.toCharArray())).get<std::string>();
+			return String(val.c_str());
+		} catch (...) {
+			return defaultVal;
+		}
+	}
+
+	bool hasVar(const String& path) const {
+		try {
+			String jsonPath = "/" + path;
+			vars.at(JSONSerializationType::json_pointer(jsonPath.toCharArray()));
+			return true;
+		} catch (...) {
+			return false;
+		}
 	}
 
 	String substituteVars(const String& input) const {
 		String result = input;
 
-		for (int i = 0; i < vars.size(); i++) {
-			String key = vars.elementAt(i).getKey();
-			String value = vars.elementAt(i).getValue();
-			String pattern = "{" + key + "}";
+		// Iterate over JSON object keys
+		if (vars.is_object()) {
+			for (auto it = vars.begin(); it != vars.end(); ++it) {
+				String key(it.key().c_str());
+				String value;
 
-			result = result.replaceAll(pattern, value);
+				// Convert value to string for substitution
+				if (it.value().is_string()) {
+					value = String(it.value().get<std::string>().c_str());
+				} else {
+					value = String(it.value().dump().c_str());
+				}
+
+				String pattern = "{" + key + "}";
+				result = result.replaceAll(pattern, value);
+			}
 		}
 
 		return result;

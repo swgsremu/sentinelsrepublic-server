@@ -88,12 +88,10 @@ ClientCoreOptions::ClientCoreOptions(int argc, char** argv) {
 		("login-timeout", po::value<int>(), "Login timeout in seconds")
 		("zone-timeout", po::value<int>(), "Zone timeout in seconds")
 		("log-level", po::value<std::string>(), "Log level (0-5 or fatal/error/warning/log/info/debug)")
-		("character-oid", po::value<uint64>(), "Character object ID to select")
-		("character-firstname", po::value<std::string>(), "Character first name to select")
 		("save-state", po::value<std::string>(), "Save login state to JSON file")
 		("login-only", "Only perform login, skip zone connection")
 		("options-json", po::value<std::string>(), "Load options from JSON file")
-		("generate-options-json", "Generate default options JSON to stdout and exit")
+		("generate-options-json", po::value<std::string>(), "Generate options JSON to file and exit")
 		("env", po::value<std::string>(), "Environment file to load")
 		("wait-after-zone", po::value<int>(), "Seconds to stay connected to zone before shutdown");
 
@@ -170,21 +168,12 @@ ClientCoreOptions::ClientCoreOptions(int argc, char** argv) {
 	if (vm.count("login-timeout")) config["loginTimeout"] = vm["login-timeout"].as<int>();
 	if (vm.count("zone-timeout")) config["zoneTimeout"] = vm["zone-timeout"].as<int>();
 	if (vm.count("log-level")) config["logLevel"] = parseLogLevel(String(vm["log-level"].as<std::string>().c_str()));
-	if (vm.count("character-oid")) config["characterOid"] = vm["character-oid"].as<uint64>();
-	if (vm.count("character-firstname")) config["characterFirstname"] = vm["character-firstname"].as<std::string>();
 	if (vm.count("save-state")) config["saveState"] = vm["save-state"].as<std::string>();
 	if (vm.count("login-only")) config["loginOnly"] = true;
 	if (vm.count("wait-after-zone")) config["waitAfterZone"] = vm["wait-after-zone"].as<int>();
 
-	// Handle --generate-options-json after all config is loaded
-	if (vm.count("generate-options-json")) {
-		JSONSerializationType output = config;
-		if (output.contains("password")) {
-			output["password"] = "***";
-		}
-		std::cout << output.dump(2) << std::endl;
-		exit(0);
-	}
+	// Store generate filename for later (need to resolve actions first)
+	std::string generateFile = vm.count("generate-options-json") ? vm["generate-options-json"].as<std::string>() : "";
 
 	// Validate required fields
 	if (config["username"].get<std::string>().empty()) {
@@ -205,6 +194,33 @@ ClientCoreOptions::ClientCoreOptions(int argc, char** argv) {
 	// Resolve dependencies (auto-insert prerequisites and handle special cases)
 	resolveDependencies();
 
+	// Generate options JSON if requested (AFTER resolution so friends are included)
+	if (!generateFile.empty()) {
+		JSONSerializationType output = config;
+		if (output.contains("password")) {
+			output["password"] = "***";
+		}
+
+		// Add resolved actions array
+		JSONSerializationType actionsArray = JSONSerializationType::array();
+		for (int i = 0; i < actions.size(); i++) {
+			actionsArray.push_back(actions.get(i)->toJSON());
+		}
+		output["actions"] = actionsArray;
+
+		// Write to file
+		std::ofstream outFile(generateFile.c_str());
+		if (outFile.is_open()) {
+			outFile << output.dump(2) << std::endl;
+			outFile.close();
+			std::cout << "Template written to: " << generateFile << std::endl;
+			exit(0);
+		} else {
+			System::err << "ERROR: Could not write to file: " << generateFile << endl;
+			exit(1);
+		}
+	}
+
 	// Validate we have actions
 	if (actions.size() == 0) {
 		throw Exception("ERROR: No actions specified. Use --login-only, JSON actions array, or CLI action flags (--create-character, etc.)");
@@ -217,6 +233,8 @@ ClientCore::ClientCore(const ClientCoreOptions& opts) : Core("log/core3client.lo
 	selectedCharacterOid = 0;
 	targetCharacterOid = 0;
 	targetGalaxyId = 0;
+
+	vars = JSONSerializationType::object();  // Initialize as empty JSON object
 
 	overallStartTime.updateToCurrentTime();
 
@@ -259,53 +277,40 @@ void ClientCoreOptions::parseJSONIntoActions(const JSONSerializationType& jsonAc
 		}
 
 		String actionName = String(actionConfig["action"].get<std::string>().c_str());
-		ActionBase* action = ActionManager::createAction(actionName.toCharArray());
+		ActionBase* action = ActionManager::fromJSON(actionName.toCharArray(), actionConfig);
 
 		if (action == nullptr) {
 			System::err << "Unknown action type: " << actionName << endl;
 			continue;
 		}
 
-		// Parse action-specific config
-		action->parseJSON(actionConfig);
-		actions.add(action);
+		actions.add(action);  // Single action - JSON is explicit, no friends
 	}
 }
 
 void ClientCoreOptions::parseArgumentsIntoActions(const Vector<String>& args) {
 	for (int i = 0; i < args.size(); ) {
 		int consumed = 0;
+		bool matched = false;
 
-		// First: Offer arg to existing actions in the array (in order)
-		for (int j = 0; j < actions.size(); j++) {
-			consumed = actions.get(j)->parseArgs(args, i);
-			if (consumed > 0) {
-				i += consumed;
-				break;
-			}
-		}
-
-		if (consumed > 0) continue;
-
-		// Second: Try creating new action from registered types
+		// Try all registered action static parsers
 		Vector<String> actionNames = ActionManager::listActions();
 		for (int j = 0; j < actionNames.size(); j++) {
-			ActionBase* action = ActionManager::createAction(actionNames.get(j).toCharArray());
-			if (action == nullptr) continue;
-
-			consumed = action->parseArgs(args, i);
+			Vector<ActionBase*> newActions = ActionManager::fromArgs(actionNames.get(j).toCharArray(), args, i, consumed);
 
 			if (consumed > 0) {
-				actions.add(action);
+				// Add all returned actions (me + friends)
+				for (int k = 0; k < newActions.size(); k++) {
+					actions.add(newActions.get(k));
+				}
 				i += consumed;
+				matched = true;
 				break;
 			}
-
-			delete action;
 		}
 
 		// Handle unrecognized
-		if (consumed == 0) {
+		if (!matched) {
 			if (args.get(i).charAt(0) == '-') {
 				System::err << "ERROR: Unrecognized option: " << args.get(i) << endl;
 				System::err << "Use --help to see available options" << endl;
@@ -391,6 +396,17 @@ void ClientCoreOptions::resolveDependencies() {
 }
 
 void ClientCore::executeActions() {
+	info(true) << "----------------------------------------";
+	info(true) << __FUNCTION__ << " actions:";
+
+	for (int i = 0; i < options.actions.size(); i++) {
+		info(true) << "    #" << (i+1) << " " << options.actions.get(i)->toJSON().dump();
+	}
+
+	info(true) << "----------------------------------------";
+	info(true) << "Running " << options.actions.size() << " action(s)...";
+	info(true) << "----------------------------------------";
+
 	for (int i = 0; i < options.actions.size(); i++) {
 		ActionBase* action = options.actions.get(i);
 
@@ -551,13 +567,9 @@ void ClientCore::saveStateToFile(const String& filename, LoginSession* loginSess
 		}
 		jsonData["actions"] = actionsArray;
 
-		// Variables map
-		if (vars.size() > 0) {
-			JSONSerializationType varsObj;
-			for (int i = 0; i < vars.size(); i++) {
-				varsObj[vars.elementAt(i).getKey().toCharArray()] = vars.elementAt(i).getValue().toCharArray();
-			}
-			jsonData["variables"] = varsObj;
+		// Variables (already JSON)
+		if (!vars.empty()) {
+			jsonData["variables"] = vars;
 		}
 
 		// Write to file

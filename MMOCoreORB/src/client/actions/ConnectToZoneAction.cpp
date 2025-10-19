@@ -27,13 +27,22 @@ public:
 		return "connectToZone";
 	}
 
-
-	void parseJSON(const JSONSerializationType& config) override {
-		// No JSON configuration needed
-	}
-
 	bool needsZone() const override {
 		return false;  // This action CREATES the zone connection
+	}
+
+	// ===== Static Factories =====
+
+	static Vector<ActionBase*> fromArgs(const Vector<String>& args, int startIndex, int& consumed) {
+		Vector<ActionBase*> result;
+		consumed = 0;
+		// ConnectToZone has no CLI args - always auto-inserted by dependency resolution
+		return result;
+	}
+
+	static ActionBase* fromJSON(const JSONSerializationType& config) {
+		// ConnectToZone has no configuration
+		return new ConnectToZoneAction();
 	}
 
 	bool needsTarget() const override {
@@ -92,7 +101,7 @@ public:
 		uint32 accountId = core.loginSession->getAccountID();
 		const String& sessionId = core.loginSession->getSessionID();
 
-		core.zone = new Zone(accountId, sessionId, galaxy.getAddress(), galaxy.getPort());
+		core.zone = new Zone(&core, accountId, sessionId, galaxy.getAddress(), galaxy.getPort());
 		core.zone->start();
 
 		// Wait briefly for connection to establish
@@ -158,4 +167,4 @@ public:
 
 // Static registration (runs before main())
 static bool _registered_connectToZone =
-	(ActionManager::registerAction("connectToZone", ConnectToZoneAction::factory), true);
+	(ActionManager::registerAction("connectToZone", ConnectToZoneAction::factory, ConnectToZoneAction::fromArgs, ConnectToZoneAction::fromJSON), true);

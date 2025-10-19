@@ -32,6 +32,12 @@ LoginSession::~LoginSession() {
 	if (login != nullptr) {
 		login->disconnect();
 	}
+
+	// Cleanup wait conditions
+	for (int i = 0; i < waitConditions.size(); i++) {
+		delete waitConditions.elementAt(i).getValue();
+	}
+	waitConditions.removeAll();
 }
 
 void LoginSession::run() {
@@ -66,13 +72,13 @@ void LoginSession::run() {
 	info(true) << "Sending login request...";
 	login->sendMessage(acc);
 
-	info(true) << "Waiting for response...";
+	info(true) << "Waiting for response for " << ClientCore::getLoginTimeout() << "s";
 
 	// Wait for packets to be processed by the packet handler
 	lock();
 	Time timeout;
 	timeout.addMiliTime(ClientCore::getLoginTimeout() * 1000);
-	bool timedOut = !sessionFinalized.timedWait(this, &timeout);
+	bool timedOut = (sessionFinalized.timedWait(this, &timeout) != 0);
 	unlock();
 
 	if (timedOut) {

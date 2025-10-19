@@ -29,12 +29,22 @@ public:
 		return "zoneInCharacter";
 	}
 
-	void parseJSON(const JSONSerializationType& config) override {
-		// No config needed - uses core.targetCharacterOid from selectContext
-	}
-
 	bool needsZone() const override {
 		return true;  // Requires zone connection
+	}
+
+	// ===== Static Factories =====
+
+	static Vector<ActionBase*> fromArgs(const Vector<String>& args, int startIndex, int& consumed) {
+		Vector<ActionBase*> result;
+		consumed = 0;
+		// ZoneInCharacter has no CLI args - always auto-inserted or friend-injected
+		return result;
+	}
+
+	static ActionBase* fromJSON(const JSONSerializationType& config) {
+		// ZoneInCharacter has no configuration - uses core.targetCharacterOid
+		return new ZoneInCharacterAction();
 	}
 
 	bool needsTarget() const override {
@@ -119,4 +129,4 @@ public:
 
 // Static registration (runs before main())
 static bool _registered_zoneInCharacter =
-	(ActionManager::registerAction("zoneInCharacter", ZoneInCharacterAction::factory), true);
+	(ActionManager::registerAction("zoneInCharacter", ZoneInCharacterAction::factory, ZoneInCharacterAction::fromArgs, ZoneInCharacterAction::fromJSON), true);

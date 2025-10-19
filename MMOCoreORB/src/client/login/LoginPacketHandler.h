@@ -27,6 +27,7 @@ public:
 	}
 
 	void loginComplete() {
+		info(true) << __FUNCTION__;
 		loginSession->signalCompletion();
 	}
 

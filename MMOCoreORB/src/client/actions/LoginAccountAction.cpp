@@ -24,13 +24,22 @@ public:
 		return "loginAccount";
 	}
 
-	void parseJSON(const JSONSerializationType& config) override {
-		// JSON can override username/password if needed
-		// For Phase 1, we just use ClientCoreOptions
-	}
-
 	bool needsZone() const override {
 		return false;  // Login-phase action
+	}
+
+	// ===== Static Factories =====
+
+	static Vector<ActionBase*> fromArgs(const Vector<String>& args, int startIndex, int& consumed) {
+		Vector<ActionBase*> result;
+		consumed = 0;
+		// LoginAccount has no CLI args - always auto-inserted
+		return result;
+	}
+
+	static ActionBase* fromJSON(const JSONSerializationType& config) {
+		// LoginAccount has no configuration - always auto-inserted
+		return new LoginAccountAction();
 	}
 
 	void run(ClientCore& core) override {
@@ -116,4 +125,4 @@ public:
 
 // Static registration (runs before main())
 static bool _registered_loginAccount =
-	(ActionManager::registerAction("loginAccount", LoginAccountAction::factory), true);
+	(ActionManager::registerAction("loginAccount", LoginAccountAction::factory, LoginAccountAction::fromArgs, LoginAccountAction::fromJSON), true);

@@ -35,46 +35,77 @@ public:
 		return "selectContext";
 	}
 
-	int parseArgs(const Vector<String>& args, int startIndex) override {
-		if (startIndex >= args.size()) return 0;
+	// ===== Static Factories =====
 
-		if (args.get(startIndex) == "--galaxy" && startIndex + 1 < args.size()) {
-			String val = args.get(startIndex + 1);
-			// Try parsing as number first, otherwise treat as name
-			try {
-				galaxyId = UnsignedInteger::valueOf(val);
-			} catch (...) {
-				galaxyName = val;
+	static Vector<ActionBase*> fromArgs(const Vector<String>& args, int startIndex, int& consumed) {
+		Vector<ActionBase*> result;
+		consumed = 0;
+		SelectContextAction* me = nullptr;
+
+		int i = startIndex;
+		while (i < args.size()) {
+			int lastConsumed = consumed;
+
+			if (args.get(i) == "--galaxy" && i + 1 < args.size()) {
+				if (me == nullptr) me = new SelectContextAction();
+				String val = args.get(i + 1);
+				// Try parsing as number first, otherwise treat as name
+				try {
+					me->galaxyId = UnsignedInteger::valueOf(val);
+				} catch (...) {
+					me->galaxyName = val;
+				}
+				consumed += 2;
+				i += 2;
 			}
-			return 2;
+			else if (args.get(i) == "--character-oid" && i + 1 < args.size()) {
+				if (me == nullptr) me = new SelectContextAction();
+				me->characterOid = UnsignedLong::valueOf(args.get(i + 1));
+				consumed += 2;
+				i += 2;
+			}
+			else if (args.get(i) == "--character-firstname" && i + 1 < args.size()) {
+				if (me == nullptr) me = new SelectContextAction();
+				me->characterFirstname = args.get(i + 1);
+				consumed += 2;
+				i += 2;
+			}
+
+			if (consumed == lastConsumed) break;
 		}
 
-		if (args.get(startIndex) == "--character-oid" && startIndex + 1 < args.size()) {
-			characterOid = UnsignedLong::valueOf(args.get(startIndex + 1));
-			return 2;
+		if (me != nullptr) {
+			result.add(me);
+
+			// CLI CONVENIENCE: Character selection implies wanting to zone in
+			if (!me->characterFirstname.isEmpty() || me->characterOid != 0) {
+				ActionBase* zoneIn = ActionManager::createAction("zoneInCharacter");
+				if (zoneIn != nullptr) {
+					result.add(zoneIn);
+				}
+			}
 		}
 
-		if (args.get(startIndex) == "--character-firstname" && startIndex + 1 < args.size()) {
-			characterFirstname = args.get(startIndex + 1);
-			return 2;
-		}
-
-		return 0;
+		return result;
 	}
 
-	void parseJSON(const JSONSerializationType& config) override {
+	static ActionBase* fromJSON(const JSONSerializationType& config) {
+		SelectContextAction* me = new SelectContextAction();
+
 		if (config.contains("galaxyId")) {
-			galaxyId = config["galaxyId"].get<uint32>();
+			me->galaxyId = config["galaxyId"].get<uint32>();
 		}
 		if (config.contains("galaxyName")) {
-			galaxyName = String(config["galaxyName"].get<std::string>().c_str());
+			me->galaxyName = String(config["galaxyName"].get<std::string>().c_str());
 		}
 		if (config.contains("characterOid")) {
-			characterOid = config["characterOid"].get<uint64>();
+			me->characterOid = config["characterOid"].get<uint64>();
 		}
 		if (config.contains("characterFirstname")) {
-			characterFirstname = String(config["characterFirstname"].get<std::string>().c_str());
+			me->characterFirstname = String(config["characterFirstname"].get<std::string>().c_str());
 		}
+
+		return me;  // JSON is explicit - no friends
 	}
 
 	bool needsZone() const override {
@@ -190,6 +221,7 @@ public:
 				warning() << "Changing target galaxy from " << core.targetGalaxyId << " to " << resolvedGalaxyId;
 			}
 			core.targetGalaxyId = resolvedGalaxyId;
+			galaxyId = resolvedGalaxyId;  // Store in action for toJSON()
 		}
 
 		if (resolvedCharacterOid != 0) {
@@ -197,6 +229,7 @@ public:
 				warning() << "Changing target character from " << core.targetCharacterOid << " to " << resolvedCharacterOid;
 			}
 			core.targetCharacterOid = resolvedCharacterOid;
+			characterOid = resolvedCharacterOid;  // Store in action for toJSON()
 		}
 
 		result.setSuccess();
@@ -223,6 +256,21 @@ public:
 		JSONSerializationType json;
 		json["action"] = getName();
 
+		// Include configuration (for template generation)
+		if (galaxyId != 0) {
+			json["galaxyId"] = galaxyId;
+		}
+		if (!galaxyName.isEmpty()) {
+			json["galaxyName"] = galaxyName.toCharArray();
+		}
+		if (characterOid != 0) {
+			json["characterOid"] = characterOid;
+		}
+		if (!characterFirstname.isEmpty()) {
+			json["characterFirstname"] = characterFirstname.toCharArray();
+		}
+
+		// Status
 		if (skipped) {
 			json["status"] = "skipped";
 		} else if (result.isOK()) {
@@ -248,4 +296,4 @@ public:
 
 // Static registration (runs before main())
 static bool _registered_selectContext =
-	(ActionManager::registerAction("selectContext", SelectContextAction::factory), true);
+	(ActionManager::registerAction("selectContext", SelectContextAction::factory, SelectContextAction::fromArgs, SelectContextAction::fromJSON), true);

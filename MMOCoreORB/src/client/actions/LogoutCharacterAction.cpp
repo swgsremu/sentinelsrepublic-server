@@ -26,12 +26,22 @@ public:
 		return "logoutCharacter";
 	}
 
-	void parseJSON(const JSONSerializationType& config) override {
-		// No config needed
-	}
-
 	bool needsZone() const override {
 		return true;  // Requires zone to logout from
+	}
+
+	// ===== Static Factories =====
+
+	static Vector<ActionBase*> fromArgs(const Vector<String>& args, int startIndex, int& consumed) {
+		Vector<ActionBase*> result;
+		consumed = 0;
+		// LogoutCharacter has no CLI args - always auto-inserted
+		return result;
+	}
+
+	static ActionBase* fromJSON(const JSONSerializationType& config) {
+		// LogoutCharacter has no configuration
+		return new LogoutCharacterAction();
 	}
 
 	bool needsCharacter() const override {
@@ -117,4 +127,4 @@ public:
 
 // Static registration (runs before main())
 static bool _registered_logoutCharacter =
-	(ActionManager::registerAction("logoutCharacter", LogoutCharacterAction::factory), true);
+	(ActionManager::registerAction("logoutCharacter", LogoutCharacterAction::factory, LogoutCharacterAction::fromArgs, LogoutCharacterAction::fromJSON), true);

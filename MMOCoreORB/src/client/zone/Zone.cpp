@@ -6,7 +6,8 @@
 #include "client/zone/managers/objectcontroller/ObjectController.h"
 #include "client/zone/managers/object/ObjectManager.h"
 
-Zone::Zone(uint32 account, const String& sessionID, const String& galaxyAddress, uint32 galaxyPort) : Thread(), Mutex("Zone"), Logger("Zone") {
+Zone::Zone(ClientCore* core, uint32 account, const String& sessionID, const String& galaxyAddress, uint32 galaxyPort) : Thread(), Mutex("Zone"), Logger("Zone") {
+	clientCore = core;
 	accountID = account;
 	this->sessionID = sessionID;
 	this->galaxyAddress = galaxyAddress;
@@ -22,10 +23,6 @@ Zone::Zone(uint32 account, const String& sessionID, const String& galaxyAddress,
 
 	started = false;
 	sceneReady = false;
-
-	characterCreated = false;
-	characterCreationFailed = false;
-	createdCharacterOID = 0;
 
 	canLogin = false;
 	canCreateRegularCharacter = false;
@@ -43,6 +40,12 @@ Zone::Zone(uint32 account, const String& sessionID, const String& galaxyAddress,
 Zone::~Zone() {
 	delete objectManager;
 	objectManager = nullptr;
+
+	// Cleanup wait conditions
+	for (int i = 0; i < waitConditions.size(); i++) {
+		delete waitConditions.elementAt(i).getValue();
+	}
+	waitConditions.removeAll();
 }
 
 void Zone::run() {

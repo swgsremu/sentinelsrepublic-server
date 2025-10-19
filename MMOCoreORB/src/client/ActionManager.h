@@ -18,22 +18,35 @@
  *
  * Example registration in action .cpp file:
  *   static bool _registered_myAction =
- *       (ActionManager::registerAction("myAction", MyAction::factory), true);
+ *       (ActionManager::registerAction("myAction", MyAction::factory, MyAction::fromArgs, MyAction::fromJSON), true);
  */
 class ActionManager {
 public:
+	// Function pointer types for cleaner signatures
+	typedef ActionBase* (*FactoryFunc)();
+	typedef Vector<ActionBase*> (*FromArgsFunc)(const Vector<String>&, int, int&);
+	typedef ActionBase* (*FromJSONFunc)(const JSONSerializationType&);
+
+	struct ActionRegistry {
+		FactoryFunc factory;
+		FromArgsFunc fromArgs;
+		FromJSONFunc fromJSON;
+	};
+
 	/**
-	 * Register an action factory function
+	 * Register an action with all its factory methods
 	 *
 	 * @param name Action name (e.g., "loginAccount")
-	 * @param factory Function pointer that creates action instances
+	 * @param factory Function that creates empty action instance
+	 * @param fromArgs Function that parses CLI args and creates action(s) with friends
+	 * @param fromJSON Function that parses JSON config and creates single action
 	 *
 	 * Called by static initializers before main()
 	 */
-	static void registerAction(const char* name, ActionBase* (*factory)());
+	static void registerAction(const char* name, FactoryFunc factory, FromArgsFunc fromArgs, FromJSONFunc fromJSON);
 
 	/**
-	 * Create an action instance by name
+	 * Create an action instance by name (using basic factory)
 	 *
 	 * @param name Action name to create
 	 * @return New action instance, or nullptr if not registered
@@ -41,6 +54,26 @@ public:
 	 * Caller is responsible for deleting the returned action
 	 */
 	static ActionBase* createAction(const char* name);
+
+	/**
+	 * Create action(s) from CLI arguments (may include friends)
+	 *
+	 * @param name Action type to try
+	 * @param args CLI arguments
+	 * @param startIndex Current position in args
+	 * @param consumed OUTPUT: number of args consumed
+	 * @return Vector of actions (me + friends), empty if not interested
+	 */
+	static Vector<ActionBase*> fromArgs(const char* name, const Vector<String>& args, int startIndex, int& consumed);
+
+	/**
+	 * Create action from JSON config (single action, no friends)
+	 *
+	 * @param name Action type to create
+	 * @param config JSON configuration object
+	 * @return Configured action instance, or nullptr on error
+	 */
+	static ActionBase* fromJSON(const char* name, const JSONSerializationType& config);
 
 	/**
 	 * List all registered action names
@@ -62,10 +95,10 @@ public:
 private:
 	/**
 	 * Meyers singleton for thread-safe registry initialization
-	 * Registry is a map of action name -> factory function
+	 * Registry is a map of action name -> registry entry (factory + parsers)
 	 */
-	static VectorMap<String, ActionBase* (*)()>& getRegistry() {
-		static VectorMap<String, ActionBase* (*)()> registry;
+	static VectorMap<String, ActionRegistry>& getRegistry() {
+		static VectorMap<String, ActionRegistry> registry;
 		return registry;
 	}
 };
