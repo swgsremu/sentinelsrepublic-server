@@ -14,12 +14,14 @@
 
 class LoginPacketHandler : public Mutex, public Logger {
 	Reference<LoginSession*> loginSession;
+	class ClientCore* core;
 	uint8_t pending_packets;
 
 public:
-	LoginPacketHandler(LoginSession* session) : Logger("LoginPacketHandler") {
+	LoginPacketHandler(LoginSession* session, class ClientCore* clientCore) : Logger("LoginPacketHandler") {
 		pending_packets = 0xF;
 		loginSession = session;
+		core = clientCore;
 		setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 	}
 

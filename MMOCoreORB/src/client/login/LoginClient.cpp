@@ -31,7 +31,7 @@ LoginClient::~LoginClient() {
 }
 
 void LoginClient::initialize() {
-	loginPacketHandler = new LoginPacketHandler(loginSession);
+	loginPacketHandler = new LoginPacketHandler(loginSession, ClientCore::getCoreInstance());
 
 	client->setHandler(this);
 	client->initialize();
