@@ -396,6 +396,11 @@ void ZonePacketHandler::handleErrorMessage(Message* pack) {
 
 	error() << "Zone ERROR: " << errorType << " - " << errorMessage;
 
+	// Store in vars
+	core->setVar("ErrorMessage/type", errorType);
+	core->setVar("ErrorMessage/message", errorMessage);
+	core->setVar("ErrorMessage/source", "ZonePacketHandler");
+
 	zone->setError(errorMessage, 1);
 }
 
