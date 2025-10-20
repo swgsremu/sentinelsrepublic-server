@@ -216,8 +216,8 @@ tatooine_regions = {
 	
 	{"@tatooine_region_names:jundland_waste_1", -3488, 4240, {CIRCLE, 1125}, SPAWNAREA, {"tatooine_jundland_wastes"}, 64},
 	{"@tatooine_region_names:jundland_waste_2", -3296, -1016, {CIRCLE, 1250}, SPAWNAREA, {"tatooine_jundland_wastes"}, 64},
-	{"@tatooine_region_names:eastern_dune_sea", 2320, 784, {RECTANGLE, 8000, 7696}, SPAWNAREA, {"tatooine_hard_dune_sea"}, 256},
-	{"@tatooine_region_names:western_dune_sea_1", -8000, -8000, {RECTANGLE, -3728, -432}, SPAWNAREA, {"tatooine_hard_dune_sea"}, 256},
+	{"@tatooine_region_names:eastern_dune_sea", 2320, 784, {RECTANGLE, 6677, 7696}, SPAWNAREA, {"tatooine_hard_dune_sea"}, 256}, -- cut back the rectangle to 6677, from 8000 to avoid static krayts
+	{"@tatooine_region_names:western_dune_sea_1", -7980, -7980, {RECTANGLE, -3728, -432}, SPAWNAREA, {"tatooine_hard_dune_sea"}, 256},
 	{"@tatooine_region_names:western_dune_sea_2", -2160, -5920, {CIRCLE, 1968}, SPAWNAREA, {"tatooine_hard_dune_sea"}, 64},
 	{"@tatooine_region_names:western_dune_sea_3", -4904, -2536, {CIRCLE, 2424}, SPAWNAREA, {"tatooine_hard_dune_sea"}, 128},
 	{"@tatooine_region_names:southwestern_desert", -7600, -7720, {RECTANGLE, -2915, 3933}, SPAWNAREA, {"tatooine_southwestern_desert"}, 128},
