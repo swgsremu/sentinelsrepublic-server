@@ -83,7 +83,11 @@ function ramnaConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 	local tier3SkillCount = SpaceHelpers:getPilotTierSkillCount(pPlayer, "neutral", 3)
 
 	-- Reward Checks. Tier3 grants a skill box for each mission
-	if (questFourComplete and questFourSideQuestComplete and tier3SkillCount == 3) then
+	if (questFourComplete and tier3SkillCount == 3) then
+		--	if (questFourComplete and questFourSideQuestComplete and tier3SkillCount == 3) then
+		-- REMOVE AFTER IMPLEMENTATION SURVIVAL
+		survival_corellia_privateer_tier3_4_a:completeQuest(pPlayer, "false")
+
 		if (getQuestStatus(playerID .. CorsecSquadronScreenplay.TIER3_QUEST_STRING_4.name .. ":reward") ~= "1") then
 			setQuestStatus(playerID .. CorsecSquadronScreenplay.TIER3_QUEST_STRING_4.name .. ":reward", 1)
 
