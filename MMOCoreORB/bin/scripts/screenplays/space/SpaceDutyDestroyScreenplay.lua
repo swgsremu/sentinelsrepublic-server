@@ -21,7 +21,8 @@ SpaceDutyDestroyScreenplay = SpaceQuestLogic:new {
 	sideQuestDelay = 0, -- Time in seconds to wait to trigger side quest
 
 	parentQuest = "",
-	parentQuestType = "", -- Quest type of parent quest, used for completing tasks
+	parentQuestType = "",
+	parentQuestName = "",
 
 	-- Screenplay Specific Variables
 	totalLevels = 0, -- Amount of levels a player has to complete to finish mission
@@ -65,6 +66,10 @@ function SpaceDutyDestroyScreenplay:startQuest(pPlayer, pNpc)
 		SpaceHelpers:failSpaceQuest(pPlayer, self.questType, self.questName, false)
 	end
 
+	if (pNpc == "") then
+		pNpc = nil
+	end
+
 	-- Activate the Journal Quest
 	SpaceHelpers:activateSpaceQuest(pPlayer, pNpc, self.questType, self.questName, false)
 
@@ -74,7 +79,7 @@ function SpaceDutyDestroyScreenplay:startQuest(pPlayer, pNpc)
 	local pRootParent = SceneObject(pPlayer):getRootParent()
 
 	-- Check if the player is in the proper zone already
-	if (playerZoneHash == spaceQuestHash and pRootParent ~= nil and SceneObject(pRootParent):getObjectName() ~= "player_sorosuub_space_yacht") then
+	if (playerZoneHash == spaceQuestHash and not SpaceHelpers:isInYacht(pPlayer)) then
 		-- Complete the quest task 0
 		SpaceHelpers:completeSpaceQuestTask(pPlayer, self.questType, self.questName, 0, false)
 
@@ -138,12 +143,12 @@ function SpaceDutyDestroyScreenplay:failQuest(pPlayer, notifyClient)
 
 	-- Fail the parent quest
 	if (self.parentQuestType ~= "") then
-		createEvent(200, self.parentQuestType .. "_" .. self.questName, "failQuest", pPlayer, "false")
+		createEvent(200, self.parentQuestType .. "_" .. self.parentQuestName, "failQuest", pPlayer, "false")
 	end
 
 	-- Fail the side quest
-	if (self.sideQuest and SpaceHelpers:isSpaceQuestActive(pPlayer, self.sideQuestType, self.questName)) then
-		createEvent(200, self.sideQuestType .. "_" .. self.questName, "failQuest", pPlayer, "false")
+	if (self.sideQuest and SpaceHelpers:isSpaceQuestActive(pPlayer, self.sideQuestType, self.sideQuestName)) then
+		createEvent(200, self.sideQuestType .. "_" .. self.sideQuestName, "failQuest", pPlayer, "false")
 	end
 
 	-- Remove any data
@@ -359,8 +364,6 @@ function SpaceDutyDestroyScreenplay:spawnAttackWave(pPlayer)
 
 			local bossID = SceneObject(pBossLevelAgent):getObjectID()
 
-			writeData(bossID .. ":" .. self.className .. ":QuestOwnerID:", playerID)
-
 			-- Add to the list of shipIDs
 			shipIDs[#shipIDs + 1] = bossID
 
@@ -368,7 +371,7 @@ function SpaceDutyDestroyScreenplay:spawnAttackWave(pPlayer)
 			CreatureObject(pPlayer):addSpaceMissionObject(bossID, (i == bossSquadSize))
 
 			-- Add kill observer
-			createObserver(DESTROYEDSHIP, self.className, "notifyBossShipDestroyed", pBossLevelAgent)
+			createObserver(SHIPDESTROYED, self.className, "notifyBossShipDestroyed", pBossLevelAgent)
 
 			-- Add aggo and set the pPlayerShip as ShipAgents Defender
 			ShipAiAgent(pBossLevelAgent):addSpaceFactionEnemy(playerFactionHash)
@@ -420,10 +423,8 @@ function SpaceDutyDestroyScreenplay:spawnAttackWave(pPlayer)
 
 			local agentID = SceneObject(pShipAgent):getObjectID()
 
-			writeData(agentID .. ":" .. self.className .. ":QuestOwnerID:", playerID)
-
 			-- Add kill observer
-			createObserver(DESTROYEDSHIP, self.className, "notifyAttackShipDestroyed", pShipAgent)
+			createObserver(SHIPDESTROYED, self.className, "notifyAttackShipDestroyed", pShipAgent)
 
 			-- Set as space mission object
 			CreatureObject(pPlayer):addSpaceMissionObject(agentID, (i == fighterCount))
@@ -495,12 +496,14 @@ function SpaceDutyDestroyScreenplay:removeAttackShips(pPlayer)
 		end
 
 		-- Remove the kill observer
-		dropObserver(DESTROYEDSHIP, self.className, "notifyAttackShipDestroyed", pAttackShip)
+		dropObserver(SHIPDESTROYED, self.className, "notifyAttackShipDestroyed", pAttackShip)
 
 		-- Make ship fly away first
 		ShipObject(pAttackShip):setHyperspacing(true);
 
-		SceneObject(pAttackShip):setPosition(8000, 8000, 8000)
+		local hyperspaceLocation = ShipObject(pAttackShip):getSpawnPointInFrontOfShip(2500, 8000)
+
+		SceneObject(pAttackShip):setPosition(hyperspaceLocation[1], hyperspaceLocation[2], hyperspaceLocation[3])
 
 		-- Remove the attack ship
 		createEvent(2000, "SpaceHelpers", "delayedDestroyShipAgent", pAttackShip, "")
@@ -615,33 +618,30 @@ function SpaceDutyDestroyScreenplay:notifyEnteredQuestArea(pActiveArea, pShip)
 	return 1
 end
 
-function SpaceDutyDestroyScreenplay:notifyBossShipDestroyed(pShipAgent, pBossShip)
-	if (pShipAgent == nil) then
+function SpaceDutyDestroyScreenplay:notifyBossShipDestroyed(pBossShip, pKillerShip)
+	if (pBossShip == nil) then
 		return 1
 	end
 
-	local agentID = SceneObject(pShipAgent):getObjectID()
-	local playerID = readData(agentID .. ":" .. self.className .. ":QuestOwnerID:")
+	local missionOwnerID = ShipAiAgent(pBossShip):getMissionOwnerID()
+	local pPlayer = getSceneObject(missionOwnerID)
 
-	deleteData(agentID .. ":" .. self.className .. ":QuestOwnerID:")
-
-	local pPlayer = getSceneObject(playerID)
-
-	if (pPlayer == nil) then
-		Logger:log(self.className .. ":notifyBossShipDestroyed - Quest Owner is nil.", LT_ERROR)
+	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
 		return 1
 	end
+
+	local agentID = SceneObject(pBossShip):getObjectID()
 
 	-- Remove as Mission Object
 	CreatureObject(pPlayer):removeSpaceMissionObject(agentID, true)
 
 	if (self.DEBUG_SPACE_DUTY_DESTROY) then
-		print(self.className .. ":notifyBossShipDestroyed - Boss Ship Destoyed: " .. SceneObject(pShipAgent):getDisplayedName() .. " Quest Owner Name: " .. SceneObject(pPlayer):getDisplayedName())
+		print(self.className .. ":notifyBossShipDestroyed - Boss Ship Destoyed: " .. SceneObject(pBossShip):getDisplayedName() .. " Quest Owner Name: " .. SceneObject(pPlayer):getDisplayedName())
 	end
 
 	-- Destroy the area
-	local playerAreaID = readData(playerID .. ":" .. self.className .. ":targetArea:")
-	deleteData(playerID .. ":" .. self.className .. ":targetArea:", questAreaID)
+	local playerAreaID = readData(missionOwnerID .. ":" .. self.className .. ":targetArea:")
+	deleteData(missionOwnerID .. ":" .. self.className .. ":targetArea:", questAreaID)
 
 	local pQuestArea = getSceneObject(questAreaID)
 
@@ -650,10 +650,10 @@ function SpaceDutyDestroyScreenplay:notifyBossShipDestroyed(pShipAgent, pBossShi
 	end
 
 	-- Remove from Attack Ships Vector
-	local shipIDs = readStringVectorSharedMemory(playerID .. self.className .. ":attackShips:")
+	local shipIDs = readStringVectorSharedMemory(missionOwnerID .. self.className .. ":attackShips:")
 	local newIDs = {}
 
-	deleteStringVectorSharedMemory(playerID .. self.className .. ":attackShips:")
+	deleteStringVectorSharedMemory(missionOwnerID .. self.className .. ":attackShips:")
 
 	for i = 1, #shipIDs, 1 do
 		local shipID = tonumber(shipIDs[i])
@@ -665,7 +665,7 @@ function SpaceDutyDestroyScreenplay:notifyBossShipDestroyed(pShipAgent, pBossShi
 
 	if (#newIDs > 0) then
 		-- Store the Spawned Attack Ships
-		writeStringVectorSharedMemory(playerID .. self.className .. ":attackShips:", newIDs)
+		writeStringVectorSharedMemory(missionOwnerID .. self.className .. ":attackShips:", newIDs)
 
 		local messageString = LuaStringIdChatParameter("@space/quest:destroy_duty_targets_remaining")
 		messageString:setDI(#newIDs)
@@ -683,8 +683,8 @@ function SpaceDutyDestroyScreenplay:notifyBossShipDestroyed(pShipAgent, pBossShi
 		CreatureObject(pPlayer):sendSystemMessage("@space/quest:destroy_duty_boss_dead")
 
 		-- read the current level
-		local currentLevel = readData(playerID .. ":" .. self.className .. ":CurrentLevel:") + 1
-		deleteData(playerID .. ":" .. self.className .. ":CurrentLevel:")
+		local currentLevel = readData(missionOwnerID .. ":" .. self.className .. ":CurrentLevel:") + 1
+		deleteData(missionOwnerID .. ":" .. self.className .. ":CurrentLevel:")
 
 		-- Calculate Reward
 		local rewardCredits = self.creditReward * 3
@@ -717,7 +717,7 @@ function SpaceDutyDestroyScreenplay:notifyBossShipDestroyed(pShipAgent, pBossShi
 			end
 
 			-- Update the level
-			writeData(playerID .. ":" .. self.className .. ":CurrentLevel:", currentLevel)
+			writeData(missionOwnerID .. ":" .. self.className .. ":CurrentLevel:", currentLevel)
 
 			-- Remove waypoint
 			SpaceHelpers:clearQuestWaypoint(pPlayer, self.className)
@@ -750,13 +750,10 @@ function SpaceDutyDestroyScreenplay:notifyAttackShipDestroyed(pShipAgent, pKille
 		return 1
 	end
 
-	local agentID = SceneObject(pShipAgent):getObjectID()
-	local playerID = readData(agentID .. ":" .. self.className .. ":QuestOwnerID:")
+	local missionOwnerID = ShipAiAgent(pShipAgent):getMissionOwnerID()
+	local pPlayer = getSceneObject(missionOwnerID)
 
-	local pPlayer = getSceneObject(playerID)
-
-	if (pPlayer == nil) then
-		Logger:log(self.className .. ":notifyAttackShipDestroyed - Quest Owner is nil.", LT_ERROR)
+	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
 		return 1
 	end
 
@@ -764,14 +761,16 @@ function SpaceDutyDestroyScreenplay:notifyAttackShipDestroyed(pShipAgent, pKille
 		print(self.className .. ":notifyAttackShipDestroyed - Ship Destoyed: " .. SceneObject(pShipAgent):getDisplayedName() .. " Quest Owner Name: " .. SceneObject(pPlayer):getDisplayedName())
 	end
 
+	local agentID = SceneObject(pShipAgent):getObjectID()
+
 	-- Remove as Mission Objects
 	CreatureObject(pPlayer):removeSpaceMissionObject(agentID, true)
 
 	-- Remove from Attack Ships Vector
-	local shipIDs = readStringVectorSharedMemory(playerID .. self.className .. ":attackShips:")
+	local shipIDs = readStringVectorSharedMemory(missionOwnerID .. self.className .. ":attackShips:")
 	local newIDs = {}
 
-	deleteStringVectorSharedMemory(playerID .. self.className .. ":attackShips:")
+	deleteStringVectorSharedMemory(missionOwnerID .. self.className .. ":attackShips:")
 
 	for i = 1, #shipIDs, 1 do
 		local shipID = tonumber(shipIDs[i])
@@ -782,21 +781,21 @@ function SpaceDutyDestroyScreenplay:notifyAttackShipDestroyed(pShipAgent, pKille
 	end
 
 	-- Increase kill count
-	local totalKills = readData(playerID .. ":" .. self.className .. ":DestroyKillCount:")
-	deleteData(playerID .. ":" .. self.className .. ":DestroyKillCount:")
+	local totalKills = readData(missionOwnerID .. ":" .. self.className .. ":DestroyKillCount:")
+	deleteData(missionOwnerID .. ":" .. self.className .. ":DestroyKillCount:")
 
 	totalKills = totalKills + 1
 
 	if (#newIDs > 0) then
 		-- Store the Spawned Attack Ships
-		writeStringVectorSharedMemory(playerID .. self.className .. ":attackShips:", newIDs)
+		writeStringVectorSharedMemory(missionOwnerID .. self.className .. ":attackShips:", newIDs)
 
 		local messageString = LuaStringIdChatParameter("@space/quest:destroy_duty_targets_remaining")
 		messageString:setDI(#newIDs)
 
 		CreatureObject(pPlayer):sendSystemMessage(messageString:_getObject())
 
-		writeData(playerID .. ":" .. self.className .. ":DestroyKillCount:", totalKills)
+		writeData(missionOwnerID .. ":" .. self.className .. ":DestroyKillCount:", totalKills)
 
 		if (self.DEBUG_SPACE_DUTY_DESTROY) then
 			print(self.className .. ":notifyAttackShipDestroyed - Ships remaining: " .. #newIDs)
@@ -806,15 +805,15 @@ function SpaceDutyDestroyScreenplay:notifyAttackShipDestroyed(pShipAgent, pKille
 		CreatureObject(pPlayer):sendSystemMessage("@space/quest:destroy_duty_targets_dead")
 
 		-- Check wave count
-		local currentWave = readData(playerID .. ":" .. self.className .. ":CurrentWave:")
-		deleteData(playerID .. ":" .. self.className .. ":CurrentWave:")
+		local currentWave = readData(missionOwnerID .. ":" .. self.className .. ":CurrentWave:")
+		deleteData(missionOwnerID .. ":" .. self.className .. ":CurrentWave:")
 
 		-- Waves are not complete
 		if (currentWave < self.totalWaves) then
 			CreatureObject(pPlayer):playEffect("clienteffect/ui_quest_destroyed_wave.cef", "")
 
-			writeData(playerID .. ":" .. self.className .. ":CurrentWave:", currentWave + 1)
-			writeData(playerID .. ":" .. self.className .. ":DestroyKillCount:", totalKills)
+			writeData(missionOwnerID .. ":" .. self.className .. ":CurrentWave:", currentWave + 1)
+			writeData(missionOwnerID .. ":" .. self.className .. ":DestroyKillCount:", totalKills)
 
 			-- Spawn next wave
 			createEvent(5000, self.className, "spawnAttackWave", pPlayer, "")
@@ -831,8 +830,8 @@ function SpaceDutyDestroyScreenplay:notifyAttackShipDestroyed(pShipAgent, pKille
 
 			CreatureObject(pPlayer):playEffect("clienteffect/ui_quest_destroyed_all.cef", "")
 
-			local currentRound = readData(playerID .. ":" .. self.className .. ":CurrentRound:") + 1
-			deleteData(playerID .. ":" .. self.className .. ":CurrentRound:")
+			local currentRound = readData(missionOwnerID .. ":" .. self.className .. ":CurrentRound:") + 1
+			deleteData(missionOwnerID .. ":" .. self.className .. ":CurrentRound:")
 
 			-- Give Round Reward
 			local rewardCredits = self.creditReward * totalKills
@@ -845,8 +844,8 @@ function SpaceDutyDestroyScreenplay:notifyAttackShipDestroyed(pShipAgent, pKille
 			SpaceHelpers:spaceCreditReward(pPlayer, rewardCredits)
 
 			-- Destroy the area
-			local playerAreaID = readData(playerID .. ":" .. self.className .. ":targetArea:")
-			deleteData(playerID .. ":" .. self.className .. ":targetArea:", questAreaID)
+			local playerAreaID = readData(missionOwnerID .. ":" .. self.className .. ":targetArea:")
+			deleteData(missionOwnerID .. ":" .. self.className .. ":targetArea:", questAreaID)
 
 			local pQuestArea = getSceneObject(questAreaID)
 
@@ -866,9 +865,9 @@ function SpaceDutyDestroyScreenplay:notifyAttackShipDestroyed(pShipAgent, pKille
 				CreatureObject(pPlayer):playMusicMessage("sound/music_combat_bfield_vict.snd")
 
 				-- Set boss data
-				writeData(playerID .. ":" .. self.className .. ":bossLevel:", 1)
+				writeData(missionOwnerID .. ":" .. self.className .. ":bossLevel:", 1)
 
-				local currentLevel = readData(playerID .. ":" .. self.className .. ":CurrentLevel:") + 1
+				local currentLevel = readData(missionOwnerID .. ":" .. self.className .. ":CurrentLevel:") + 1
 
 				local messageString = LuaStringIdChatParameter("@spacequest/destroy_duty/" .. self.questName .. ":level_boss")
 				messageString:setTO("@spacequest/destroy_duty/" .. self.questName .. ":boss_title_" .. tostring(currentLevel))
@@ -889,7 +888,7 @@ function SpaceDutyDestroyScreenplay:notifyAttackShipDestroyed(pShipAgent, pKille
 
 				CreatureObject(pPlayer):playMusicMessage("sound/music_int_complete_neutral.snd")
 
-				writeData(playerID .. ":" .. self.className .. ":CurrentRound:", currentRound)
+				writeData(missionOwnerID .. ":" .. self.className .. ":CurrentRound:", currentRound)
 			end
 		end
 	end

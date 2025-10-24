@@ -35,6 +35,12 @@ class LoginSession : public Mutex, public Runnable, public Logger, public Object
 
 	Time loginStartTime;
 
+	String lastError;
+	uint16 lastErrorCode;
+
+	// Generic async response handling
+	VectorMap<uint32, Condition*> waitConditions;
+
 public:
 	LoginSession(const String& username, const String& password);
 
@@ -118,7 +124,92 @@ public:
 		return galaxies;
 	}
 
+	bool isConnected() const {
+		return loginThread != nullptr && login != nullptr;
+	}
+
+	bool isLoggedIn() const {
+		return accountID != 0;
+	}
+
+	const String& getLastError() const {
+		return lastError;
+	}
+
+	uint16 getLastErrorCode() const {
+		return lastErrorCode;
+	}
+
+	void setError(const String& msg, uint16 code) {
+		lastError = msg;
+		lastErrorCode = code;
+	}
+
+	void clearError() {
+		lastError = "";
+		lastErrorCode = 0;
+	}
+
+	// ===== Generic Wait/Signal Mechanism =====
+
+	bool waitFor(uint32 opcode, int timeoutMs) {
+		lock();
+
+		if (!waitConditions.contains(opcode)) {
+			waitConditions.put(opcode, new Condition());
+		}
+
+		Condition* cond = waitConditions.get(opcode);
+
+		Time timeout;
+		timeout.addMiliTime(timeoutMs);
+		bool success = (cond->timedWait(this, &timeout) == 0);
+
+		unlock();
+		return success;
+	}
+
+	void signal(uint32 opcode) {
+		lock();
+
+		if (waitConditions.contains(opcode)) {
+			waitConditions.get(opcode)->signal(this);
+		}
+
+		unlock();
+	}
+
+	bool waitForAny(uint32 opcodes[], int count, int timeoutMs) {
+		lock();
+
+		// Create ONE shared condition for all opcodes
+		Condition* sharedCond = new Condition();
+
+		// Register under all opcodes
+		for (int i = 0; i < count; i++) {
+			waitConditions.put(opcodes[i], sharedCond);
+		}
+
+		// Wait (releases lock during wait, re-acquires on return)
+		Time timeout;
+		timeout.addMiliTime(timeoutMs);
+		bool success = (sharedCond->timedWait(this, &timeout) == 0);
+
+		// Cleanup: Remove all opcodes and free condition
+		for (int i = 0; i < count; i++) {
+			waitConditions.drop(opcodes[i]);
+		}
+		delete sharedCond;
+
+		unlock();
+		return success;
+	}
+
+	void cleanup();
+
 	JSONSerializationType collectStats();
+
+	void sendMessage(BaseMessage* msg);
 };
 
 

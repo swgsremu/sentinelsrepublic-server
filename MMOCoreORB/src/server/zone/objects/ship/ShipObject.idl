@@ -437,6 +437,9 @@ class ShipObject extends TangibleObject {
 	@dereferenced
 	protected VectorMap<unsigned int, string> availableDroidCommands;
 
+	@dereferenced
+	protected string cargoString;
+
 	public ShipObject() {
 		Logger.setLoggingName("ShipObject");
 
@@ -464,6 +467,7 @@ class ShipObject extends TangibleObject {
 		chassisSpeed.set(1.f);
 
 		certificationRequired = "";
+		cargoString = "";
 	}
 
 	public native void notifyLoadFromDatabase();
@@ -502,11 +506,13 @@ class ShipObject extends TangibleObject {
 	public abstract native void notifyDissapear(TreeEntry obj);
 
 	@preLocked
-	public abstract native void notifyDespawn(Zone zone);
+	public abstract void notifyDespawn() {
+	}
 
 	@dirty
 	public native void sendDestroyTo(SceneObject player);
 
+	@local
 	public native void notifyInsertToZone(Zone zone);
 
 	public native void notifyRemoveFromZone();
@@ -996,7 +1002,7 @@ class ShipObject extends TangibleObject {
 	public void setHyperspacing(boolean value) {
 		hyperspacing = value;
 
-		if (hyperspacing) {
+		if (hyperspacing && !isShipAiAgent()) {
 			setHyperspaceDelay();
 		}
 	}
@@ -1861,6 +1867,19 @@ class ShipObject extends TangibleObject {
 		certificationRequired = cert;
 	}
 
+	@read
+	public string getCargoString() {
+		return cargoString;
+	}
+
+	public void setCargoString(final string cargo) {
+		cargoString = cargo;
+	}
+
+	public abstract int getSquadronSize() {
+		return 0;
+	}
+
 	@local
 	public native void initializeTransform(@dereferenced final Vector3 position, @dereferenced final Quaternion direction);
 
@@ -1879,4 +1898,10 @@ class ShipObject extends TangibleObject {
 	@local
 	@dereferenced
 	public native SpaceTransform getNextTransform();
+
+	@local
+	public native float getNextDistance();
+
+	@local
+	public native float getNextRotation();
 }

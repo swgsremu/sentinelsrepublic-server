@@ -6,8 +6,8 @@
 #include "client/zone/managers/objectcontroller/ObjectController.h"
 #include "client/zone/managers/object/ObjectManager.h"
 
-Zone::Zone(uint64 characterObjectID, uint32 account, const String& sessionID, const String& galaxyAddress, uint32 galaxyPort) : Thread(), Mutex("Zone"), Logger("Zone") {
-	characterID = characterObjectID;
+Zone::Zone(ClientCore* core, uint32 account, const String& sessionID, const String& galaxyAddress, uint32 galaxyPort) : Thread(), Mutex("Zone"), Logger("Zone") {
+	clientCore = core;
 	accountID = account;
 	this->sessionID = sessionID;
 	this->galaxyAddress = galaxyAddress;
@@ -24,18 +24,28 @@ Zone::Zone(uint64 characterObjectID, uint32 account, const String& sessionID, co
 	started = false;
 	sceneReady = false;
 
-	characterCreated = false;
-	characterCreationFailed = false;
-	createdCharacterOID = 0;
+	canLogin = false;
+	canCreateRegularCharacter = false;
+	canCreateJediCharacter = false;
+	canSkipTutorial = false;
+
+	lastError = "";
+	lastErrorCode = 0;
 
 	setLogLevel(static_cast<Logger::LogLevel>(ClientCore::getLogLevel()));
 
-	info(true) << "Zone created for character " << characterObjectID << " with sessionID: " << sessionID;
+	info(true) << "Zone connection created to " << galaxyAddress << ":" << galaxyPort;
 }
 
 Zone::~Zone() {
 	delete objectManager;
 	objectManager = nullptr;
+
+	// Cleanup wait conditions
+	for (int i = 0; i < waitConditions.size(); i++) {
+		delete waitConditions.elementAt(i).getValue();
+	}
+	waitConditions.removeAll();
 }
 
 void Zone::run() {
@@ -95,6 +105,20 @@ JSONSerializationType Zone::collectStats() {
 	stats["elapsedMs"] = startTime.miliDifference();
 	stats["packetCount"] = client != nullptr ? client->getPacketCount() : 0;
 	stats["sceneReady"] = sceneReady;
-	stats["characterId"] = characterID;
+
+	// Add unknown opcodes if any
+	if (client != nullptr) {
+		auto& unknownOps = client->getZonePacketHandler()->getUnknownOpcodes();
+		if (unknownOps.size() > 0) {
+			JSONSerializationType unknownStats;
+			for (int i = 0; i < unknownOps.size(); i++) {
+				StringBuffer key;
+				key << "0x" << hex << uppercase << unknownOps.elementAt(i).getKey();
+				unknownStats[key.toString().toCharArray()] = unknownOps.elementAt(i).getValue();
+			}
+			stats["unknownOpcodes"] = unknownStats;
+		}
+	}
+
 	return stats;
 }

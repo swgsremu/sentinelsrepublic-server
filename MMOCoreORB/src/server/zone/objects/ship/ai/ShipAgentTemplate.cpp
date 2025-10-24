@@ -56,6 +56,8 @@ ShipAgentTemplate::ShipAgentTemplate() {
 	conversationTemplate = 0;
 	conversationMobile = 0;
 	conversationMessage = 0;
+
+	cargoString = "";
 }
 
 // Destructor
@@ -135,4 +137,6 @@ void ShipAgentTemplate::readObject(LuaObject* templateData) {
 	conversationTemplate = String(templateData->getStringField("conversationTemplate").trim()).hashCode();
 	conversationMobile = String(templateData->getStringField("conversationMobile").trim()).hashCode();
 	conversationMessage = String(templateData->getStringField("conversationMessage").trim()).hashCode();
+
+	cargoString = templateData->getStringField("cargoString").trim();
 }

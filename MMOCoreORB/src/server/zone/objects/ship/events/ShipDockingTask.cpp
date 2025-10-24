@@ -27,7 +27,8 @@ void ShipDockingTask::run() {
 }
 
 void ShipDockingTask::initializeDocking(ShipObject* ship, ShipObject* target) {
-	sendEffectMessage(ship, "clienteffect/space_command/sys_manipulation.cef");
+	sendEffectMessage(ship, "clienteffect/ship_dock_repair_01.cef");
+
 	sendSystemMessage(ship, "@space/cargo:dock_started");
 	setDockingTransform(ship, target);
 
@@ -65,7 +66,6 @@ void ShipDockingTask::updateTransform(ShipObject* ship, ShipObject* target) {
 		return reschedule(INTERVAL_TRANSFORM);
 	}
 
-	sendEffectMessage(ship, "clienteffect/space_command/shp_dock_harddock.cef");
 	sendSystemMessage(ship, interlockStatus ? "@space/cargo:dock_achieved" : "@space/cargo:dock_abort");
 
 	dockingStage = FINALIZE;
@@ -73,27 +73,29 @@ void ShipDockingTask::updateTransform(ShipObject* ship, ShipObject* target) {
 }
 
 void ShipDockingTask::finalizeDocking(ShipObject* ship, ShipObject* target) {
-	sendEffectMessage(ship, "clienteffect/space_command/shp_dock_release.cef");
 	sendSystemMessage(ship, "@space/cargo:dock_complete");
+	sendEffectMessage(ship, "clienteffect/ship_dock_repair_02.cef");
 
 	clearDockingState(ship, target);
 	notifyObservers(ship, target);
 }
 
 void ShipDockingTask::notifyObservers(ShipObject* ship, ShipObject* target) {
-	Reference<ShipObject*> shipRef = ship;
+	Reference<CreatureObject*> pilotRef = ship->getPilot();
 	Reference<ShipObject*> targetRef = target;
 
-	Core::getTaskManager()->scheduleTask([shipRef, targetRef] () {
-		if (shipRef == nullptr || targetRef == nullptr) {
+	Core::getTaskManager()->scheduleTask([pilotRef, targetRef] () {
+		if (pilotRef == nullptr || targetRef == nullptr) {
 			return;
 		}
 
-		Locker lock(shipRef);
-		Locker clocker(targetRef, shipRef);
+		Locker lock(pilotRef);
+		Locker clocker(targetRef, pilotRef);
 
-		targetRef->notifyObservers(ObserverEventType::SHIPDOCKED, shipRef);
-	}, "notifyShipDockedLambda", 200);
+		pilotRef->notifyObservers(ObserverEventType::SHIPDOCKED, targetRef, targetRef->getCargoString().hashCode());
+	}, "notifyDockedShipLambda", 200);
+
+	sendEffectMessage(ship, "clienteffect/ship_cargo_transfer.cef");
 }
 
 void ShipDockingTask::sendSystemMessage(ShipObject* ship, const String& message) {

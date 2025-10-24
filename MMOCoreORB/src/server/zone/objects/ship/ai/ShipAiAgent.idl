@@ -32,6 +32,7 @@ import server.zone.objects.ship.ai.btspace.BlackboardDataSpace;
 include server.zone.objects.ship.ai.btspace.BlackboardDataMapSpace;
 import system.thread.atomic.AtomicInteger;
 import server.zone.objects.scene.SceneObject;
+import server.zone.objects.ship.ai.SquadronObserver;
 include system.util.VectorMap;
 include engine.util.u3d.Vector3;
 include server.zone.objects.creature.variables.CooldownTimerMap;
@@ -65,9 +66,11 @@ class ShipAiAgent extends FighterShipObject {
 	@weakReference
 	private ShipObject targetShip;
 
-	private unsigned int movementState;
+	protected transient unsigned int movementState;
 
-	protected unsigned int movementCount;
+	protected transient unsigned int movementCount;
+
+	protected transient unsigned long movementTime;
 
 	@dereferenced
 	private transient Mutex targetMutex;
@@ -138,6 +141,7 @@ class ShipAiAgent extends FighterShipObject {
 	@weakReference
 	protected SceneObject homeObject;
 
+	public static final int PATROLPOINTS_MAX = 20;
 	public static final int UPDATEZONEINTERVAL = 2000; // msec
 	public static final int BEHAVIORINTERVALMAX = 1000; // msec
 	public static final int BEHAVIORINTERVAL = 500; // msec
@@ -203,6 +207,8 @@ class ShipAiAgent extends FighterShipObject {
 	protected transient Vector<unsigned long> enemyShipList;
 
 	unsigned long missionOwnerID;
+
+	private transient SquadronObserver squadron;
 
 	public ShipAiAgent() {
 		movementState = OBLIVIOUS;
@@ -270,6 +276,7 @@ class ShipAiAgent extends FighterShipObject {
 	public void finalize() {
 	}
 
+	@local
 	public native void notifyInsertToZone(Zone zone);
 
 	@local
@@ -279,7 +286,7 @@ class ShipAiAgent extends FighterShipObject {
 	public abstract native void notifyDissapear(TreeEntry entry);
 
 	@preLocked
-	public abstract native void notifyDespawn();
+	public native void notifyDespawn();
 
 	@weakReference
 	public ShipObject getFollowShipObject() {
@@ -305,7 +312,10 @@ class ShipAiAgent extends FighterShipObject {
 	@dirty
 	public native void setMovementState(int state);
 
-	public native void setNextPathPosition(ShipObject targetShip);
+	@dirty
+	public native unsigned long getMovementDeltaTime();
+
+	public native void addPatrolPoint(@dereferenced final SpacePatrolPoint value);
 
 	@local
 	@dereferenced
@@ -315,35 +325,48 @@ class ShipAiAgent extends FighterShipObject {
 	@dereferenced
 	public native SpacePatrolPoint getFinalPosition();
 
+	@local
 	public native boolean isInRangePosition(@dereferenced final Vector3 value, float radius);
 
 	@local
-	@dirty
-	@dereferenced
-	public native SpacePatrolPoint getNextFollowPosition(ShipObject followShip);
+	public native void setNextFollowPosition();
 
 	@local
-	@dirty
-	@dereferenced
-	public native SpacePatrolPoint getNextAttackPosition(ShipObject targetShip);
+	public native void setNextSquadronPosition();
 
 	@local
-	@dirty
-	@dereferenced
-	public native SpacePatrolPoint getNextEvadePosition();
+	public native void setNextAttackPosition();
+
+	@local
+	public native void setNextEvadePosition();
+
+	@local
+	public native void setNextLeashPosition();
 
 	@local
 	@dereferenced
 	public native Vector3 getInterceptPosition(ShipObject targetShip, float speed, int slot = -1, int targetSlot = -1);
 
 	@dirty
-	public abstract native float getMaxDistance();
+	public native float getMaxDistance();
 
 	@dirty
-	public abstract native int getTransformType();
+	public native int getTransformType();
+
+	@dirty
+	public native int getPatrolSizeMax();
 
 	@preLocked
-	public abstract native int setDestination();
+	public native int setDestination();
+
+	@preLocked
+	public native void setNextTransform();
+
+	@preLocked
+	public native void setSquadronTransform();
+
+	@local
+	public native float getNextSpeed();
 
 	public native boolean setDisabledEngineSpeed();
 
@@ -352,14 +375,14 @@ class ShipAiAgent extends FighterShipObject {
 	public native int getNextBehaviorInterval();
 
 	@preLocked
-	public abstract native boolean findNextPosition(int maxDistance);
+	public native boolean findNextPosition(int maxDistance);
 
-	public abstract native boolean generatePatrol(int totalPoints, float distance, int pathShape = 0);
+	public native boolean generatePatrol(int totalPoints, float distance, int pathShape = 0);
 
-	public abstract native void updatePatrolPoints();
+	public native void updatePatrolPoints();
 
 	@preLocked
-	public abstract native void leash();
+	public native void leash();
 
 	public void clearPatrolPoints() {
 		synchronized (targetMutex) {
@@ -415,7 +438,7 @@ class ShipAiAgent extends FighterShipObject {
 	}
 
 	@dirty
-	public abstract boolean isRetreating() {
+	public boolean isRetreating() {
 		return getMovementState() == LEASHING;
 	}
 
@@ -483,6 +506,9 @@ class ShipAiAgent extends FighterShipObject {
 	@preLocked
 	public native void removeSpaceFactionEnemy(unsigned int factionHash);
 
+	@preLocked
+	public native void swapSpaceFactionAssociations();
+
 	/**
 	 * Evaluates if this creature is aggresive to the object
 	 * @pre { }
@@ -521,7 +547,7 @@ class ShipAiAgent extends FighterShipObject {
 	 * @post { this is locked }
 	 */
 	@preLocked
-	public abstract native void activateAiBehavior(boolean reschedule = false);
+	public native void activateAiBehavior(boolean reschedule = false);
 
 	/**
 	 * Stops the movement event task
@@ -529,7 +555,7 @@ class ShipAiAgent extends FighterShipObject {
 	 * @post { this is locked }
 	 */
 	@preLocked
-	public abstract native void cancelBehaviorEvent();
+	public native void cancelBehaviorEvent();
 
 	/**
 	 * Does the main AI update tick
@@ -583,12 +609,36 @@ class ShipAiAgent extends FighterShipObject {
 	@read
 	public native boolean isFixedPatrolShipAgent();
 
+	@read
+	public native boolean hasSinglePatrolRotation();
+
 	@dirty
 	@preLocked
 	public native boolean sendConversationStartTo(SceneObject player);
 
 	@preLocked
 	public native void tauntPlayer(CreatureObject player, final string message);
+
+	@preLocked
+	public native void createSquadron(int formationType = -1);
+
+	@preLocked
+	public native void assignToSquadron(ShipAiAgent squadronAgent);
+
+	@preLocked
+	public native void dropFromSquadron();
+
+	public native boolean isSquadronLeader();
+
+	public native boolean isSquadronMember();
+
+	public native boolean isSquadronTransform();
+
+	public native int getSquadronSize();
+
+	public SquadronObserver getSquadron() {
+		return squadron;
+	}
 
 	@dirty
 	public void setConversationTemplate(unsigned int convoTemplateCrc) {
@@ -619,19 +669,14 @@ class ShipAiAgent extends FighterShipObject {
 	@preLocked
 	public native void removeShipFlag(unsigned int option);
 
-	@preLocked
+	public native boolean isDisabledInvulnerable();
+
 	public native void addFixedPatrolPoint(unsigned int pointHash);
 
+	public native void clearFixedPatrolPoints();
+
 	@preLocked
-	public void destroyObjectFromWorld(boolean sendSelfDestroy) {
-		super.destroyObjectFromWorld(sendSelfDestroy);
-
-		numberOfPlayersInRange.set(0);
-
-		if (behaviorEvent) {
-			cancelBehaviorEvent();
-		}
-	}
+	public native void destroyObjectFromWorld(boolean sendSelfDestroy);
 
 	@read
 	public boolean getDespawnOnNoPlayerInRange() {
@@ -720,10 +765,10 @@ class ShipAiAgent extends FighterShipObject {
 	 * @param timeToDespawn the time to despawn the AiAgent in seconds.
 	 */
 	@preLocked
-	public abstract native void scheduleDespawn(int timeToDespawn, boolean force = false);
+	public native void scheduleDespawn(int timeToDespawn, boolean force = false);
 
 	@preLocked
-	public abstract void clearDespawnEvent() {
+	public void clearDespawnEvent() {
 		despawnEvent = null;
 	}
 
@@ -760,7 +805,7 @@ class ShipAiAgent extends FighterShipObject {
 
 	@local
 	@dirty
-	public abstract SpacePatrolPoint getHomeLocation() {
+	public SpacePatrolPoint getHomeLocation() {
 		return homeLocation;
 	}
 

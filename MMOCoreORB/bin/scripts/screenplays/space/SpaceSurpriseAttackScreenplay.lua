@@ -13,8 +13,12 @@ function SpaceSurpriseAttackScreenplay:startQuest(pPlayer, pNpc)
 		return
 	end
 
+	if (pNpc == "") then
+		pNpc = nil
+	end
+
 	-- Activate Space Quest
-	SpaceHelpers:activateSpaceQuest(pPlayer, nil, self.questType, self.questName, true)
+	SpaceHelpers:activateSpaceQuest(pPlayer, pNpc, self.questType, self.questName, true)
 
 	-- Create inital observer for player entering Corellia Space
 	if (not hasObserver(ZONESWITCHED, self.className, "enteredZone", pPlayer)) then
@@ -81,12 +85,12 @@ function SpaceSurpriseAttackScreenplay:failQuest(pPlayer, notifyClient)
 
 	-- Fail the parent quest
 	if (self.parentQuestType ~= "") then
-		createEvent(200, self.parentQuestType .. "_" .. self.questName, "failQuest", pPlayer, "false")
+		createEvent(200, self.parentQuestType .. "_" .. self.parentQuestName, "failQuest", pPlayer, "false")
 	end
 
 	-- Fail the side quest
 	if (self.sideQuest) then
-		createEvent(200, self.sideQuestType .. "_" .. self.questName, "failQuest", pPlayer, "false")
+		createEvent(200, self.sideQuestType .. "_" .. self.sideQuestName, "failQuest", pPlayer, "false")
 	end
 end
 
@@ -132,32 +136,37 @@ function SpaceSurpriseAttackScreenplay:spawnSurpriseAttack(pPilot)
 			print("spawnSurpriseAttack -- spawning ship: " .. shipName .. " Spawn Count: " .. count)
 		end
 
+		local pSquadronLeader = nil
+
 		for j = 1, count, 1 do
-			local pShipAgent = spawnShipAgent(shipName, spawnZone, spawnLocation[1] + getRandomNumber(50, 150), spawnLocation[2]  + getRandomNumber(50, 150), spawnLocation[3]  + getRandomNumber(50, 150))
+			local pShipAgent = spawnShipAgent(shipName, spawnZone, spawnLocation[1] + getRandomNumber(100, 150), spawnLocation[2], spawnLocation[3] + getRandomNumber(100, 150))
 
 			if (pShipAgent ~= nil) then
 				-- Set as a mission-specific ship locked to the mission holder
-				ShipAiAgent(pShipAgent):setMissionOwner(pPlayer)
+				ShipAiAgent(pShipAgent):setMissionOwner(pPilot)
 
 				-- Setup the patrol
-				ShipAiAgent(pShipAgent):setMinimumGuardPatrol(200)
+				ShipAiAgent(pShipAgent):setMinimumGuardPatrol(100)
 				ShipAiAgent(pShipAgent):setMaximumGuardPatrol(1000)
 
 				ShipAiAgent(pShipAgent):setGuardPatrol()
 
-				-- Make sure the extra mobs are despawned if all players leaves the area
-				ShipAiAgent(pShipAgent):setDespawnOnNoPlayerInRange(true)
-
 				-- Add kill observer
-				createObserver(DESTROYEDSHIP, self.className, "notifyShipDestroyed", pShipAgent)
+				createObserver(SHIPDESTROYED, self.className, "notifyShipDestroyed", pShipAgent)
+
+				if (i == 1) then
+					pSquadronLeader = pShipAgent
+					ShipAiAgent(pShipAgent):createSquadron()
+				elseif (pSquadronLeader ~= nil) then
+					ShipAiAgent(pShipAgent):assignToSquadron(pSquadronLeader)
+				end
 
 				local agentID = SceneObject(pShipAgent):getObjectID()
 
 				shipIDs[#shipIDs + 1] = agentID
 
-				-- Set the player as ShipAgents Defender
-				ShipAiAgent(pShipAgent):addAggro(pPilotShip, 1)
-				ShipAiAgent(pShipAgent):setDefender(pPilotShip)
+				-- Add aggo and set the escort ship as ShipAgents Defender
+				ShipAiAgent(pShipAgent):engageShipTarget(pPilotShip)
 
 				totalSpawned = totalSpawned + 1
 
@@ -233,14 +242,14 @@ function SpaceSurpriseAttackScreenplay:notifyShipDestroyed(pShipAgent, pKillerSh
 		return 1
 	end
 
-	local agentID = SceneObject(pShipAgent):getObjectID()
-	local playerID = readData(agentID .. ":QuestOwner")
-	local pPlayer = getSceneObject(playerID)
+	local missionOwnerID = ShipAiAgent(pShipAgent):getMissionOwnerID()
+	local pPlayer = getSceneObject(missionOwnerID)
 
-	if (pPlayer == nil) then
-		Logger:log(self.className .. ":notifyShipDestroyed - Quest Owner is nil.", LT_ERROR)
+	if (pPlayer == nil or not SceneObject(pPlayer):isPlayerCreature()) then
 		return 1
 	end
+
+	local agentID = SceneObject(pShipAgent):getObjectID()
 
 	if (self.DEBUG_SPACE_SURPRISE_ATTACK) then
 		print(self.className .. ":notifyShipDestroyed - Ship Destoyed: " .. SceneObject(pShipAgent):getDisplayedName() .. " Quest Owner Name: " .. SceneObject(pPlayer):getDisplayedName())
@@ -252,11 +261,11 @@ function SpaceSurpriseAttackScreenplay:notifyShipDestroyed(pShipAgent, pKillerSh
 		return 1
 	end
 
-	local spawnCount = readData(playerID .. self.className .. ":Count")
+	local spawnCount = readData(missionOwnerID .. self.className .. ":Count")
 	spawnCount = spawnCount - 1
 
 	-- Clear the old kill count off the player
-	deleteData(playerID .. self.className .. ":Count")
+	deleteData(missionOwnerID .. self.className .. ":Count")
 
 	-- Remove Ship as Space Mission Object
 	CreatureObject(pPlayer):removeSpaceMissionObject(agentID, false)
@@ -266,7 +275,7 @@ function SpaceSurpriseAttackScreenplay:notifyShipDestroyed(pShipAgent, pKillerSh
 		SpaceHelpers:sendQuestUpdate(pPlayer, spawnCount .. " targets remaining to be destroyed.") -- "destroy_remainder_update"
 
 		-- Update the remaining count
-		writeData(playerID .. self.className .. ":Count", spawnCount)
+		writeData(missionOwnerID .. self.className .. ":Count", spawnCount)
 	else
 		-- Player effect for player
 		CreatureObject(pPlayer):playEffect("clienteffect/ui_quest_destroyed_wave.cef", "")

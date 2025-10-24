@@ -27,10 +27,8 @@ function rikkhConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 		return convoTemplate:getScreen("pilot_not_corsec") -- "Well, if it isn't %TU. I've heard your name around the pilot's lounge a few times. What can I do for you?"
 	end
 
-
 	-- TESTING RESET
 	-- CorsecSquadronScreenplay:resetRikkhQuests(pPlayer)
-
 
 	local pGhost = CreatureObject(pPlayer):getPlayerObject()
 
@@ -277,16 +275,6 @@ function rikkhConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selec
 
 		--	Give third mission to player
 		inspect_corellia_privateer_15:startQuest(pPlayer, pNpc)
-
-
-		-- REMOVE AFTER INSPECT IMPLEMENTATION
-
-		CreatureObject(pPlayer):sendSystemMessage("Inspect Missions have not been implemented yet, mission has been auto-completed.")
-
-		createEvent(2000, "inspect_corellia_privateer_15", "completeQuest", pPlayer, "true")
-
-		-- REMOVE AFTER INSPECT IMPLEMENTATION
-
 	elseif (screenID == "accept_escort" or screenID == "back_to_yavin" or screenID == "now_is_good" or screenID == "be_smarter") then
 		setQuestStatus(playerID .. CorsecSquadronScreenplay.TIER2_QUEST_STRING_2.name .. ":attempted", 1)
 

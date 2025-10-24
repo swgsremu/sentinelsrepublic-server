@@ -20,7 +20,7 @@ function SpaceDeliveryScreenplay:startQuest(pPlayer, pNpc)
 		return
 	end
 
-	if (self.DEBUG_SPACE_INSPECT) then
+	if (self.DEBUG_SPACE_DELIVERY) then
 		print(self.className .. ":startQuest called -- QuestType: " .. self.questType .. " Quest Name: " .. self.questName)
 	end
 
@@ -37,14 +37,14 @@ function SpaceDeliveryScreenplay:startQuest(pPlayer, pNpc)
 	local pRootParent = SceneObject(pPlayer):getRootParent()
 
 	-- Check if the player is in the proper zone already
-	if (playerZoneHash == spaceQuestHash and pRootParent ~= nil and SceneObject(pRootParent):getObjectName() ~= "player_sorosuub_space_yacht") then
+	if (playerZoneHash == spaceQuestHash and not SpaceHelpers:isInYacht(pPlayer)) then
 		-- Complete the quest task 0
 		SpaceHelpers:completeSpaceQuestTask(pPlayer, self.questType, self.questName, 0, false)
 
 		-- Activate quest task 1
 		SpaceHelpers:activateSpaceQuestTask(pPlayer, self.questType, self.questName, 1, true)
 
-		createEvent(2000, self.className, "setupEscort", pPlayer, "")
+
 	end
 
 	-- Create inital observer for player entering Zone and to handle failing quest
@@ -59,7 +59,7 @@ function SpaceDeliveryScreenplay:completeQuest(pPlayer, notifyClient)
 		return
 	end
 
-	if (self.DEBUG_SPACE_INSPECT) then
+	if (self.DEBUG_SPACE_DELIVERY) then
 		print(self.className .. ":completeQuest called -- QuestType: " .. self.questType .. " Quest Name: " .. self.questName)
 	end
 
@@ -84,7 +84,7 @@ function SpaceDeliveryScreenplay:failQuest(pPlayer, notifyClient)
 		return
 	end
 
-	if (self.DEBUG_SPACE_INSPECT) then
+	if (self.DEBUG_SPACE_DELIVERY) then
 		print(self.className .. ":failQuest called -- QuestType: " .. self.questType .. " Quest Name: " .. self.questName)
 	end
 
@@ -107,12 +107,12 @@ function SpaceDeliveryScreenplay:failQuest(pPlayer, notifyClient)
 
 	-- Fail the parent quest
 	if (self.parentQuestType ~= "") then
-		createEvent(200, self.parentQuestType .. "_" .. self.questName, "failQuest", pPlayer, "false")
+		createEvent(200, self.parentQuestType .. "_" .. self.parentQuestName, "failQuest", pPlayer, "false")
 	end
 
 	-- Fail the side quest
-	if (self.sideQuest and SpaceHelpers:isSpaceQuestActive(pPlayer, self.sideQuestType, self.questName)) then
-		createEvent(200, self.sideQuestType .. "_" .. self.questName, "failQuest", pPlayer, "false")
+	if (self.sideQuest and SpaceHelpers:isSpaceQuestActive(pPlayer, self.sideQuestType, self.sideQuestName)) then
+		createEvent(200, self.sideQuestType .. "_" .. self.sideQuestName, "failQuest", pPlayer, "false")
 	end
 end
 

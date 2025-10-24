@@ -433,6 +433,21 @@ function SpaceHelpers:hasCertifiedShip(pPlayer, skipYacht)
 	return CreatureObject(pPlayer):hasCertifiedShip(skipYacht)
 end
 
+-- @param pPlayer pointer to check if root parent is yacht
+function SpaceHelpers:isInYacht(pPlayer)
+	if (pPlayer == nil) then
+		return false
+	end
+
+	local pRootParent = SceneObject(pPlayer):getRootParent()
+
+	if (pRootParent == nil or SceneObject(pRootParent):getObjectName() == "player_sorosuub_space_yacht") then
+		return true
+	end
+
+	return false
+end
+
 -- @param pPlayer pointer surrenders the entire pilot profession and resets all of the quests
 function SpaceHelpers:surrenderPilot(pPlayer)
 	if (pPlayer == nil) then
@@ -916,6 +931,8 @@ function SpaceHelpers:failSpaceQuest(pPlayer, questType, questName, notifyClient
 			SpaceHelpers:sendQuestUpdate(pPlayer, "@space/quest:destroy_surprise_abandoned") -- "You ran away from the attack and abandoned your duty!"
 		elseif (questType == "escort_duty" or questType == "destroy_duty") then
 			SpaceHelpers:sendDutyUpdate(pPlayer, "@space/quest:mission_abandoned") -- "You abandoned your mission!"
+		elseif (questType == "inspect") then
+			SpaceHelpers:sendQuestUpdate(pPlayer, "@space/quest:inspect_abandoned") -- "You abandoned your inspection mission!"
 		else
 			-- Failed Message
 			SpaceHelpers:sendQuestUpdate(pPlayer, "@quest/quests:task_failure")

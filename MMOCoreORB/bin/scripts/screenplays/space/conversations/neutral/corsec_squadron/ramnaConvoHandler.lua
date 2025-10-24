@@ -43,12 +43,15 @@ function ramnaConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 		return convoTemplate:getScreen("not_tier3")
 	end
 
-	local questOneStarted = SpaceHelpers:isSpaceQuestActive(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1.name)
+	local questOneStarted = SpaceHelpers:isSpaceQuestActive(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1.name) or
+							SpaceHelpers:isSpaceQuestActive(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1_SIDE1.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1_SIDE1.name) or
+							SpaceHelpers:isSpaceQuestActive(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1_SIDE2.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1_SIDE2.name) or
+							SpaceHelpers:isSpaceQuestActive(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1_SIDE3.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1_SIDE3.name)
 	local questTwoStarted = SpaceHelpers:isSpaceQuestActive(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_2.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_2.name)
 	local questThreeStarted = SpaceHelpers:isSpaceQuestActive(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_3.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_3.name)
 	local questFourStarted = SpaceHelpers:isSpaceQuestActive(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_4.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_4.name)
 
-	local questOneComplete = SpaceHelpers:isSpaceQuestComplete(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1.name)
+	local questOneComplete = SpaceHelpers:isSpaceQuestComplete(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1_SIDE3.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_1_SIDE3.name)
 	local questTwoComplete = SpaceHelpers:isSpaceQuestComplete(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_2.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_2.name)
 	local questThreeComplete = SpaceHelpers:isSpaceQuestComplete(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_3.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_3.name)
 	local questFourComplete = SpaceHelpers:isSpaceQuestComplete(pPlayer, CorsecSquadronScreenplay.TIER3_QUEST_STRING_4.type, CorsecSquadronScreenplay.TIER3_QUEST_STRING_4.name)
@@ -80,7 +83,11 @@ function ramnaConvoHandler:getInitialScreen(pPlayer, pNpc, pConvTemplate)
 	local tier3SkillCount = SpaceHelpers:getPilotTierSkillCount(pPlayer, "neutral", 3)
 
 	-- Reward Checks. Tier3 grants a skill box for each mission
-	if (questFourComplete and questFourSideQuestComplete and tier3SkillCount == 3) then
+	if (questFourComplete and tier3SkillCount == 3) then
+		--	if (questFourComplete and questFourSideQuestComplete and tier3SkillCount == 3) then
+		-- REMOVE AFTER IMPLEMENTATION SURVIVAL
+		survival_corellia_privateer_tier3_4_a:completeQuest(pPlayer, "false")
+
 		if (getQuestStatus(playerID .. CorsecSquadronScreenplay.TIER3_QUEST_STRING_4.name .. ":reward") ~= "1") then
 			setQuestStatus(playerID .. CorsecSquadronScreenplay.TIER3_QUEST_STRING_4.name .. ":reward", 1)
 
@@ -261,14 +268,6 @@ function ramnaConvoHandler:runScreenHandlers(pConvTemplate, pPlayer, pNpc, selec
 
 		--	Give First mission to player
 		recovery_corellia_privateer_tier3_1:startQuest(pPlayer, pNpc)
-
-		-- REMOVE AFTER IMPLEMENTATION RECOVERY
-
-		CreatureObject(pPlayer):sendSystemMessage("Recovery Missions have not been implemented yet, mission has been auto-completed.")
-
-		createEvent(2000, "recovery_corellia_privateer_tier3_1", "completeQuest", pPlayer, "true")
-
-		-- REMOVE AFTER IMPLEMENTATION RECOVERY
 	end
 
 	return pClonedScreen

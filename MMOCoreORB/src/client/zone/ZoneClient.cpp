@@ -3,6 +3,7 @@
 		See file COPYING for copying conditions.*/
 
 #include "ZoneClient.h"
+#include "Zone.h"
 #include "ClientCore.h"
 #include "ZonePacketHandler.h"
 #include "ZoneMessageProcessorTask.h"
@@ -37,7 +38,7 @@ void ZoneClient::handleMessage(ServiceClient* client, Packet* message) {
 }
 
 void ZoneClient::initialize() {
-	zonePacketHandler = new ZonePacketHandler("ZonePacketHandler", zone);
+	zonePacketHandler = new ZonePacketHandler("ZonePacketHandler", zone, zone->getClientCore());
 
 	client->initialize();
 }

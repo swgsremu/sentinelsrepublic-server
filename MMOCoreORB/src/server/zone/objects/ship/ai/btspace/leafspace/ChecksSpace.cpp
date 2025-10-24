@@ -148,23 +148,15 @@ template<> bool CheckTargetIsValid::check(ShipAiAgent* agent) const {
 	return agent->validateTarget(targetShip);
 }
 
-template<> bool CheckEnginesDisabled::check(ShipAiAgent* agent) const {
-	auto componentOptMap = agent->getComponentOptionsMap();
+template<> bool CheckShipDisabled::check(ShipAiAgent* agent) const {
+	return agent->isShipDisabled();
+}
 
-	if (componentOptMap == nullptr)
-		return false;
-
-	uint32 flags = componentOptMap->get(Components::ENGINE);
-
-	return (flags & ShipComponentFlag::DISABLED) || (flags & ShipComponentFlag::DEMOLISHED);
+template<> bool CheckEngineSpeed::check(ShipAiAgent* agent) const {
+	return agent->getCurrentSpeed() > 0.f;
 }
 
 template<> bool CheckEvadeChance::check(ShipAiAgent* agent) const {
-	// Agent engines are disabled, no evading
-	if (agent->getCurrentSpeed() == 0.f) {
-		return false;
-	}
-
 	// Don't immediately evade again
 	if (!agent->isEvadeDelayPast()) {
 		return false;

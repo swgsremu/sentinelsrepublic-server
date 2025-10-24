@@ -11,6 +11,8 @@
 
 #include <bitset>
 
+#define CASE_OPCODE(str) case STRING_HASHCODE(str): what = str
+
 void LoginPacketHandler::handleMessage(Message* pack) {
 	Locker lock(this);
 
@@ -19,15 +21,17 @@ void LoginPacketHandler::handleMessage(Message* pack) {
 
 	info(true) << "-------------------- (0x" << hex << opcode << ") --------------------";
 
+	String what;
+
 	switch (opcount) {
 	case 02:
 		switch (opcode) {
-		case STRING_HASHCODE("EnumerateCharacterId"): // 0x65EA4574 char create success
+		CASE_OPCODE("EnumerateCharacterId");
 			handleEnumerateCharacterId(pack);
 			pending_packets &= ~0x01;
 			break;
 
-		case STRING_HASHCODE("LoginEnumCluster"): // 0xC11C63B9 galaxy list
+		CASE_OPCODE("LoginEnumCluster");
 			handleLoginEnumCluster(pack);
 			pending_packets &= ~0x02;
 			break;
@@ -35,12 +39,12 @@ void LoginPacketHandler::handleMessage(Message* pack) {
 		break;
 	case 03:
 		switch (opcode) {
-		case STRING_HASHCODE("ErrorMessage"):
+		CASE_OPCODE("ErrorMessage");
 			handleErrorMessage(pack);
 			pending_packets = 0;
 			break;
 
-		case STRING_HASHCODE("LoginClusterStatus"): // 0x3436AEB6 galaxy status with address/port
+		CASE_OPCODE("LoginClusterStatus");
 			handleLoginClusterStatus(pack);
 			pending_packets &= ~0x04;
 			break;
@@ -48,7 +52,7 @@ void LoginPacketHandler::handleMessage(Message* pack) {
 		break;
 	case 04:
 		switch (opcode) {
-		case STRING_HASHCODE("LoginClientToken"): // 0xAAB296C6 client token
+		CASE_OPCODE("LoginClientToken");
 			handleLoginClientToken(pack);
 			pending_packets &= ~0x08;
 			break;
@@ -58,7 +62,13 @@ void LoginPacketHandler::handleMessage(Message* pack) {
 	default:
 		error() << "Unhandled packet - opcount: " << opcount << " opcode: 0x" << hex << opcode << dec;
 		pending_packets = 0;
+		what = "unknown";
 		break;
+	}
+
+	// Auto-signal for all recognized packets (signal() ignores if no waiter)
+	if (!what.isEmpty() && what != "unknown") {
+		loginSession->signal(opcode);
 	}
 
 	// If we've seen all the packets or errored out signal complete
@@ -69,11 +79,15 @@ void LoginPacketHandler::handleMessage(Message* pack) {
 
 void LoginPacketHandler::handleErrorMessage(Message* pack) {
 	String errorType, errorMessage;
-
 	pack->parseAscii(errorType);
 	pack->parseAscii(errorMessage);
 
-	info(true) << "ERROR: " << errorType << " - " << errorMessage ;
+	error() << "Login ERROR: " << errorType << " - " << errorMessage ;
+
+	// Store in vars
+	core->setVar("ErrorMessage/type", errorType);
+	core->setVar("ErrorMessage/message", errorMessage);
+	core->setVar("ErrorMessage/source", "LoginPacketHandler");
 
 	loginSession->signalCompletion();
 }
@@ -186,7 +200,16 @@ void LoginPacketHandler::handleEnumerateCharacterId(Message* pack) {
 		CharacterListEntry entry;
 		entry.setObjectID(oid);
 		entry.setGalaxyID(galaxy);
-		entry.setFirstName(name.toString());
+
+		// Split full name into firstname and surname
+		String fullName = name.toString();
+		int spacePos = fullName.indexOf(' ');
+		if (spacePos != -1) {
+			entry.setFirstName(fullName.subString(0, spacePos));
+			entry.setSurName(fullName.subString(spacePos + 1));
+		} else {
+			entry.setFirstName(fullName);
+		}
 
 		loginSession->addCharacter(entry);
 

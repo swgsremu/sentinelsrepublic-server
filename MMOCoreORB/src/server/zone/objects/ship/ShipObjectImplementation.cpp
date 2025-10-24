@@ -640,9 +640,6 @@ void ShipObjectImplementation::notifyDissapear(TreeEntry* object) {
 	}
 }
 
-void ShipObjectImplementation::notifyDespawn(Zone* zone) {
-}
-
 void ShipObjectImplementation::sendDestroyTo(SceneObject* player) {
 	SceneObjectImplementation::sendDestroyTo(player);
 }
@@ -2652,4 +2649,12 @@ SpaceTransform ShipObjectImplementation::getCurrentTransform() {
 
 SpaceTransform ShipObjectImplementation::getNextTransform() {
 	return shipTransform.getNextTransform();
+}
+
+float ShipObjectImplementation::getNextDistance() {
+	return shipTransform.getNextDistance();
+}
+
+float ShipObjectImplementation::getNextRotation() {
+	return shipTransform.getNextRotation();
 }
