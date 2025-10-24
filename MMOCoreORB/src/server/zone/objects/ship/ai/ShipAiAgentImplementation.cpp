@@ -531,6 +531,9 @@ void ShipAiAgentImplementation::notifyDespawn() {
 		Locker squadronLock(squadron, asShipAiAgent());
 
 		squadron->dropSquadronShip(asShipAiAgent());
+
+		squadronLock.release();
+
 		squadron = nullptr;
 
 #ifdef DEBUG_SHIP_DESPAWN
