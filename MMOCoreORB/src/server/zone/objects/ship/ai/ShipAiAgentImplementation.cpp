@@ -852,7 +852,12 @@ void ShipAiAgentImplementation::setNextSquadronPosition() {
 		return;
 	}
 
+	Locker squadronLock(squadron, asShipAiAgent());
+
 	SpacePatrolPoint point = squadron->getPosition(asShipAiAgent());
+
+	squadronLock.release();
+
 	patrolPoints.removeAll();
 	patrolPoints.add(point);
 }
@@ -2210,7 +2215,12 @@ void ShipAiAgentImplementation::tauntPlayer(CreatureObject* player, const String
 
 void ShipAiAgentImplementation::createSquadron(int formationType) {
 	if (squadron != nullptr) {
+		Locker squadronLock(squadron, asShipAiAgent());
+
 		squadron->dropSquadronShip(asShipAiAgent());
+
+		squadronLock.release();
+
 		squadron = nullptr;
 	}
 
@@ -2238,11 +2248,11 @@ void ShipAiAgentImplementation::dropFromSquadron() {
 		return;
 	}
 
-	Locker cLock(squadron, asShipAiAgent());
+	Locker squadronLock(squadron, asShipAiAgent());
 
 	squadron->dropSquadronShip(asShipAiAgent());
 
-	cLock.release();
+	squadronLock.release();
 
 	squadron = nullptr;
 }
