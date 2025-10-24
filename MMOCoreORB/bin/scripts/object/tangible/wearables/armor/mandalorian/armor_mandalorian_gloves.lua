@@ -108,7 +108,7 @@ object_tangible_wearables_armor_mandalorian_armor_mandalorian_gloves = object_ta
 	heat = 58,
 	cold = 0,
 	acid = 58,
-	lightSaber = 0
+	lightSaber = 20
 }
 
 ObjectTemplates:addTemplate(object_tangible_wearables_armor_mandalorian_armor_mandalorian_gloves, "object/tangible/wearables/armor/mandalorian/armor_mandalorian_gloves.iff")
