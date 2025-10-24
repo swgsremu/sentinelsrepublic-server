@@ -681,7 +681,7 @@ dathomir_world = {
 			minDifficulty = 76,
 			maxDifficulty = 107,
 			numberToSpawn = 0,
-			weighting = 3,
+			weighting = 5,
 			size = 25
 		},
 	}
