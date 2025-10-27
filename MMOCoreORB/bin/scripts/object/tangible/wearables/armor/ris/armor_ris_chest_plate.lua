@@ -108,6 +108,11 @@ object_tangible_wearables_armor_ris_armor_ris_chest_plate = object_tangible_wear
 	acid = 15,
 	lightSaber = 10,
 
+	-- Enforce hard cap on lightsaber resist
+    -- Ensures even crafted or modified versions cannot exceed 10%
+    lightSaber = math.min(lightSaber or 0, 10),
+
+    -- Experimentation settings
 	numberExperimentalProperties = {1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1, 2, 1},
 	experimentalProperties = {"XX", "XX", "XX", "XX", "OQ", "SR", "OQ", "UT", "MA", "OQ", "MA", "OQ", "MA", "OQ", "XX", "XX", "OQ", "SR", "XX"},
 	experimentalWeights = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
