@@ -7,7 +7,7 @@ rancor_padded_armor_segment = {
 	directObjectTemplate = "object/tangible/component/armor/armor_segment_padded_rancor.iff",
 	craftingValues = {
 		{"hit_points",1000,1000,0, true},
-		{"armor_effectiveness",20,35,10},
+		{"armor_effectiveness",10,20,10},
 		{"armor_integrity",1000,5000,0},
 		{"armor_health_encumbrance",20,1,0},
 		{"armor_action_encumbrance",15,1,0},
