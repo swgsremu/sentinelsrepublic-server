@@ -60,7 +60,7 @@ object_draft_schematic_clothing_clothing_armor_ris_leggings = object_draft_schem
    customizationSkill = "armor_customization", 
 
    customizationOptions = {2},
-   customizationStringNames = {"/private/index_color_1"},
+   customizationStringNames = {"/private/index_color_1", "/private/index_color_2"},
    customizationDefaults = {0},
 
    ingredientTemplateNames = {"craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n", "craft_clothing_ingredients_n"},
