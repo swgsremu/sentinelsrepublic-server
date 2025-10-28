@@ -495,8 +495,16 @@ float ArmorObjectImplementation::getAcid() const {
 }
 
 float ArmorObjectImplementation::getLightSaber() const {
-	float value = getTypeValue(SharedWeaponObjectTemplate::LIGHTSABER, lightSaber);
-	return value - getConditionReduction(value);
+    // Force all RIS armor to always have 10% lightsaber resistance
+    String templateName = getObjectTemplate()->getFullTemplateString();
+
+    if (templateName.find("armor_ris_") != String::npos) {
+        float baseValue = 10.0f;
+        return baseValue - getConditionReduction(baseValue);
+    }
+
+    float value = getTypeValue(SharedWeaponObjectTemplate::LIGHTSABER, lightSaber);
+    return value - getConditionReduction(value);
 }
 
 void ArmorObjectImplementation::setProtectionValue(int type, float value) {
