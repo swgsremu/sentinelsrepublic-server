@@ -92,12 +92,6 @@ class ShipAiAgent extends FighterShipObject {
 	@dereferenced
 	protected transient AtomicInteger numberOfPlayersInRange;
 
-	@dereferenced
-	protected transient AtomicInteger behaviorIntervalSchedule;
-
-	@dereferenced
-	protected transient AtomicInteger behaviorIntervalIterator;
-
 	protected transient DespawnAiShipOnNoPlayersInRange despawnEvent;
 
 	@dereferenced
@@ -136,16 +130,19 @@ class ShipAiAgent extends FighterShipObject {
 
 	protected transient unsigned long updateZoneTime;
 
+	protected transient unsigned int serverSyncCount;
+
 	protected transient float missileLockTime;
 
 	@weakReference
 	protected SceneObject homeObject;
 
 	public static final int PATROLPOINTS_MAX = 20;
+	public static final int SERVERSYNCCOUNTMAX = 5;
 	public static final int UPDATEZONEINTERVAL = 2000; // msec
-	public static final int BEHAVIORINTERVALMAX = 1000; // msec
-	public static final int BEHAVIORINTERVAL = 500; // msec
-	public static final int BEHAVIORINTERVALMIN = 200; // msec
+	public static final int BEHAVIORINTERVALMAX = 2000; // msec
+	public static final int BEHAVIORINTERVAL = 1000; // msec
+	public static final int BEHAVIORINTERVALMIN = 500; // msec
 
 	public static final float VELOCITY_MAX = 512.f;
 	public static final float DEFAULTAGGRORADIUS = 768.f;
@@ -899,4 +896,10 @@ class ShipAiAgent extends FighterShipObject {
 
 	@dirty
 	public native abstract float getOutOfRangeDistance(unsigned long specialRangeObjectID = 0);
+
+	@dirty
+	public native abstract float getInRangeDistance(boolean lightUpdate);
+
+	@local
+	public native abstract void updateZone(boolean lightUpdate, boolean sendPackets = true);
 }
