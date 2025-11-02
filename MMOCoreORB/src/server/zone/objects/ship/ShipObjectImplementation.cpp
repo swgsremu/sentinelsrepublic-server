@@ -777,7 +777,6 @@ void ShipObjectImplementation::doRecovery(int mselapsed) {
 
 	float deltaTime = Math::clamp(0.1f, mselapsed * 0.001f, 10.f);
 
-	auto pilot = getPilot();
 	auto deltaVector = getDeltaVector();
 	auto componentMap = getShipComponentMap();
 
@@ -909,6 +908,8 @@ void ShipObjectImplementation::doRecovery(int mselapsed) {
 					} else {
 						removeComponentFlag(Components::BOOSTER, ShipComponentFlag::ACTIVE, false);
 						restartBooster();
+
+						auto pilot = getPilot();
 
 						if (pilot != nullptr) {
 							pilot->sendSystemMessage("@space/space_interaction:booster_energy_depleted");

@@ -2280,11 +2280,23 @@ void ShipAiAgentImplementation::dropFromSquadron() {
 }
 
 bool ShipAiAgentImplementation::isSquadronLeader() {
-	return squadron != nullptr ? squadron->isSquadronLeader(asShipAiAgent()) : false;
+	if (squadron == nullptr) {
+		return false;
+	}
+
+	Locker squadronLock(squadron, asShipAiAgent());
+
+	return squadron->isSquadronLeader(asShipAiAgent());
 }
 
 bool ShipAiAgentImplementation::isSquadronMember() {
-	return squadron != nullptr ? squadron->isSquadronMember(asShipAiAgent()) : false;
+	if (squadron == nullptr) {
+		return false;
+	}
+
+	Locker squadronLock(squadron, asShipAiAgent());
+
+	return squadron->isSquadronMember(asShipAiAgent());
 }
 
 bool ShipAiAgentImplementation::isSquadronTransform() {
