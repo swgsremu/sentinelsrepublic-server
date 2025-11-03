@@ -499,7 +499,7 @@ float ArmorObjectImplementation::getLightSaber() const {
     String templateName = getObjectTemplate()->getFullTemplateString();
 
     if (templateName.find("armor_ris_") != String::npos) {
-        float baseValue = 10.0f;
+        float baseValue = 0.10f; // 10% resistance
         return baseValue - getConditionReduction(baseValue);
     }
 
