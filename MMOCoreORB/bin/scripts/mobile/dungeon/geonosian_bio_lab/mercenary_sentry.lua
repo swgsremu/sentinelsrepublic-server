@@ -33,9 +33,9 @@ mercenary_sentry = Creature:new {
 	lootGroups = {
 		{
 			groups = {
-				{group = "geonosian_hard", chance = 1000000},
-				{group = "geonosian_common", chance = 4500000},
-				{group = "geonosian_relic", chance = 4500000}
+				{group = "geonosian_hard", chance = 1500000},
+				{group = "geonosian_common", chance = 5000000},
+				{group = "geonosian_relic", chance = 3500000}
 			}
 		}
 	},
