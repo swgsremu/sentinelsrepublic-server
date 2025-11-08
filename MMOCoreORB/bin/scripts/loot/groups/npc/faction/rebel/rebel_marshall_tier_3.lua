@@ -13,12 +13,12 @@ rebel_marshall_tier_3 = {
 		{groupTemplate = "power_crystals", weight = 500000},
 		{groupTemplate = "ranged_weapons", weight = 3500000},
 		{groupTemplate = "wearables_rare", weight = 700000},
-		{groupTemplate = "resource_gemstone", weight = 150000},
-		{groupTemplate = "resource_metal", weight = 150000},
-		{groupTemplate = "resource_ore", weight = 150000},
-		{groupTemplate = "resource_water", weight = 150000},
-		{groupTemplate = "crafting_component", weight = 175000},
-		{groupTemplate = "crafting_component_advanced", weight = 175000},
+		--{groupTemplate = "resource_gemstone", weight = 150000},
+		--{groupTemplate = "resource_metal", weight = 150000},
+		--{groupTemplate = "resource_ore", weight = 150000},
+		--{groupTemplate = "resource_water", weight = 150000},
+		{groupTemplate = "crafting_component", weight = 325000},
+		{groupTemplate = "crafting_component_advanced", weight = 625000},
 	}
 }
 

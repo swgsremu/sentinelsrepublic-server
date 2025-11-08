@@ -11,14 +11,14 @@ rebel_commando_tier_5 = {
 		{groupTemplate = "color_crystals", weight = 300000},
 		{groupTemplate = "holocron_dark", weight = 100000},
 		{groupTemplate = "holocron_light", weight = 100000},
-		{groupTemplate = "junk", weight = 5850000},
+		{groupTemplate = "junk", weight = 5500000},
 		{groupTemplate = "weapons_all", weight = 900000},
 		{groupTemplate = "wearables_all", weight = 900000},
-		{groupTemplate = "resource_gemstone", weight = 50000},
-		{groupTemplate = "resource_metal", weight = 50000},
-		{groupTemplate = "resource_ore", weight = 50000},
-		{groupTemplate = "resource_water", weight = 50000},
-		{groupTemplate = "crafting_component_advanced", weight = 450000},
+		--{groupTemplate = "resource_gemstone", weight = 50000},
+		--{groupTemplate = "resource_metal", weight = 50000},
+		--{groupTemplate = "resource_ore", weight = 50000},
+		--{groupTemplate = "resource_water", weight = 50000},
+		{groupTemplate = "crafting_component_advanced", weight = 1000000},
 	}
 }
 

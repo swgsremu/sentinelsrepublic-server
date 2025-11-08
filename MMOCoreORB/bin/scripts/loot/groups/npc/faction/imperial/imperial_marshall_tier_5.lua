@@ -11,15 +11,15 @@ imperial_marshall_tier_5 = {
 		{groupTemplate = "color_crystals", weight = 100000},
 		{groupTemplate = "holocron_dark", weight = 200000},
 		{groupTemplate = "holocron_light", weight = 200000},
-		{groupTemplate = "junk", weight = 3700000},
+		{groupTemplate = "junk", weight = 3350000},
 		{groupTemplate = "power_crystals", weight = 850000},
 		{groupTemplate = "weapons_all", weight = 2800000},
 		{groupTemplate = "wearables_all", weight = 400000},
-		{groupTemplate = "resource_gemstone", weight = 50000},
-		{groupTemplate = "resource_metal", weight = 50000},
-		{groupTemplate = "resource_ore", weight = 50000},
-		{groupTemplate = "resource_water", weight = 50000},
-		{groupTemplate = "crafting_component_advanced", weight = 450000},
+		--{groupTemplate = "resource_gemstone", weight = 50000},
+		--{groupTemplate = "resource_metal", weight = 50000},
+		--{groupTemplate = "resource_ore", weight = 50000},
+		--{groupTemplate = "resource_water", weight = 50000},
+		{groupTemplate = "crafting_component_advanced", weight = 1000000},
 	}
 }
 

@@ -14,12 +14,12 @@ dark_jedi_tier_4 = {
 		{groupTemplate = "power_crystals", weight = 300000},
 		{groupTemplate = "ranged_weapons", weight = 3500000},
 		{groupTemplate = "wearables_rare", weight = 700000},
-		{groupTemplate = "resource_chemical", weight = 100000},
-		{groupTemplate = "resource_gemstone", weight = 100000},
-		{groupTemplate = "resource_metal", weight = 100000},
-		{groupTemplate = "resource_water", weight = 100000},
-		{groupTemplate = "crafting_component", weight = 100000},
-		{groupTemplate = "crafting_component_advanced", weight = 300000},
+		--{groupTemplate = "resource_chemical", weight = 100000},
+		--{groupTemplate = "resource_gemstone", weight = 100000},
+		--{groupTemplate = "resource_metal", weight = 100000},
+		--{groupTemplate = "resource_water", weight = 100000},
+		{groupTemplate = "crafting_component", weight = 200000},
+		{groupTemplate = "crafting_component_advanced", weight = 600000},
 	}
 }
 

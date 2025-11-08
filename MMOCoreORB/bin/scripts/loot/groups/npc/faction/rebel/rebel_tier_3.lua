@@ -12,12 +12,12 @@ rebel_tier_3 = {
 		{groupTemplate = "junk", weight = 5650000},
 		{groupTemplate = "weapons_all", weight = 1000000},
 		{groupTemplate = "wearables_all", weight = 900000},
-		{groupTemplate = "resource_gemstone", weight = 150000},
-		{groupTemplate = "resource_metal", weight = 150000},
-		{groupTemplate = "resource_ore", weight = 150000},
-		{groupTemplate = "resource_water", weight = 150000},
-		{groupTemplate = "crafting_component", weight = 175000},
-		{groupTemplate = "crafting_component_advanced", weight = 175000},
+		--{groupTemplate = "resource_gemstone", weight = 150000},
+		--{groupTemplate = "resource_metal", weight = 150000},
+		--{groupTemplate = "resource_ore", weight = 150000},
+		--{groupTemplate = "resource_water", weight = 150000},
+		{groupTemplate = "crafting_component", weight = 325000},
+		{groupTemplate = "crafting_component_advanced", weight = 625000},
 	}
 }
 

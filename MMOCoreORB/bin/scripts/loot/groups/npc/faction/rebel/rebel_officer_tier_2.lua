@@ -13,12 +13,12 @@ rebel_officer_tier_2 = {
 		{groupTemplate = "rebel_officer_common", weight = 400000},
 		{groupTemplate = "weapons_all", weight = 900000},
 		{groupTemplate = "wearables_all", weight = 800000},
-		{groupTemplate = "resource_gemstone", weight = 200000},
-		{groupTemplate = "resource_metal", weight = 200000},
-		{groupTemplate = "resource_ore", weight = 200000},
-		{groupTemplate = "resource_water", weight = 200000},
-		{groupTemplate = "crafting_component", weight = 225000},
-		{groupTemplate = "crafting_component_advanced", weight = 75000},
+		--{groupTemplate = "resource_gemstone", weight = 200000},
+		--{groupTemplate = "resource_metal", weight = 200000},
+		--{groupTemplate = "resource_ore", weight = 200000},
+		--{groupTemplate = "resource_water", weight = 200000},
+		{groupTemplate = "crafting_component", weight = 625000},
+		{groupTemplate = "crafting_component_advanced", weight = 475000},
 	}
 }
 
