@@ -83,8 +83,8 @@ randomDotUses = {250, 1000}
 junkValueModifier = 5;
 
 lootableArmorAttachmentStatMods = {
-	"aim",
-	"alert",
+	--"aim", --BROKEN
+	--"alert", --BROKEN
 	"berserk",
 	"blind_defense",
 	"block",
@@ -103,18 +103,18 @@ lootableArmorAttachmentStatMods = {
 	"droid_track_chance",
 	"droid_track_speed",
 	"foraging",
-	"group_slope_move",
+	--"group_slope_move", --BROKEN
 	"heavy_rifle_lightning_accuracy",
 	"heavy_rifle_lightning_speed",
 	"heavyweapon_accuracy",
 	"heavyweapon_speed",
 	"intimidate",
 	"intimidate_defense",
-	"keep_creature",
+	--"keep_creature", --BROKEN
 	"knockdown_defense",
 	"melee_defense",
 	"onehandmelee_accuracy",
-	"onehandmelee_damage",
+	--"onehandmelee_damage", --BROKEN
 	"onehandmelee_speed",
 	"pistol_accuracy",
 	"pistol_aim",
@@ -136,8 +136,8 @@ lootableArmorAttachmentStatMods = {
 	"rifle_hit_while_moving",
 	"rifle_speed",
 	"slope_move",
-	"steadyaim",
-	"stored_pets",
+	--"steadyaim", --BROKEN
+	--"stored_pets", --BROKEN
 	"stun_defense",
 	"take_cover",
 	"tame_aggro",
@@ -146,18 +146,18 @@ lootableArmorAttachmentStatMods = {
 	"thrown_accuracy",
 	"thrown_speed",
 	"twohandmelee_accuracy",
-	"twohandmelee_damage",
+	--"twohandmelee_damage", --BROKEN
 	"twohandmelee_speed",
 	"unarmed_accuracy",
 	"unarmed_damage",
 	"unarmed_speed",
-	"volley",
-	"warcry"
+	--"volley", --BROKEN
+	--"warcry" --BROKEN
 }
 
 lootableClothingAttachmentStatMods = {
-	"aim",
-	"alert",
+	--"aim", --BROKEN
+	--"alert", --BROKEN
 	"armor_assembly",
 	"armor_experimentation",
 	"armor_repair",
@@ -173,7 +173,7 @@ lootableClothingAttachmentStatMods = {
 	"clothing_experimentation",
 	"clothing_repair",
 	"combat_bleeding_defense",
-	"combat_healing_ability",
+	--"combat_healing_ability", --BROKEN
 	"combat_medicine_assembly",
 	"combat_medicine_experimentation",
 	"counterattack",
@@ -193,10 +193,10 @@ lootableClothingAttachmentStatMods = {
 	"foraging",
 	"general_assembly",
 	"general_experimentation",
-	"grenade_assembly",
-	"grenade_experimentation",
-	"group_slope_move",
-	"healing_ability",
+	--"grenade_assembly", --BROKEN
+	--"grenade_experimentation", --BROKEN
+	--"group_slope_move", --BROKEN
+	--"healing_ability", --BROKEN
 	"healing_dance_mind",
 	"healing_dance_shock",
 	"healing_dance_wound",
@@ -216,14 +216,14 @@ lootableClothingAttachmentStatMods = {
 	"instrument_assembly",
 	"intimidate",
 	"intimidate_defense",
-	"keep_creature",
+	--"keep_creature", --BROKEN
 	"knockdown_defense",
-	"medical_foraging",
+	--"medical_foraging", --BROKEN
 	"medicine_assembly",
 	"medicine_experimentation",
 	"melee_defense",
 	"onehandmelee_accuracy",
-	"onehandmelee_damage",
+	--"onehandmelee_damage", --BROKEN
 	"onehandmelee_speed",
 	"pistol_accuracy",
 	"pistol_aim",
@@ -245,8 +245,8 @@ lootableClothingAttachmentStatMods = {
 	"rifle_hit_while_moving",
 	"rifle_speed",
 	"slope_move",
-	"steadyaim",
-	"stored_pets",
+	--"steadyaim", --BROKEN
+	--"stored_pets", --BROKEN
 	"structure_assembly",
 	"structure_complexity",
 	"structure_experimentation",
@@ -259,21 +259,21 @@ lootableClothingAttachmentStatMods = {
 	"thrown_accuracy",
 	"thrown_speed",
 	"twohandmelee_accuracy",
-	"twohandmelee_damage",
+	--"twohandmelee_damage", --BROKEN
 	"twohandmelee_speed",
 	"unarmed_accuracy",
 	"unarmed_damage",
 	"unarmed_speed",
-	"volley",
-	"warcry",
+	--"volley", --BROKEN
+	--"warcry", --BROKEN
 	"weapon_assembly",
 	"weapon_experimentation",
 	"weapon_repair"
 }
 
 lootableArmorStatMods = {
-	"aim",
-	"alert",
+	--"aim", --BROKEN
+	--"alert", --BROKEN
 	"armor_assembly",
 	"armor_experimentation",
 	"armor_repair",
@@ -308,9 +308,9 @@ lootableArmorStatMods = {
 	"foraging",
 	"general_assembly",
 	"general_experimentation",
-	"grenade_assembly",
-	"grenade_experimentation",
-	"group_slope_move",
+	--"grenade_assembly", --BROKEN
+	--"grenade_experimentation", --BROKEN
+	--"group_slope_move", --BROKEN
 	"healing_dance_mind",
 	"healing_dance_shock",
 	"healing_dance_wound",
@@ -331,12 +331,12 @@ lootableArmorStatMods = {
 	"intimidate",
 	"intimidate_defense",
 	"knockdown_defense",
-	"medical_foraging",
+	--"medical_foraging", --BROKEN
 	"medicine_assembly",
 	"medicine_experimentation",
 	"melee_defense",
 	"onehandmelee_accuracy",
-	"onehandmelee_damage",
+	--"onehandmelee_damage", --BROKEN
 	"onehandmelee_speed",
 	"pistol_accuracy",
 	"pistol_aim",
@@ -358,7 +358,7 @@ lootableArmorStatMods = {
 	"rifle_hit_while_moving",
 	"rifle_speed",
 	"slope_move",
-	"steadyaim",
+	--"steadyaim", --BROKEN
 	"structure_assembly",
 	"structure_complexity",
 	"structure_experimentation",
@@ -370,21 +370,21 @@ lootableArmorStatMods = {
 	"thrown_accuracy",
 	"thrown_speed",
 	"twohandmelee_accuracy",
-	"twohandmelee_damage",
+	--"twohandmelee_damage", --BROKEN
 	"twohandmelee_speed",
 	"unarmed_accuracy",
 	"unarmed_damage",
 	"unarmed_speed",
-	"volley",
-	"warcry",
+	--"volley", --BROKEN
+	--"warcry", --BROKEN
 	"weapon_assembly",
 	"weapon_experimentation",
 	"weapon_repair"
 }
 
 lootableClothingStatMods = {
-	"aim",
-	"alert",
+	--"aim", --BROKEN
+	--"alert", --BROKEN
 	"armor_assembly",
 	"armor_experimentation",
 	"armor_repair",
@@ -419,9 +419,9 @@ lootableClothingStatMods = {
 	"foraging",
 	"general_assembly",
 	"general_experimentation",
-	"grenade_assembly",
-	"grenade_experimentation",
-	"group_slope_move",
+	--"grenade_assembly", --BROKEN
+	--"grenade_experimentation", --BROKEN
+	--"group_slope_move", --BROKEN
 	"healing_dance_mind",
 	"healing_dance_shock",
 	"healing_dance_wound",
@@ -442,12 +442,12 @@ lootableClothingStatMods = {
 	"intimidate",
 	"intimidate_defense",
 	"knockdown_defense",
-	"medical_foraging",
+	--"medical_foraging", --BROKEN
 	"medicine_assembly",
 	"medicine_experimentation",
 	"melee_defense",
 	"onehandmelee_accuracy",
-	"onehandmelee_damage",
+	--"onehandmelee_damage", --BROKEN
 	"onehandmelee_speed",
 	"pistol_accuracy",
 	"pistol_aim",
@@ -469,7 +469,7 @@ lootableClothingStatMods = {
 	"rifle_hit_while_moving",
 	"rifle_speed",
 	"slope_move",
-	"steadyaim",
+	--"steadyaim", --BROKEN
 	"structure_assembly",
 	"structure_complexity",
 	"structure_experimentation",
@@ -481,13 +481,13 @@ lootableClothingStatMods = {
 	"thrown_accuracy",
 	"thrown_speed",
 	"twohandmelee_accuracy",
-	"twohandmelee_damage",
+	--"twohandmelee_damage", --BROKEN
 	"twohandmelee_speed",
 	"unarmed_accuracy",
 	"unarmed_damage",
 	"unarmed_speed",
-	"volley",
-	"warcry",
+	--"volley", --BROKEN
+	--"warcry", --BROKEN
 	"weapon_assembly",
 	"weapon_experimentation",
 	"weapon_repair"
@@ -507,13 +507,13 @@ lootableOneHandedMeleeStatMods = {
 	"droid_track_chance",
 	"droid_track_speed",
 	"foraging",
-	"group_slope_move",
+	--"group_slope_move", --BROKEN
 	"intimidate",
 	"intimidate_defense",
 	"knockdown_defense",
 	"melee_defense",
 	"onehandmelee_accuracy",
-	"onehandmelee_damage",
+	--"onehandmelee_damage", --BROKEN
 	"onehandmelee_speed",
 	"posture_change_down_defense",
 	"posture_change_up_defense",
@@ -529,7 +529,7 @@ lootableOneHandedMeleeStatMods = {
 	"tame_non_aggro",
 	"thrown_accuracy",
 	"thrown_speed",
-	"warcry"
+	--"warcry" --BROKEN
 }
 
 lootableTwoHandedMeleeStatMods = {
@@ -546,7 +546,7 @@ lootableTwoHandedMeleeStatMods = {
 	"droid_track_chance",
 	"droid_track_speed",
 	"foraging",
-	"group_slope_move",
+	--"group_slope_move", --BROKEN
 	"intimidate",
 	"intimidate_defense",
 	"knockdown_defense",
@@ -566,9 +566,9 @@ lootableTwoHandedMeleeStatMods = {
 	"thrown_accuracy",
 	"thrown_speed",
 	"twohandmelee_accuracy",
-	"twohandmelee_damage",
+	--"twohandmelee_damage", --BROKEN
 	"twohandmelee_speed",
-	"warcry"
+	--"warcry" --BROKEN
 }
 
 lootableUnarmedStatMods = {
@@ -585,7 +585,7 @@ lootableUnarmedStatMods = {
 	"droid_track_chance",
 	"droid_track_speed",
 	"foraging",
-	"group_slope_move",
+	--"group_slope_move", --BROKEN
 	"intimidate",
 	"intimidate_defense",
 	"knockdown_defense",
@@ -607,12 +607,12 @@ lootableUnarmedStatMods = {
 	"unarmed_accuracy",
 	"unarmed_damage",
 	"unarmed_speed",
-	"warcry"
+	--"warcry" --BROKEN
 }
 
 lootablePistolStatMods = {
-	"aim",
-	"alert",
+	--"aim", --BROKEN
+	--"alert", --BROKEN
 	"blind_defense",
 	"block",
 	"camouflage",
@@ -625,7 +625,7 @@ lootablePistolStatMods = {
 	"droid_track_chance",
 	"droid_track_speed",
 	"foraging",
-	"group_slope_move",
+	--"group_slope_move", --BROKEN
 	"intimidate_defense",
 	"knockdown_defense",
 	"melee_defense",
@@ -643,18 +643,18 @@ lootablePistolStatMods = {
 	"resistance_fire",
 	"resistance_poison",
 	"slope_move",
-	"steadyaim",
+	--"steadyaim", --BROKEN
 	"stun_defense",
 	"tame_aggro",
 	"tame_non_aggro",
 	"thrown_accuracy",
 	"thrown_speed",
-	"volley"
+	--"volley" --BROKEN
 }
 
 lootableRifleStatMods = {
-	"aim",
-	"alert",
+	--"aim", --BROKEN
+	--"alert", --BROKEN
 	"blind_defense",
 	"block",
 	"camouflage",
@@ -668,7 +668,7 @@ lootableRifleStatMods = {
 	"droid_track_chance",
 	"droid_track_speed",
 	"foraging",
-	"group_slope_move",
+	--"group_slope_move", --BROKEN
 	"heavy_rifle_lightning_accuracy",
 	"heavy_rifle_lightning_speed",
 	"intimidate_defense",
@@ -687,19 +687,19 @@ lootableRifleStatMods = {
 	"rifle_hit_while_moving",
 	"rifle_speed",
 	"slope_move",
-	"steadyaim",
+	--"steadyaim", --BROKEN
 	"stun_defense",
 	"take_cover",
 	"tame_aggro",
 	"tame_non_aggro",
 	"thrown_accuracy",
 	"thrown_speed",
-	"volley"
+	--"volley" --BROKEN
 }
 
 lootableCarbineStatMods = {
-	"aim",
-	"alert",
+	--"aim", --BROKEN
+	--"alert", --BROKEN
 	"blind_defense",
 	"block",
 	"camouflage",
@@ -716,7 +716,7 @@ lootableCarbineStatMods = {
 	"droid_track_chance",
 	"droid_track_speed",
 	"foraging",
-	"group_slope_move",
+	--"group_slope_move", --BROKEN
 	"intimidate_defense",
 	"knockdown_defense",
 	"melee_defense",
@@ -729,13 +729,13 @@ lootableCarbineStatMods = {
 	"resistance_fire",
 	"resistance_poison",
 	"slope_move",
-	"steadyaim",
+	--"steadyaim", --BROKEN
 	"stun_defense",
 	"tame_aggro",
 	"tame_non_aggro",
 	"thrown_accuracy",
 	"thrown_speed",
-	"volley"
+	--"volley" --BROKEN
 }
 
 lootablePolearmStatMods = {
@@ -752,7 +752,7 @@ lootablePolearmStatMods = {
 	"droid_track_chance",
 	"droid_track_speed",
 	"foraging",
-	"group_slope_move",
+	--"group_slope_move", --BROKEN
 	"intimidate",
 	"intimidate_defense",
 	"knockdown_defense",
@@ -773,12 +773,12 @@ lootablePolearmStatMods = {
 	"tame_non_aggro",
 	"thrown_accuracy",
 	"thrown_speed",
-	"warcry"
+	--"warcry" --BROKEN
 }
 
 lootableHeavyWeaponStatMods = {
-	"aim",
-	"alert",
+	--"aim", --BROKEN
+	--"alert", --BROKEN
 	"blind_defense",
 	"block",
 	"camouflage",
@@ -791,7 +791,7 @@ lootableHeavyWeaponStatMods = {
 	"droid_track_chance",
 	"droid_track_speed",
 	"foraging",
-	"group_slope_move",
+	--"group_slope_move", --BROKEN
 	"heavy_rifle_lightning_accuracy",
 	"heavy_rifle_lightning_speed",
 	"heavyweapon_accuracy",
@@ -808,13 +808,13 @@ lootableHeavyWeaponStatMods = {
 	"resistance_fire",
 	"resistance_poison",
 	"slope_move",
-	"steadyaim",
+	--"steadyaim", --BROKEN
 	"stun_defense",
 	"tame_aggro",
 	"tame_non_aggro",
 	"thrown_accuracy",
 	"thrown_speed",
-	"volley"
+	--"volley" --BROKEN
 }
 
 -- Values used to generate lightsaber crystal stats
