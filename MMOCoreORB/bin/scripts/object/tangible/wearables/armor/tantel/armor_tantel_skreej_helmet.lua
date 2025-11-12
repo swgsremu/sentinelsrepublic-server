@@ -80,6 +80,7 @@ object_tangible_wearables_armor_tantel_armor_tantel_skreej_helmet = object_tangi
 
 	-- Damage types in WeaponObject
 	vulnerability = LIGHTSABER,
+	specialResists = COLD,
 
 	-- These are default Blue Frog stats
 	healthEncumbrance = 8,

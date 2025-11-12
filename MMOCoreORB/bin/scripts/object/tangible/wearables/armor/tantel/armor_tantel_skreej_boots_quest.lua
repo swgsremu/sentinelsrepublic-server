@@ -85,6 +85,7 @@ object_tangible_wearables_armor_tantel_armor_tantel_skreej_boots_quest = object_
 	
 	-- Damage types in WeaponObject
 	vulnerability = LIGHTSABER,
+	specialResists = COLD, -- In prep for Hoth arrival
 
 	-- These are default Blue Frog stats
 	healthEncumbrance = 1,
