@@ -248,10 +248,6 @@ void ShipAiAgentImplementation::loadTemplateData(ShipAgentTemplate* agentTemp) {
 
 	setPvpStatusBitmask(templatePvpStatusBitmask, false);
 
-	if (getPvpStatusBitmask() == 0) {
-		closeobjects = nullptr;
-	}
-
 	// Handles special flags for differnt AI Template bitmasks (ESCORT, FOLLOW etc)
 	shipBitmask = agentTemplate->getShipBitmask();
 
