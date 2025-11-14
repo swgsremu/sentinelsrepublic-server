@@ -18,7 +18,7 @@ ShipObjectTimerTask::ShipObjectTimerTask(const String& taskQueueName) : Task() {
 }
 
 void ShipObjectTimerTask::addShip(ShipObject* ship) {
-	if (ship == nullptr || shipSet.contains(ship)) {
+	if (ship == nullptr) {
 		return;
 	}
 
