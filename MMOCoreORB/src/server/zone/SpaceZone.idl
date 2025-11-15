@@ -20,6 +20,7 @@ import system.util.SortedVector;
 import system.util.SynchronizedSortedVector;
 include engine.util.u3d.Vector3;
 include server.zone.OctreeReference;
+include server.zone.managers.ship.tasks.ShipObjectTimerTask;
 
 import server.zone.objects.tangible.TangibleObject;
 import server.zone.ActiveAreaOctree;
@@ -29,6 +30,8 @@ class SpaceZone extends Zone {
 	private transient SpaceManager spaceManager;
 
 	private transient ActiveAreaOctree areaOctree;
+
+	protected transient ShipObjectTimerTask timerTask;
 
 	@dereferenced
 	private OctreeReference octree;
@@ -150,5 +153,8 @@ class SpaceZone extends Zone {
 	public boolean isSpaceZone() {
 		return true;
 	}
+
+	@local
+	public native ShipObjectTimerTask getTimerTask();
 }
 
