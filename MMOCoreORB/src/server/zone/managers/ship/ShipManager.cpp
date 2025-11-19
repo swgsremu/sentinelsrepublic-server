@@ -49,9 +49,6 @@ ShipManager::ShipManager() : Logger("ShipManager") {
 
 	lua->registerFunction("includeFile", includeFile);
 	lua->registerFunction("addShipSpawnGroup", addShipSpawnGroup);
-
-	timerTask = new ShipObjectTimerTask(this);
-	timerTask->schedule(60000);
 }
 
 void ShipManager::initialize() {

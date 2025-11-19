@@ -169,9 +169,6 @@ void AiAgentImplementation::loadTemplateData(CreatureTemplate* templateData) {
 
 	setPvpStatusBitmask(npcTemplate->getPvpBitmask());
 
-	if (npcTemplate->getPvpBitmask() == 0)
-		closeobjects = nullptr;
-
 	optionsBitmask = npcTemplate->getOptionsBitmask();
 	creatureBitmask = npcTemplate->getCreatureBitmask();
 

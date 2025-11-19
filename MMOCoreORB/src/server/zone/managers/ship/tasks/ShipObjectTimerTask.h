@@ -4,16 +4,6 @@
 #include "engine/engine.h"
 #include "server/zone/objects/ship/ai/ShipAiAgent.h"
 
-namespace server {
-	namespace zone {
-		namespace managers {
-			namespace ship {
-				class ShipManager;
-			}
-		}
-	}
-}
-
 class ShipObjectTimerTask : public Task, public Logger {
 	public:
 		enum Timers : int {
@@ -32,12 +22,10 @@ class ShipObjectTimerTask : public Task, public Logger {
 
 		static const int ITERATOR_MID = TIME_MID / TIME_MIN;
 		static const int ITERATOR_MAX = TIME_MAX / TIME_MIN;
-		static const int SCHEDULE_MIN = TIME_MIN * 0.5f;
-		static const int SCHEDULE_MAX = TIME_MIN * 1.5f;
+		static const int SCHEDULE_MIN = TIME_MIN * 0.125f;
+		static const int SCHEDULE_MAX = TIME_MIN;
 
 	protected:
-		Reference<ShipManager*> shipManagerRef;
-
 		Vector<ManagedReference<ShipObject*>> shipVector;
 		Vector<ManagedReference<ShipAiAgent*>> agentVector;
 		Vector<ManagedWeakReference<ShipObject*>> queueVector;
@@ -48,11 +36,21 @@ class ShipObjectTimerTask : public Task, public Logger {
 		uint64 startTime;
 		uint32 iterator;
 		uint32 priority;
+		uint32 taskCrc;
+
+		HashSet<ShipObject*> shipSet;
+		mutable ReadWriteLock mutex;
 
 	public:
-		ShipObjectTimerTask(ShipManager* shipManager);
+		ShipObjectTimerTask(const String& taskQueueName);
+
+		void addShip(ShipObject* ship);
 
 		void run();
+
+		uint32 getTaskCrc() const {
+			return taskCrc;
+		}
 
 	private:
 		void updateTimers() {
@@ -95,7 +93,9 @@ class ShipObjectTimerTask : public Task, public Logger {
 
 		void updateShips();
 
-		int updateVectors();
+		void updateVectors();
+
+		bool isShipValid(ShipObject* ship) const;
 
 		String toDebugString(const String& message) const {
 			StringBuffer msg;

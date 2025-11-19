@@ -172,61 +172,73 @@ void SquadronObserver::setRandomFormation() {
 }
 
 ShipAiAgent* SquadronObserver::getSquadronLeader() const {
-	Locker lock(&mutex);
+	ReadLocker lock(&mutex);
+
 	return squadronAgents.size() > 0 ? squadronAgents.get(0) : nullptr;
 }
 
 ShipAiAgent* SquadronObserver::getSquadronMember(int index) const {
-	Locker lock(&mutex);
+	ReadLocker lock(&mutex);
+
 	return squadronAgents.size() > index ? squadronAgents.get(index) : nullptr;
 }
 
 uint64 SquadronObserver::getSquadronLeaderID() const {
-	Locker lock(&mutex);
+	ReadLocker lock(&mutex);
+
 	return squadronAgents.size() > 0 ? squadronAgents.get(0)->getObjectID() : 0ull;
 }
 
 uint64 SquadronObserver::getSquadronMemberID(int index) const {
-	Locker lock(&mutex);
+	ReadLocker lock(&mutex);
+
 	return squadronAgents.size() > index ? squadronAgents.get(index)->getObjectID() : 0ull;
 }
 
 int SquadronObserver::getSquadronIndex(ShipAiAgent* shipAgent) const {
-	Locker lock(&mutex);
+	ReadLocker lock(&mutex);
+
 	return squadronAgents.find(shipAgent);
 }
 
 int SquadronObserver::getSquadronSize() const {
-	Locker lock(&mutex);
+	ReadLocker lock(&mutex);
+
 	return squadronAgents.size();
 }
 
 int SquadronObserver::getFormationType() const {
-	Locker lock(&mutex);
+	ReadLocker lock(&mutex);
+
 	return squadronData.getFormationType();
 }
 
 float SquadronObserver::getFormationSpeed() const {
-	Locker lock(&mutex);
+	ReadLocker lock(&mutex);
+
 	return squadronData.getFormationSpeed();
 }
 
 bool SquadronObserver::isSquadronLeader(ShipAiAgent* shipAgent) const {
-	Locker lock(&mutex);
+	ReadLocker lock(&mutex);
+
 	return squadronAgents.find(shipAgent) == 0;
 }
 
 bool SquadronObserver::isSquadronMember(ShipAiAgent* shipAgent) const {
-	Locker lock(&mutex);
+	ReadLocker lock(&mutex);
+
 	return squadronAgents.find(shipAgent) >= 1;
 }
 
 Vector3 SquadronObserver::getPosition(ShipAiAgent* shipAgent) const {
-	Locker lock(&mutex);
+	ReadLocker lock(&mutex);
+
 	return squadronData.getPosition(squadronAgents.find(shipAgent));
 }
 
 float SquadronObserver::getSpeed(ShipAiAgent* shipAgent) const {
-	Locker lock(&mutex);
+	ReadLocker lock(&mutex);
+
 	return squadronData.getSpeed(squadronAgents.find(shipAgent));
 }

@@ -1,11 +1,8 @@
-#include "server/zone/Zone.h"
-#include "server/ServerCore.h"
-#include "server/zone/managers/ship/ShipManager.h"
 #include "server/zone/managers/ship/tasks/ShipObjectTimerTask.h"
 
-ShipObjectTimerTask::ShipObjectTimerTask(ShipManager* shipManager) : Task() {
-	setLoggingName("ShipObjectTimerTask ");
-	shipManagerRef = shipManager;
+ShipObjectTimerTask::ShipObjectTimerTask(const String& taskQueueName) : Task() {
+	setLoggingName("ShipObjectTimerTask_" + taskQueueName);
+	setCustomTaskQueue(taskQueueName);
 
 	uint64 timeNow = System::getMiliTime();
 
@@ -17,6 +14,16 @@ ShipObjectTimerTask::ShipObjectTimerTask(ShipManager* shipManager) : Task() {
 	startTime = timeNow;
 	iterator = 0;
 	priority = Timers::MIN;
+	taskCrc = taskQueueName.hashCode();
+}
+
+void ShipObjectTimerTask::addShip(ShipObject* ship) {
+	if (ship == nullptr) {
+		return;
+	}
+
+	Locker lock(&mutex);
+	queueVector.add(ship);
 }
 
 void ShipObjectTimerTask::run() {
@@ -35,17 +42,14 @@ void ShipObjectTimerTask::updateAgents() {
 	for (int i = agentVector.size(); -1 < --i;) {
 		auto agent = agentVector.get(i);
 
-		if (agent == nullptr || !agent->isShipLaunched()) {
+		if (!isShipValid(agent)) {
 			agentVector.remove(i);
+			shipSet.remove(agent);
 			continue;
 		}
 
 		Locker lock(agent);
 		bool lightUpdate = !getAsyncPriority(ITERATOR_MAX, i);
-
-		if (!lightUpdate) {
-			agent->doRecovery(deltaMax);
-		}
 
 		agent->updateTransform(lightUpdate);
 	}
@@ -57,8 +61,9 @@ void ShipObjectTimerTask::updateShips() {
 	for (int i = shipVector.size(); -1 < --i;) {
 		auto ship = shipVector.get(i);
 
-		if (ship == nullptr || !ship->isShipLaunched()) {
+		if (!isShipValid(ship)) {
 			shipVector.remove(i);
+			shipSet.remove(ship);
 			continue;
 		}
 
@@ -71,32 +76,18 @@ void ShipObjectTimerTask::updateShips() {
 	}
 }
 
-int ShipObjectTimerTask::updateVectors() {
+void ShipObjectTimerTask::updateVectors() {
 	if (priority == Timers::MAX) {
-		auto shipManager = shipManagerRef.get();
+		ReadLocker rLock(&mutex);
 
-		if (shipManager == nullptr) {
-			return 0;
-		}
+		auto queueCopy = queueVector;
+		queueVector.removeAll();
+		rLock.release();
 
-		auto shipMap = shipManager->getShipUniqueIdMap();
+		for (int i = queueCopy.size(); -1 < --i;) {
+			auto ship = queueCopy.get(i).get();
 
-		if (shipMap == nullptr) {
-			return 0;
-		}
-
-		shipMap->safeCopyTo(queueVector);
-
-		int size = queueVector.size();
-		agentVector.removeAll(size,size);
-		shipVector.removeAll(size,size);
-	}
-
-	if (priority >= Timers::MID) {
-		for (int i = queueVector.size(); -1 < --i;) {
-			auto ship = queueVector.get(i).get();
-
-			if (ship == nullptr || !ship->isShipLaunched()) {
+			if (!isShipValid(ship) || shipSet.contains(ship)) {
 				continue;
 			}
 
@@ -110,13 +101,15 @@ int ShipObjectTimerTask::updateVectors() {
 				}
 
 				agentVector.add(agent);
+				shipSet.add(agent);
 			} else {
 				shipVector.add(ship);
+				shipSet.add(ship);
 			}
-
-			queueVector.remove(i);
 		}
 	}
+}
 
-	return shipVector.size() + agentVector.size();
+bool ShipObjectTimerTask::isShipValid(ShipObject* ship) const {
+	return ship != nullptr && ship->isShipLaunched() && ship->getTimerTaskCrc() == taskCrc;
 }

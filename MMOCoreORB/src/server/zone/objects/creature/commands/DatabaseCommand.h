@@ -121,8 +121,10 @@ private:
 	}
 
 	void doSQLQuery(CreatureObject* creature, String db, uint64 objectID) const {
-		StringBuffer selectStatement;
 		StringBuffer msg;
+
+#ifndef WITH_SWGREALMS_API
+		StringBuffer selectStatement;
 
 		try {
 			selectStatement << "SELECT * FROM " << db << " WHERE character_oid = " << objectID;
@@ -154,6 +156,49 @@ private:
 		} catch (const Exception& err) {
 			msg << endl << err.getMessage();
 		}
+#else // WITH_SWGREALMS_API
+		auto swgRealmsAPI = SWGRealmsAPI::instance();
+		if (swgRealmsAPI == nullptr) {
+			msg << endl << "SWGRealms API not available" << endl;
+		} else {
+			String errorMessage;
+			auto zoneServer = server->getZoneServer();
+			if (zoneServer == nullptr) {
+				msg << endl << "Zone server not available" << endl;
+			} else {
+				auto character = swgRealmsAPI->getCharacterBlocking(objectID, zoneServer->getGalaxyID(), errorMessage);
+
+				if (character.is_null() || character.size() == 0) {
+					msg << endl << "No results for character " << String::valueOf(objectID) << " from API";
+					if (!errorMessage.isEmpty()) {
+						msg << endl << "Error: " << errorMessage;
+					}
+				} else {
+					msg << endl << "Found in the database (via API)" << endl;
+					msg << "oid " << String::valueOf(objectID) << endl;
+
+					if (character.contains("account_id")) {
+						msg << "account id: " << String::valueOf(character["account_id"].get<uint32_t>()) << endl;
+					}
+					if (character.contains("galaxy_id")) {
+						msg << "galaxy id " << String::valueOf(character["galaxy_id"].get<uint32_t>()) << endl;
+					}
+
+					if (db == "characters" && character.contains("firstname")) {
+						String firstname = character["firstname"].get<std::string>().c_str();
+						String surname = character.contains("surname") ? character["surname"].get<std::string>().c_str() : "";
+						msg << "Name: " << firstname;
+						if (!surname.isEmpty()) {
+							msg << " " << surname;
+						}
+						msg << endl;
+					}
+
+					// Note: db_deleted not in API response, would need separate field
+				}
+			}
+		}
+#endif // WITH_SWGREALMS_API
 
 		creature->sendSystemMessage(msg.toString());
 	}

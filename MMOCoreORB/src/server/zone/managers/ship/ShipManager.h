@@ -25,7 +25,6 @@
 #include "ShipUniqueIdMap.h"
 #include "SpaceSpawnGroup.h"
 #include "server/zone/objects/ship/ai/ShipAiAgentPilotData.h"
-#include "server/zone/managers/ship/tasks/ShipObjectTimerTask.h"
 
 namespace server {
 namespace zone {
@@ -57,7 +56,6 @@ protected:
 	HashTable<uint32, Reference<DroidCommandData*>> DroidCommands;
 
 	ShipUniqueIdMap shipUniqueIdMap;
-	ShipObjectTimerTask* timerTask;
 
 private:
 	void loadShipComponentData();

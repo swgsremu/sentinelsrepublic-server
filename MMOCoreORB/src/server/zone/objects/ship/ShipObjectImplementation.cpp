@@ -41,8 +41,17 @@
 #include "server/zone/managers/faction/FactionManager.h"
 #include "server/zone/objects/ship/transform/ShipObjectTransform.h"
 #include "server/zone/objects/ship/transform/SpaceTransform.h"
+#include "server/zone/managers/ship/tasks/ShipObjectTimerTask.h"
 
 // #define DEBUG_COV
+
+void ShipObjectImplementation::finalize() {
+	if (getUniqueID() != 0) {
+		dropUniqueID(false);
+	}
+
+	TangibleObjectImplementation::finalize();
+}
 
 void ShipObjectImplementation::initializeTransientMembers() {
 	TangibleObjectImplementation::initializeTransientMembers();
@@ -56,7 +65,10 @@ void ShipObjectImplementation::initializeTransientMembers() {
 		resetComponentFlag(componentOptions.getKeyAt(i), false);
 	}
 
-	initializeUniqueID(false);
+	if (!isShipAiAgent()) {
+		initializeUniqueID(false);
+	}
+
 	initializeTransform(getPosition(), *getDirection());
 
 	auto volume = getCollisionVolume();
@@ -69,6 +81,8 @@ void ShipObjectImplementation::initializeTransientMembers() {
 			setBoundingRadius(sphereRadius);
 		}
 	}
+
+	timerTaskCrc = 0;
 }
 
 void ShipObjectImplementation::notifyLoadFromDatabase() {
@@ -645,10 +659,24 @@ void ShipObjectImplementation::sendDestroyTo(SceneObject* player) {
 }
 
 void ShipObjectImplementation::notifyInsertToZone(Zone* zone) {
-	StringBuffer newName;
-	newName << getDisplayedName() << " -- ID: " << getObjectID() << " - " << zone->getZoneName();
+	if (zone != nullptr) {
+		const auto& zoneName = zone->getZoneName();
 
-	setLoggingName(newName.toString());
+		if (timerTaskCrc != zoneName.hashCode()) {
+			auto timerTask = zone->getTimerTask();
+
+			if (timerTask != nullptr) {
+				timerTaskCrc = timerTask->getTaskCrc();
+				timerTask->addShip(asShipObject());
+			} else {
+				timerTaskCrc = 0;
+			}
+		}
+
+		setLoggingName(getDisplayedName() + " [" + String::valueOf(getObjectID()) + "] " + zoneName);
+	} else {
+		setLoggingName(getDisplayedName() + " [" + String::valueOf(getObjectID()) + "]");
+	}
 
 	TangibleObjectImplementation::notifyInsertToZone(zone);
 
@@ -660,6 +688,8 @@ void ShipObjectImplementation::notifyInsertToZone(Zone* zone) {
 }
 
 void ShipObjectImplementation::notifyRemoveFromZone() {
+	timerTaskCrc = 0;
+
 	TangibleObjectImplementation::notifyRemoveFromZone();
 
 #ifdef DEBUG_COV
@@ -777,7 +807,6 @@ void ShipObjectImplementation::doRecovery(int mselapsed) {
 
 	float deltaTime = Math::clamp(0.1f, mselapsed * 0.001f, 10.f);
 
-	auto pilot = getPilot();
 	auto deltaVector = getDeltaVector();
 	auto componentMap = getShipComponentMap();
 
@@ -910,6 +939,8 @@ void ShipObjectImplementation::doRecovery(int mselapsed) {
 						removeComponentFlag(Components::BOOSTER, ShipComponentFlag::ACTIVE, false);
 						restartBooster();
 
+						auto pilot = getPilot();
+
 						if (pilot != nullptr) {
 							pilot->sendSystemMessage("@space/space_interaction:booster_energy_depleted");
 						}
@@ -956,7 +987,7 @@ void ShipObjectImplementation::doRecovery(int mselapsed) {
 	auto targetVector = getTargetVector();
 
 	if (targetVector != nullptr) {
-		targetVector->update();
+		targetVector->update(asShipObject());
 	}
 }
 
@@ -2594,6 +2625,20 @@ void ShipObjectImplementation::initializeUniqueID(bool notifyClient) {
 
 	uint16 shipID = shipManager->setShipUniqueID(asShipObject());
 	setUniqueID(shipID, notifyClient);
+}
+
+void ShipObjectImplementation::dropUniqueID(bool notifyClient) {
+	auto shipManager = ShipManager::instance();
+
+	if (shipManager == nullptr) {
+		return;
+	}
+
+	if (getUniqueID() != 0) {
+		shipManager->dropShipUniqueID(asShipObject());
+	}
+
+	setUniqueID(0, notifyClient);
 }
 
 bool ShipObjectImplementation::canBePilotedBy(CreatureObject* player) {

@@ -135,6 +135,8 @@ class ShipObject extends TangibleObject {
 
 	protected transient boolean droidFeedback;
 
+	protected transient unsigned int timerTaskCrc;
+
 	// DeltaAutoVariable template <class K, class V, int BaselineName, uint8 DeltaType, int DeltaIndex>
 
 	@rawTemplate(value = "float, 'SHIP', 1, 17")
@@ -470,6 +472,8 @@ class ShipObject extends TangibleObject {
 		cargoString = "";
 	}
 
+	public native void finalize();
+
 	public native void notifyLoadFromDatabase();
 
 	@dirty
@@ -478,7 +482,7 @@ class ShipObject extends TangibleObject {
 	public native void initializeTransientMembers();
 
 	@preLocked
-	public native void doRecovery(int latency);
+	public native abstract void doRecovery(int latency);
 
 	@preLocked
 	public native float getTotalShipDamage();
@@ -515,7 +519,7 @@ class ShipObject extends TangibleObject {
 	@local
 	public native void notifyInsertToZone(Zone zone);
 
-	public native void notifyRemoveFromZone();
+	public native abstract void notifyRemoveFromZone();
 
 	@local
 	public native abstract void updateZone(boolean lightUpdate, boolean sendPackets = true);
@@ -1823,7 +1827,11 @@ class ShipObject extends TangibleObject {
 
 	public native void resetEfficiency();
 
+	@local
 	public native void initializeUniqueID(boolean notifyClient = true);
+
+	@local
+	public native void dropUniqueID(boolean notifyClient = true);
 
 	public native boolean canBePilotedBy(CreatureObject player);
 
@@ -1907,4 +1915,9 @@ class ShipObject extends TangibleObject {
 
 	@local
 	public native float getNextRotation();
+
+	@local
+	public native unsigned int getTimerTaskCrc() {
+		return timerTaskCrc;
+	}
 }

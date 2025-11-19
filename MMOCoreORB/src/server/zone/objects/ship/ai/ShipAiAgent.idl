@@ -367,6 +367,7 @@ class ShipAiAgent extends FighterShipObject {
 
 	public native boolean setDisabledEngineSpeed();
 
+	@local
 	public native void updateTransform(boolean lightUpdate = true);
 
 	public native int getNextBehaviorInterval();
@@ -902,4 +903,9 @@ class ShipAiAgent extends FighterShipObject {
 
 	@local
 	public native abstract void updateZone(boolean lightUpdate, boolean sendPackets = true);
+
+	@preLocked
+	public native abstract void doRecovery(int latency);
+
+	public native abstract void notifyRemoveFromZone();
 }
