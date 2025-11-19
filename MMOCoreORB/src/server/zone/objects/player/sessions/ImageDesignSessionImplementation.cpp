@@ -225,9 +225,16 @@ void ImageDesignSessionImplementation::updateImageDesign(CreatureObject* updater
 		if (type == 1) {
 			String oldCustomization;
 
-			// First get current customization
-			if (currentHair != nullptr)
+			// First destroy current hair.
+			if (currentHair != nullptr) {
+				hairObject = nullptr;
+
+				Locker hlock(currentHair);
 				currentHair->getCustomizationString(oldCustomization);
+
+				currentHair->destroyObjectFromWorld(true);
+				currentHair->destroyObjectFromDatabase();
+			}
 
 			String hairTempString = imageDesignData.getHairTemplate();
 
