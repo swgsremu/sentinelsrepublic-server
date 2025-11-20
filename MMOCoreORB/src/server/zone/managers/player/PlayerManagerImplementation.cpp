@@ -949,11 +949,10 @@ String PlayerManagerImplementation::setFirstName(CreatureObject* creature, const
 	auto swgRealmsAPI = SWGRealmsAPI::instance();
 	String errorMessage;
 
-	if (!swgRealmsAPI->updateCharacterNameBlocking(
+	if (!swgRealmsAPI->updateCharacterFirstNameBlocking(
 			creature->getObjectID(),
 			server->getGalaxyID(),
-			creature->getFirstName(),  // firstname
-			"",  // surname unchanged
+			creature->getFirstName(),
 			errorMessage)) {
 		error("Failed to update character firstname: " + errorMessage);
 		return "API error: " + errorMessage;
@@ -1045,10 +1044,9 @@ String PlayerManagerImplementation::setLastName(CreatureObject* creature, const 
 	auto swgRealmsAPI = SWGRealmsAPI::instance();
 	String errorMessage;
 
-	if (!swgRealmsAPI->updateCharacterNameBlocking(
+	if (!swgRealmsAPI->updateCharacterSurNameBlocking(
 			creature->getObjectID(),
 			galaxyID,
-			"", // firstname unchanged
 			creature->getLastName(),
 			errorMessage)) {
 		error("Failed to update character surname: " + errorMessage);

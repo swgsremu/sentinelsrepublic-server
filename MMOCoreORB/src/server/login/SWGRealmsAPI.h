@@ -451,9 +451,10 @@ namespace server {
 			                                  String& reservationID, String& errorMessage);
 			bool beginCharactersCommitBlocking(uint32 galaxyID, String& errorMessage);
 			bool commitCharactersBlocking(uint32 galaxyID, String& errorMessage);
-			bool updateCharacterNameBlocking(uint64 characterOID, uint32 galaxyID,
-			                             const String& firstname, const String& surname,
-			                             String& errorMessage);
+			bool updateCharacterFirstNameBlocking(uint64 characterOID, uint32 galaxyID,
+			                                      const String& firstname, String& errorMessage);
+			bool updateCharacterSurNameBlocking(uint64 characterOID, uint32 galaxyID,
+			                                    const String& surname, String& errorMessage);
 			bool deleteCharacterBlocking(uint64 characterOID, uint32 accountID, uint32 galaxyID, String& errorMessage);
 			bool rollbackCharactersBlocking(uint32 galaxyID, String& errorMessage);
 			bool beginPurgeBatchBlocking(uint32 galaxyID, uint32 limit, Vector<uint64>& characterOIDs,

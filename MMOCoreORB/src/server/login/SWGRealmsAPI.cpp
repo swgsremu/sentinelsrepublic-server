@@ -1628,29 +1628,32 @@ bool SWGRealmsAPI::commitCharactersBlocking(uint32 galaxyID, String& errorMessag
 	return apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "PUT", "", errorMessage);
 }
 
-bool SWGRealmsAPI::updateCharacterNameBlocking(uint64 characterOID, uint32 galaxyID,
-                                            const String& firstname, const String& surname,
-                                            String& errorMessage) {
+bool SWGRealmsAPI::updateCharacterFirstNameBlocking(uint64 characterOID, uint32 galaxyID,
+                                                     const String& firstname, String& errorMessage) {
+	// Validate that firstname is not empty - we should never allow blank firstnames
+	if (firstname.isEmpty()) {
+		errorMessage = "First name cannot be empty";
+		return false;
+	}
+
 	StringBuffer pathBuffer;
 	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/characters/" << characterOID;
 
 	auto jsonBody = json::value::object();
-	bool hasFields = false;
+	jsonBody[U("firstname")] = json::value::string(U(firstname.toCharArray()));
 
-	if (!firstname.isEmpty()) {
-		jsonBody[U("firstname")] = json::value::string(U(firstname.toCharArray()));
-		hasFields = true;
-	}
+	Reference<SimpleResult*> result = new SimpleResult();
+	return apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "PUT", String(jsonBody.serialize().c_str()), errorMessage);
+}
 
-	if (!surname.isEmpty()) {
-		jsonBody[U("surname")] = json::value::string(U(surname.toCharArray()));
-		hasFields = true;
-	}
+bool SWGRealmsAPI::updateCharacterSurNameBlocking(uint64 characterOID, uint32 galaxyID,
+                                                   const String& surname, String& errorMessage) {
+	// Always send surname value, even if empty - this allows CSRs to blank out surnames
+	StringBuffer pathBuffer;
+	pathBuffer << "/v1/core3/galaxy/" << galaxyID << "/characters/" << characterOID;
 
-	if (!hasFields) {
-		errorMessage = "No fields to update";
-		return false;
-	}
+	auto jsonBody = json::value::object();
+	jsonBody[U("surname")] = json::value::string(U(surname.toCharArray()));
 
 	Reference<SimpleResult*> result = new SimpleResult();
 	return apiCallBlocking(result.castTo<SWGRealmsAPIResult*>(), pathBuffer.toString(), "PUT", String(jsonBody.serialize().c_str()), errorMessage);
