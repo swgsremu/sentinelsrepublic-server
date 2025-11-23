@@ -263,6 +263,13 @@ void ZoneClientSessionImplementation::setIPAddress(const String& newIP) {
 	}
 }
 
+uint16 ZoneClientSessionImplementation::getPort() const {
+	if (session != nullptr) {
+		return session->getAddress().getPort();
+	}
+	return 0;
+}
+
 BaseClientProxy* ZoneClientSessionImplementation::getSession() {
 	return session;
 }

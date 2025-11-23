@@ -100,6 +100,7 @@ enum class TrxCode {
 	PLAYEROFFLINE,              // Player Offline
 	PLAYERONLINE,               // Player Online
 	RECYCLED,                   // Recycled Items
+	SESSIONSTATS,               // Session Statistics
 	SERVERDESTROYOBJECT,        // /serverDestroyObject command
 	SHIPDEEDPURCHASE,           // Purchase of a ship deed from chassis dealer
 	SHIPREDEED,                 // ReDeeding a ship from datapad
@@ -433,6 +434,7 @@ private:
 			case TrxCode::PLAYERLOGGINGOUT:
 			case TrxCode::PLAYEROFFLINE:
 			case TrxCode::PLAYERONLINE:
+			case TrxCode::SESSIONSTATS:
 			case TrxCode::POISYSTEM:
 			case TrxCode::SKILLTRAININGSYSTEM:
 			case TrxCode::TESTACCOUNT:

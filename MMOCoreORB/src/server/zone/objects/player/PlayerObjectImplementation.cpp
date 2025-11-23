@@ -37,6 +37,7 @@
 #include "server/zone/packets/zone/CmdSceneReady.h"
 #include "server/zone/objects/waypoint/WaypointObject.h"
 #include "server/zone/objects/creature/CreatureObject.h"
+#include "server/zone/objects/transaction/TransactionLog.h"
 #include "server/chat/StringIdChatParameter.h"
 #include "server/zone/objects/area/ActiveArea.h"
 #include "server/zone/objects/player/events/PlayerDisconnectEvent.h"
@@ -1952,7 +1953,8 @@ void PlayerObjectImplementation::logSessionStats(bool isSessionEnd) {
 		ipAccountCount = loggedInAccounts.size();
 	}
 
-	// Need the session_stats table to log to database
+	// Log session statistics
+#ifndef WITH_SWGREALMS_API
 	if (ServerCore::getSchemaVersion() >= 1003) {
 		StringBuffer query;
 
@@ -2003,6 +2005,28 @@ void PlayerObjectImplementation::logSessionStats(bool isSessionEnd) {
 
 		info(logMsg.toString(), true);
 	}
+#else // WITH_SWGREALMS_API
+
+	// API mode: Use TransactionLog with SESSIONSTATS code
+	if (parent != nullptr) {
+		CreatureObject* creature = parent->asCreatureObject();
+
+		if (creature != nullptr) {
+			TransactionLog trx(TrxCode::SESSIONSTATS, creature);
+
+			trx.addState("uptime", (int)(uptime / 1000.0f));
+			trx.addState("dstSessionEnd", isSessionEnd);
+			trx.addState("dstDeltaSeconds", (int)(sessionStatsMiliSecs / 1000.0f));
+			trx.addState("dstDeltaCredits", creditsDelta);
+			trx.addState("dstDeltaSkillPoints", skillPointDelta);
+			trx.addState("dstActivityXP", sessionStatsActivityXP);
+			trx.addState("dstCurrentCredits", currentCredits);
+			trx.addState("dstIPAccountCount", ipAccountCount);
+
+			trx.commit();
+		}
+	}
+#endif // WITH_SWGREALMS_API
 
 	resetSessionStats(false);
 }
