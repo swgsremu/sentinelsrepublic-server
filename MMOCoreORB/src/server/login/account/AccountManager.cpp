@@ -164,8 +164,8 @@ void AccountManager::loginApprovedAccount(LoginClient* client, ManagedReference<
 	try {
 #ifndef WITH_SWGREALMS_API
 		ServerDatabase::instance()->executeStatement(sessionQuery);
-#endif // !WITH_SWGREALMS_API
 		ServerDatabase::instance()->executeStatement(logQuery);
+#endif // !WITH_SWGREALMS_API
 	} catch (const DatabaseException& e) {
 		client->error() << e.getMessage();
 	}

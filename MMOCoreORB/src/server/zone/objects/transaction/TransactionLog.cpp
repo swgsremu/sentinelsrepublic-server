@@ -15,6 +15,7 @@
 #include "engine/engine.h"
 #include "system/thread/atomic/AtomicBoolean.h"
 #include "system/thread/atomic/AtomicInteger.h"
+#include "server/zone/ZoneClientSession.h"
 #include "server/zone/objects/player/PlayerObject.h"
 #include "server/zone/objects/scene/SceneObject.h"
 #include "server/zone/objects/structure/StructureObject.h"
@@ -458,7 +459,26 @@ void TransactionLog::initializeCommonSceneObject(const String& key, SceneObject*
 	auto player = creo->getPlayerObject();
 
 	if (player != nullptr) {
+		auto zoneServer = creo->getZoneServer();
+		if (zoneServer != nullptr) {
+			mTransaction[key + "GalaxyId"] = zoneServer->getGalaxyID();
+		}
+
 		mTransaction[key + "AccountId"] = player->getAccountID();
+
+		String networkIP = "0.0.0.0";
+		uint16 networkPort = 0;
+
+		auto client = creo->getClient();
+
+		if (client != nullptr) {
+			// Use client methods which return EIP-aware IP (after API sets it)
+			networkIP = client->getIPAddress();
+			networkPort = client->getPort();
+		}
+
+		mState[key + "NetworkIP"] = networkIP;
+		mState[key + "NetworkPort"] = networkPort;
 
 		mState[key + "PlayedSeconds"] = (int)(player->getPlayedMiliSecs() / 1000);
 		mState[key + "SessionSeconds"] = (int)(player->getSessionMiliSecs() / 1000);
@@ -945,6 +965,7 @@ const String TransactionLog::trxCodeToString(TrxCode code) {
 	case TrxCode::PLAYERLOGGINGOUT:         return "playerloggingout";          // Player Logging Out
 	case TrxCode::PLAYERDIED:               return "playerdied";                // Player Died
 	case TrxCode::RECYCLED:                 return "recycled";                  // Recycled Items
+	case TrxCode::SESSIONSTATS:             return "sessionstats";              // Session Statistics
 	case TrxCode::SERVERDESTROYOBJECT:      return "serverdestroyobject";       // /serverDestroyObject command
 	case TrxCode::SHIPDEEDPURCHASE:         return "shipdeedpurchase";          // Purchase of a ship deed from chassis dealer
 	case TrxCode::SHIPREDEED:               return "shipredeed";                // ReDeeding a ship from datapad
