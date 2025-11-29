@@ -588,6 +588,7 @@ void ZoneServerImplementation::clearZones() {
 				zone->clearZone();
 			}, "ClearZoneLambda");
 		}
+		Thread::sleep(100);
 	}
 
 	for (int i = 0; i < zones->size(); ++i) {
@@ -610,6 +611,7 @@ void ZoneServerImplementation::clearZones() {
 				szone->clearZone();
 			}, "ClearZoneLambda");
 		}
+		Thread::sleep(100);
 	}
 
 	for (int i = 0; i < spaceZones->size(); ++i) {
