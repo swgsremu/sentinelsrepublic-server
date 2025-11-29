@@ -563,8 +563,9 @@ namespace server {
 			bool isStreamConnected() const;
 			int getStreamPendingCount() const;
 
-			// Metrics publishing
-			static const TaskQueue* getCustomQueue();
+			// Task queues
+			static const TaskQueue* getCustomQueue();        // 4 threads for API callbacks
+			static const TaskQueue* getCustomMetricsQueue(); // 1 thread for metrics (BDB handle optimization)
 			void scheduleMetricsPublish();
 		};
 	}

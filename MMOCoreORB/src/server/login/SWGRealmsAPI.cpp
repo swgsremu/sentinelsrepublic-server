@@ -190,7 +190,7 @@ void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& 
 
 		Core::getTaskManager()->executeTask([result]() {
 			result->invokeCallback();
-		}, "SWGRealmsAPIResult-nop-" + src, "slowQueue");
+		}, "SWGRealmsAPIResult-nop-" + src, getCustomQueue()->getName());
 		return;
 	}
 
@@ -359,7 +359,7 @@ void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& 
 			Core::getTaskManager()->executeTask([result] {
 				API_TRACE(result, "callback_invoked");
 				result->invokeCallback();
-			}, "SWGRealmsAPIResult-" + src, "slowQueue");
+			}, "SWGRealmsAPIResult-" + src, getCustomQueue()->getName());
 		});
 }
 
@@ -404,7 +404,7 @@ void SWGRealmsAPI::createSession(const String& username, const String& password,
 
 		Core::getTaskManager()->executeTask([result]() mutable {
 			result->invokeCallback();
-		}, "SWGRealmsAPIResult-nop-createSession", "slowQueue");
+		}, "SWGRealmsAPIResult-nop-createSession", getCustomQueue()->getName());
 
 		return;
 	}
@@ -2150,7 +2150,16 @@ public:
 
 const TaskQueue* SWGRealmsAPI::getCustomQueue() {
 	static auto customQueue = []() {
-		return Core::getTaskManager()->initializeCustomQueue("SWGRealmsWorker", 1);
+		auto numThreads = ConfigManager::instance()->getInt("Core3.Login.API.WorkerThreads", 4);
+		return Core::getTaskManager()->initializeCustomQueue("SWGRealmsAPI", numThreads);
+	}();
+
+	return customQueue;
+}
+
+const TaskQueue* SWGRealmsAPI::getCustomMetricsQueue() {
+	static auto customQueue = []() {
+		return Core::getTaskManager()->initializeCustomQueue("SWGRealmsMetrics", 1);
 	}();
 
 	return customQueue;
@@ -2176,7 +2185,7 @@ void SWGRealmsAPI::scheduleMetricsPublish() {
 	}
 
 	Reference<SWGRealmsMetricsTask*> task = new SWGRealmsMetricsTask(intervalSec);
-	task->setCustomTaskQueue(getCustomQueue()->getName());
+	task->setCustomTaskQueue(getCustomMetricsQueue()->getName());
 	task->schedule(intervalSec * 1000);
 
 	info(true) << "Scheduled metrics publishing every " << intervalSec << " seconds";
