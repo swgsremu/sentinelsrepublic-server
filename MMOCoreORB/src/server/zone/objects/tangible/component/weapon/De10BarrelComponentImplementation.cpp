@@ -33,8 +33,8 @@ void De10BarrelComponentImplementation::fillAttributeList(AttributeListMessage* 
 			double power;
 			int precision;
 
-			// Shot hidden attributes to staff
-			bool showStats = ghost->isPrivileged();
+			// Show hidden attributes to staff - now everyone 
+			bool showStats = true;       // Removed this line after the = "ghost->isPrivileged();" and changed it to "true;" so stats show for all players. 11-29-25
 
 			String footer;
 
