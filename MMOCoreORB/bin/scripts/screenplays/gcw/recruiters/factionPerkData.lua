@@ -8,6 +8,7 @@ factionRewardType = {
 	installation = 7,
 	hireling = 8,
 	schematic = 9,
+	component =  10,
 }
 
 rebelRewardData = {
@@ -108,6 +109,16 @@ rebelRewardData = {
 
 	schematic = {
 		dead_eye_prototype = {type = factionRewardType.schematic, display = "@item_n:dead_eye_prototype", item = "object/draft_schematic/item/theme_park/alderaan/act3/dead_eye_prototype.iff", cost = 750, useCount = 10},
+	},
+
+	 -- Creating the new component list for imp stocks and anything else we add as components in the future. 
+	componentList = {  
+		"weapon_stock_quest" 
+	},
+
+	-- Adding the components and their information to the Rebel vendor to be put for sale, their price and use count as well. 
+	 component = {
+		 weapon_stock_quest = { type = factionRewardType.component, display = "@component_name:Form-Fitted Weapon Stock", item = "object/tangible/component/weapon/stock_advanced_quest.iff", cost = 10000, useCount = 1},
 	},
 }
 
@@ -231,5 +242,15 @@ imperialRewardData = {
 
 	schematic = {
 		dead_eye_prototype = {type = factionRewardType.schematic, display = "@item_n:dead_eye_prototype", item = "object/draft_schematic/item/theme_park/alderaan/act3/dead_eye_prototype.iff", cost = 750, useCount = 10},
+	},
+
+	 -- Creating the new component list for imp stocks and anything else we add as components in the future. 
+	componentList = {  
+		"weapon_stock_quest" 
+	},
+
+	-- Adding the components and their information to the Imperial vendor to be put for sale, their price and use count as well. 
+	 component = {
+		 weapon_stock_quest = { type = factionRewardType.component, display = "@component_name:Form-Fitted Weapon Stock", item = "object/tangible/component/weapon/stock_advanced_quest.iff", cost = 10000, useCount = 1},
 	},
 }
