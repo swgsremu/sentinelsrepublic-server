@@ -4,9 +4,9 @@ LifeDay = ScreenPlay:new {
 	numberOfActs = 1,
 
 	mobiles = {
-		{ mobile = "kkatamk", planet = "naboo", x = -5586.6, z = -150, y = -33.5, angle = 87 }, -- Lake Retreat
+		{ mobile = "kkatamk", planet = "naboo", x = -4902.8, z = 6.0, y = 4132.4, angle = 33 }, -- Changed to Theed
 		{ mobile = "kkatamk", planet = "tatooine", x = 130.3, z = 52.0, y = -5383.7, angle = -88 }, -- Anchorhead
-		{ mobile = "kkatamk", planet = "corellia", x = -5544.5, z = 23.4, y = -6176.6, angle = -96 }, -- Vreni Island
+		{ mobile = "kkatamk", planet = "corellia", x = -167.3, z = 28.0, y = -4723.4, angle = -87 }, -- Changed to Coronet 
 
 		{ mobile = "oraalarri", planet = "dathomir", x = -2580.2, z = 77.0, y = -5521.4, angle = 7 },
 		{ mobile = "anarra", planet = "dathomir", x = -2574.9, z = 77.0, y = -5510.8, angle = -24 },
