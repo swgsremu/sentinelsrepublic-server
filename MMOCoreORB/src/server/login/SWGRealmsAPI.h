@@ -425,6 +425,9 @@ namespace server {
 			AtomicInteger peakConcurrentCalls = 0;
 			AtomicInteger totalBlockingCalls = 0;
 
+			// Queue depth tracking
+			AtomicInteger peakQueueDepth = 0;
+
 			// Latency histogram (milliseconds)
 			AtomicInteger latency_0_10ms = 0;
 			AtomicInteger latency_10_50ms = 0;
