@@ -356,10 +356,29 @@ void SWGRealmsAPI::apiCall(Reference<SWGRealmsAPIResult*> result, const String& 
 			debug() << logPrefix << "END apiCall " << method << " [path=" << apiPath << "] result = " << *result;
 
 			API_TRACE(result, "queue_scheduled");
-			Core::getTaskManager()->executeTask([result] {
+
+			// Track queue depth before submitting - warn on new peaks
+			auto queue = getCustomQueue();
+			int queueDepth = queue->size();
+			int peak = peakQueueDepth.get();
+			while (queueDepth > peak) {
+				if (peakQueueDepth.compareAndSet(peak, queueDepth)) {
+					warning() << logPrefix << "new peak API callback queue depth: " << queueDepth;
+					break;
+				}
+				peak = peakQueueDepth.get();
+			}
+
+			auto scheduledTime = Time();
+			auto clientTrxId = result->getClientTrxId();
+			Core::getTaskManager()->executeTask([result, scheduledTime, clientTrxId, this] {
 				API_TRACE(result, "callback_invoked");
+				auto delayMs = scheduledTime.miliDifference();
+				if (delayMs > 1000) {
+					warning() << clientTrxId << " callback delay: " << delayMs << "ms";
+				}
 				result->invokeCallback();
-			}, "SWGRealmsAPIResult-" + src, getCustomQueue()->getName());
+			}, "SWGRealmsAPIResult-" + src, queue->getName());
 		});
 }
 
@@ -582,6 +601,7 @@ bool SWGRealmsAPI::consoleCommand(const String& arguments) {
 		info(true) << "  Errors: " << stats["errCount"].get<int>();
 		info(true) << "  Outstanding blocking calls: " << stats["outstandingBlockingCalls"].get<int>();
 		info(true) << "  Peak concurrent calls: " << stats["peakConcurrentCalls"].get<int>();
+		info(true) << "  Peak queue depth: " << stats["peakQueueDepth"].get<int>();
 		info(true) << "  Total blocking calls: " << stats["totalBlockingCalls"].get<int>();
 		info(true) << "  Avg round-trip: " << stats["avgRoundTripMs"].get<int>() << "ms";
 		info(true) << "  Avg ig-88a request: " << stats["avgRequestMs"].get<int>() << "ms";
@@ -607,6 +627,7 @@ JSONSerializationType SWGRealmsAPI::getStatsAsJSON() const {
 	stats["errCount"] = errCount.get();
 	stats["outstandingBlockingCalls"] = outstandingBlockingCalls.get();
 	stats["peakConcurrentCalls"] = peakConcurrentCalls.get();
+	stats["peakQueueDepth"] = peakQueueDepth.get();
 	stats["totalBlockingCalls"] = totalBlockingCalls.get();
 
 	// Calculate averages
@@ -958,6 +979,7 @@ bool SWGRealmsAPI::apiCallBlocking(Reference<SWGRealmsAPIResult*> result, const 
 		timeout.addMiliTime(apiTimeoutMs);
 
 		if (result->blockingCondition.timedWait(&result->blockingMutex, &timeout) != 0) {
+			warning() << result->getClientTrxId() << " TIMEOUT after " << apiTimeoutMs << "ms waiting for callback [path=" << path << "]";
 			errorMessage = "Timeout waiting for API response";
 			return false;
 		}
