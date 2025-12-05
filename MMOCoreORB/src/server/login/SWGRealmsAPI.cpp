@@ -2173,7 +2173,8 @@ public:
 const TaskQueue* SWGRealmsAPI::getCustomQueue() {
 	static auto customQueue = []() {
 		auto numThreads = ConfigManager::instance()->getInt("Core3.Login.API.WorkerThreads", 4);
-		return Core::getTaskManager()->initializeCustomQueue("SWGRealmsAPI", numThreads);
+		// Don't block during save - API callbacks must run to prevent timeout of blocking callers
+		return Core::getTaskManager()->initializeCustomQueue("SWGRealmsAPI", numThreads, false);
 	}();
 
 	return customQueue;
