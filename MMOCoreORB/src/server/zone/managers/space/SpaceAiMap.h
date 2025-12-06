@@ -232,11 +232,20 @@ public:
 
 				int num = zone->getSpawnedAiAgents();
 
-				if (num <= 0)
+				if (num <= 0) {
 					continue;
+				}
 
 				String ucFirstZoneName = zone->getZoneName();
 				ucFirstZoneName[0] = toupper(ucFirstZoneName[0]);
+
+				int underIndex = ucFirstZoneName.indexOf("_");
+
+				if (underIndex > -1) {
+					ucFirstZoneName = ucFirstZoneName.replaceFirst("_", "");
+					ucFirstZoneName[underIndex] = toupper(ucFirstZoneName[underIndex]);
+				}
+
 				json["countAiAgents" + ucFirstZoneName] = num;
 
 				totalSpawned += num;
