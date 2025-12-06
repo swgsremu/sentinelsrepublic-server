@@ -1385,6 +1385,12 @@ void PlayerManagerImplementation::killPlayer(TangibleObject* attacker, CreatureO
 	PlayerObject* ghost = player->getPlayerObject();
 
 	if (ghost != nullptr) {
+		// Reset food/drink filling immediately on death to avoid carry-over
+		// Controlled via config flag Core3.PlayerManager.WipeFillingOnDeath (default true)
+		if (ConfigManager::instance()->getBool("Core3.PlayerManager.WipeFillingOnDeath", true)) {
+			ghost->setFoodFilling(0);
+			ghost->setDrinkFilling(0);
+		}
 		ghost->resetIncapacitationTimes();
 		if (ghost->hasTef()) {
 			ghost->schedulePvpTefRemovalTask(true, true, true);
@@ -1937,10 +1943,7 @@ void PlayerManagerImplementation::sendPlayerToCloner(CreatureObject* player, uin
 
 	}
 
-	if (ConfigManager::instance()->getBool("Core3.PlayerManager.WipeFillingOnClone", false)) {
-		ghost->setFoodFilling(0);
-		ghost->setDrinkFilling(0);
-	}
+	// Note: filling is now cleared at time of death via Core3.PlayerManager.WipeFillingOnDeath
 
 	Reference<Task*> task = new PlayerIncapacitationRecoverTask(player, true);
 	task->schedule(3 * 1000);
