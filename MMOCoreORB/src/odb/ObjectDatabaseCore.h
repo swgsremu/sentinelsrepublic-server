@@ -11,7 +11,9 @@
 #include "engine/engine.h"
 #include "server/zone/managers/object/ObjectManager.h"
 #include "system/util/SynchronizedHashTable.h"
+#ifndef WITH_SWGREALMS_API
 #include "server/db/ServerDatabase.h"
+#endif
 
 class ParsedObjectsHashTable : protected HashTable<uint64, int> {
 public:
@@ -45,7 +47,9 @@ protected:
 	Mutex guard;
 };
 
+#ifndef WITH_SWGREALMS_API
 class ServerDatabase;
+#endif
 
 class ODB3WorkerData {
 public:
@@ -65,7 +69,9 @@ class ObjectDatabaseCore : public Core, public Logger {
 protected:
 	Reference<ObjectManager*> objectManager;
 	Vector<String> arguments;
+#ifndef WITH_SWGREALMS_API
 	UniqueReference<ServerDatabase*> mysql;
+#endif
 
 	static ParsedObjectsHashTable parsedObjects;
 	static AtomicInteger dbReadCount;

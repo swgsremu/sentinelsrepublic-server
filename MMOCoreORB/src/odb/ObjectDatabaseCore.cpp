@@ -12,6 +12,11 @@
 #include "server/zone/objects/creature/CreatureObject.h"
 #include "server/zone/objects/player/PlayerObject.h"
 
+#ifdef WITH_SWGREALMS_API
+#include "server/login/SWGRealmsAPI.h"
+#include "server/zone/managers/player/CharacterNameMap.h"
+#endif
+
 #include "ObjectDatabaseCoreSignals.h"
 
 AtomicInteger ObjectDatabaseCore::dbReadCount;
@@ -122,6 +127,7 @@ VectorMap<uint64, String> ObjectDatabaseCore::loadPlayers(int galaxyID) {
 	VectorMap<uint64, String> players(500000, 500000 / 2);
 	players.setNoDuplicateInsertPlan();
 
+#ifndef WITH_SWGREALMS_API
 	staticLogger.info("loading characters from mysql for galaxy " + String::valueOf(galaxyID), true);
 
 	try {
@@ -139,6 +145,34 @@ VectorMap<uint64, String> ObjectDatabaseCore::loadPlayers(int galaxyID) {
 	} catch (Exception& e) {
 		staticLogger.error(e.getMessage());
 	}
+#else
+	staticLogger.info("loading characters from SWGRealms API for galaxy " + String::valueOf(galaxyID), true);
+
+	try {
+		CharacterNameMap nameMap;
+		String errorMessage;
+
+		auto swgRealmsAPI = SWGRealmsAPI::instance();
+
+		if (!swgRealmsAPI->loadCharacterNamesBlocking(galaxyID, nameMap, errorMessage)) {
+			staticLogger.error("Failed to load characters from API: " + errorMessage);
+		} else {
+			// Convert from CharacterNameMap (name->oid) to VectorMap (oid->name)
+			auto names = nameMap.getNames();
+			auto iterator = names.iterator();
+
+			while (iterator.hasNext()) {
+				String name;
+				uint64 oid;
+
+				iterator.getNextKeyAndValue(name, oid);
+				players.emplace(std::move(oid), std::move(name));
+			}
+		}
+	} catch (Exception& e) {
+		staticLogger.error(e.getMessage());
+	}
+#endif
 
 	StringBuffer msg;
 	msg << "Loaded " << players.size() << " characters into memory";
@@ -518,7 +552,9 @@ void ObjectDatabaseCore::dispatchPlayerTask(const Vector<VectorMapEntry<String, 
 }
 
 void ObjectDatabaseCore::dumpPlayers() {
+#ifndef WITH_SWGREALMS_API
 	mysql = new ServerDatabase(ConfigManager::instance());
+#endif
 	auto taskManager = Core::getTaskManager();
 
 	auto players = loadPlayers(getIntArgument(1, 2));
