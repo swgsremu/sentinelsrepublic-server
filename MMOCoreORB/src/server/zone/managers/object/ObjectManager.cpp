@@ -1050,7 +1050,6 @@ void ObjectManager::onUpdateModifiedObjectsToDatabase(int flags) {
 	if (server != nullptr && server->getZoneServer() != nullptr) {
 		galaxyId = server->getZoneServer()->getGalaxyID();
 
-#ifndef WITH_SWGREALMS_API
 		//characters_dirty chars
 		try {
 			const static auto query = "SELECT * FROM characters_dirty WHERE galaxy_id = " + String::valueOf(galaxyId);
@@ -1059,20 +1058,10 @@ void ObjectManager::onUpdateModifiedObjectsToDatabase(int flags) {
 		} catch (const Exception& e) {
 			error(e.getMessage());
 		}
-#else // WITH_SWGREALMS_API
-		auto swgRealmsAPI = SWGRealmsAPI::instance();
-		if (swgRealmsAPI != nullptr) {
-			String errorMessage;
-			if (!swgRealmsAPI->beginCharactersCommitBlocking(galaxyId, errorMessage)) {
-				error("Failed to begin character commit: " + errorMessage);
-			}
-		}
-#endif // WITH_SWGREALMS_API
 	}
 }
 
 void ObjectManager::onCommitData() {
-#ifndef WITH_SWGREALMS_API
 	if (charactersSaved != nullptr) {
 		try {
 			StringBuffer query;
@@ -1110,15 +1099,6 @@ void ObjectManager::onCommitData() {
 			System::out << e.getMessage();
 		}
 	}
-#else // WITH_SWGREALMS_API
-	auto swgRealmsAPI = SWGRealmsAPI::instance();
-	if (swgRealmsAPI != nullptr && galaxyId != -1) {
-		String errorMessage;
-		if (!swgRealmsAPI->commitCharactersBlocking(galaxyId, errorMessage)) {
-			error("Failed to commit characters: " + errorMessage);
-		}
-	}
-#endif // WITH_SWGREALMS_API
 
 	//Spawn the delete characters task.
 	if (deleteCharactersTask != nullptr && !deleteCharactersTask->isScheduled()) {

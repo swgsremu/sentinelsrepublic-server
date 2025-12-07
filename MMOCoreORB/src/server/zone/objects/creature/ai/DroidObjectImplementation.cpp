@@ -17,6 +17,10 @@
 #include "server/zone/objects/structure/StructureObject.h"
 #include "server/zone/objects/creature/conversation/ConversationObserver.h"
 #include "server/zone/objects/tangible/weapon/WeaponObject.h"
+#include "server/zone/packets/scene/AttributeListMessage.h"
+#include "server/zone/objects/player/tasks/AutoDroidPowerTask.h"
+#include "server/zone/objects/player/PlayerObject.h"
+#include "system/thread/Locker.h"
 
 void DroidObjectImplementation::initializeTransientMembers() {
 	AiAgentImplementation::initializeTransientMembers();
@@ -188,6 +192,35 @@ void DroidObjectImplementation::rechargeFromDroid() {
 void DroidObjectImplementation::rechargeOtherDroid(DroidObject* otherDroid) {
 	otherDroid->rechargeFromDroid();
 	usePower(100);
+}
+
+void DroidObjectImplementation::usePower(int amount) {
+	if (amount <= 0)
+		return;
+
+	power -= amount;
+
+	if (power < 0)
+		power = 0;
+
+	if (power <= (int)(0.05f * (float)MAX_POWER)) {
+		ManagedReference<CreatureObject*> owner = getLinkedCreature().get();
+
+		if (owner != nullptr) {
+			PlayerObject* ghost = owner->getPlayerObject();
+
+			if (ghost != nullptr && ghost->isAutoDroidPowerEnabled()) {
+				if (owner->getPendingTask("auto_droid_power") == nullptr) {
+					Reference<AutoDroidPowerTask*> task = new AutoDroidPowerTask(owner.get(), _this.getReferenceUnsafeStaticCast());
+					owner->addPendingTask("auto_droid_power", task, 0);
+				}
+			}
+		}
+	}
+
+	if (power == 0) {
+		handleLowPower();
+	}
 }
 
 void DroidObjectImplementation::handleLowPower() {

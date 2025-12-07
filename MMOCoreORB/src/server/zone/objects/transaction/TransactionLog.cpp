@@ -10,10 +10,6 @@
 
 #include "TransactionLog.h"
 
-#ifdef WITH_SWGREALMS_API
-#include "server/login/SWGRealmsAPI.h"
-#endif
-
 #include "server/ServerCore.h"
 #include "server/zone/Zone.h"
 #include "server/zone/ZoneServer.h"
@@ -827,14 +823,6 @@ void TransactionLog::writeLog() {
 
 	// Write to local file (always)
 	trxLog.info() << logEntry;
-
-#ifdef WITH_SWGREALMS_API
-	// Stream to SWGRealms (if enabled)
-	auto api = SWGRealmsAPI::instance();
-	if (api != nullptr) {
-		api->publishTrxLog(getTrxID(), logEntry);
-	}
-#endif // WITH_SWGREALMS_API
 }
 
 SceneObject* TransactionLog::getTrxParticipant(SceneObject* obj, SceneObject* defaultValue) {

@@ -1,8 +1,10 @@
+#include <cmath>
+#include <algorithm>
 /*
  * EntertainingSessionImplementation.cpp
  *
- *  Created on: 20/08/2010
- *      Author: victor
+ *  Created on: 10/21/2025
+ *      Author: Joseph Ridder
  */
 
 #include "server/zone/objects/player/sessions/EntertainingSession.h"
@@ -29,6 +31,74 @@
 #include "server/chat/ChatManager.h"
 #include "server/zone/Zone.h"
 #include "server/zone/packets/scene/PlayClientEffectLocMessage.h"
+#include "system/lang/StringBuffer.h"
+
+namespace {
+	const float ENTERTAINER_MAX_BUFF_DURATION_MINUTES = 120.0f + (10.0f / 60.0f);
+	const int ENTERTAINER_AUTO_STAGE_NONE = 0;
+	const int ENTERTAINER_AUTO_STAGE_DANCE = 1;
+	const int ENTERTAINER_AUTO_STAGE_MUSIC = 2;
+	const int ENTERTAINER_AUTO_ACTION_NONE = 0;
+	const int ENTERTAINER_AUTO_ACTION_ADVANCE_STAGE = 1;
+	const int ENTERTAINER_AUTO_ACTION_DISABLE = 2;
+
+	int computeAutoCycleTicks(CreatureObject* entertainer, Performance* performance, bool isDanceStage) {
+		if (entertainer == nullptr || performance == nullptr)
+			return 0;
+
+		float buffAcceleration = 1.0f + (float) entertainer->getSkillMod("accelerate_entertainer_buff") / 100.0f;
+
+		if (buffAcceleration <= 0.0f)
+			buffAcceleration = 1.0f;
+
+		float durationPerTick = 2.0f * buffAcceleration;
+
+		if (durationPerTick <= 0.0f)
+			durationPerTick = 2.0f;
+
+		int ticksForDuration = (int) std::ceil(ENTERTAINER_MAX_BUFF_DURATION_MINUTES / durationPerTick);
+
+		float maxBuffStrength = 0.0f;
+
+		if (isDanceStage)
+			maxBuffStrength = (float) entertainer->getSkillMod("healing_dance_mind");
+		else
+			maxBuffStrength = (float) entertainer->getSkillMod("healing_music_mind");
+
+		if (maxBuffStrength > 125.0f)
+			maxBuffStrength = 125.0f;
+
+		float factionPerkStrength = entertainer->getSkillMod("private_faction_buff_mind");
+
+		ManagedReference<BuildingObject*> building = cast<BuildingObject*>(entertainer->getRootParent());
+
+		if (building != nullptr && factionPerkStrength > 0 && building->isPlayerRegisteredWithin(entertainer->getObjectID())) {
+			unsigned int buildingFaction = building->getFaction();
+			unsigned int entFaction = entertainer->getFaction();
+
+			if (entFaction != 0 && entFaction == buildingFaction && entertainer->getFactionStatus() == FactionStatus::OVERT)
+				maxBuffStrength += factionPerkStrength;
+		}
+
+		int ticksForStrength = 0;
+
+		if (maxBuffStrength > 0.0f) {
+			float perTickStrength = (float) performance->getHealShockWound();
+
+			if (perTickStrength <= 0.0f)
+				perTickStrength = maxBuffStrength;
+
+			ticksForStrength = (int) std::ceil(maxBuffStrength / perTickStrength);
+		}
+
+		int ticks = std::max(ticksForDuration, ticksForStrength);
+
+		if (ticks <= 0)
+			ticks = std::max(1, ticksForDuration);
+
+		return ticks + 1;
+	}
+}
 
 void EntertainingSessionImplementation::doEntertainerPatronEffects() {
 	ManagedReference<CreatureObject*> creo = entertainer.get();
@@ -222,9 +292,22 @@ void EntertainingSessionImplementation::activateAction() {
 	doPerformanceAction();
 
 
+	int autoCycleAction = ENTERTAINER_AUTO_ACTION_NONE;
+
+	if (autoCycleEnabled)
+		autoCycleAction = handleAutoCycleTick();
+
 	startTickTask();
 
 	entertainer->debug("EntertainerEvent completed.");
+
+	if (autoCycleAction != ENTERTAINER_AUTO_ACTION_NONE) {
+		locker.release();
+		if (autoCycleAction == ENTERTAINER_AUTO_ACTION_ADVANCE_STAGE)
+			advanceAutoCycleStage();
+		else if (autoCycleAction == ENTERTAINER_AUTO_ACTION_DISABLE)
+			disableAutoCycle(true);
+	}
 }
 
 void EntertainingSessionImplementation::startTickTask() {
@@ -284,51 +367,65 @@ void EntertainingSessionImplementation::stopPlaying() {
 	if (entertainer == nullptr)
 		return;
 
-	Locker locker(entertainer);
+	bool disableAutoAfterStop = false;
+	bool keepSessionActive = false;
 
-	if (!isPlayingMusic())
-		return;
+	{
+		Locker locker(entertainer);
 
-	performanceIndex = 0;
-	entertainer->setListenToID(0);
+		if (!isPlayingMusic())
+			return;
 
-	entertainer->dropObserver(ObserverEventType::POSTURECHANGED, observer);
-	entertainer->setPosture(CreaturePosture::UPRIGHT, true, true);
+		keepSessionActive = autoCycleEnabled && autoCycleStageChanging;
 
-	if (isPerformingOutro())
-		setPerformingOutro(false);
+		performanceIndex = 0;
+		entertainer->setListenToID(0);
 
-	ManagedReference<PlayerManager*> playerManager = entertainer->getZoneServer()->getPlayerManager();
+		entertainer->dropObserver(ObserverEventType::POSTURECHANGED, observer);
+		entertainer->setPosture(CreaturePosture::UPRIGHT, true, true);
 
-	while (patronDataMap.size() > 0) {
-		ManagedReference<CreatureObject*> patron = patronDataMap.elementAt(0).getKey();
+		if (isPerformingOutro())
+			setPerformingOutro(false);
 
-		Locker clocker(patron, entertainer);
+		ManagedReference<PlayerManager*> playerManager = entertainer->getZoneServer()->getPlayerManager();
 
-		playerManager->stopListen(patron, entertainer->getObjectID(), true, true, false);
+		while (patronDataMap.size() > 0) {
+			ManagedReference<CreatureObject*> patron = patronDataMap.elementAt(0).getKey();
 
-		if (!patron->isWatching())
-			sendEntertainmentUpdate(patron, 0, "");
+			Locker clocker(patron, entertainer);
 
-		patronDataMap.drop(patron);
+			playerManager->stopListen(patron, entertainer->getObjectID(), true, true, false);
+
+			if (!patron->isWatching())
+				sendEntertainmentUpdate(patron, 0, "");
+
+			patronDataMap.drop(patron);
+		}
+
+		if (tickTask != nullptr && tickTask->isScheduled())
+			tickTask->cancel();
+
+		sendEntertainingUpdate(entertainer, 0, false);
+		updateEntertainerMissionStatus(false, MissionTypes::MUSICIAN);
+
+		entertainer->notifyObservers(ObserverEventType::STOPENTERTAIN, entertainer);
+
+		if (!isDancing() && !isPlayingMusic()) {
+			ManagedReference<PlayerObject*> entPlayer = entertainer->getPlayerObject();
+
+			if (entPlayer != nullptr && entPlayer->getPerformanceBuffTarget() != 0)
+				entPlayer->setPerformanceBuffTarget(0);
+
+			if (!keepSessionActive)
+				entertainer->dropActiveSession(SessionFacadeType::ENTERTAINING);
+		}
+
+		if (autoCycleEnabled && !autoCycleStageChanging)
+			disableAutoAfterStop = true;
 	}
 
-	if (tickTask != nullptr && tickTask->isScheduled())
-		tickTask->cancel();
-
-	sendEntertainingUpdate(entertainer, 0, false);
-	updateEntertainerMissionStatus(false, MissionTypes::MUSICIAN);
-
-	entertainer->notifyObservers(ObserverEventType::STOPENTERTAIN, entertainer);
-
-	if (!isDancing() && !isPlayingMusic()) {
-		ManagedReference<PlayerObject*> entPlayer = entertainer->getPlayerObject();
-
-		if (entPlayer != nullptr && entPlayer->getPerformanceBuffTarget() != 0)
-			entPlayer->setPerformanceBuffTarget(0);
-
-		entertainer->dropActiveSession(SessionFacadeType::ENTERTAINING);
-	}
+	if (disableAutoAfterStop)
+		disableAutoCycle(false);
 }
 
 void EntertainingSessionImplementation::stopMusic(bool skipOutro, bool bandStop, bool isBandLeader) {
@@ -554,48 +651,375 @@ void EntertainingSessionImplementation::stopDancing() {
 	if (entertainer == nullptr)
 		return;
 
-	Locker locker(entertainer);
+	bool disableAutoAfterStop = false;
+	bool keepSessionActive = false;
 
-	if (!isDancing())
-		return;
+	{
+		Locker locker(entertainer);
 
-	entertainer->sendSystemMessage("@performance:dance_stop_self"); // You stop dancing.
+		if (!isDancing())
+			return;
 
-	performanceIndex = 0;
+		keepSessionActive = autoCycleEnabled && autoCycleStageChanging;
 
-	entertainer->dropObserver(ObserverEventType::POSTURECHANGED, observer);
-	entertainer->setPosture(CreaturePosture::UPRIGHT, true, true);
+		entertainer->sendSystemMessage("@performance:dance_stop_self"); // You stop dancing.
 
-	ManagedReference<PlayerManager*> playerManager = entertainer->getZoneServer()->getPlayerManager();
+		performanceIndex = 0;
 
-	while (patronDataMap.size() > 0) {
-		ManagedReference<CreatureObject*> patron = patronDataMap.elementAt(0).getKey();
+		entertainer->dropObserver(ObserverEventType::POSTURECHANGED, observer);
+		entertainer->setPosture(CreaturePosture::UPRIGHT, true, true);
 
-		Locker clocker(patron, entertainer);
+		ManagedReference<PlayerManager*> playerManager = entertainer->getZoneServer()->getPlayerManager();
 
-		playerManager->stopWatch(patron, entertainer->getObjectID(), true, true, false);
+		while (patronDataMap.size() > 0) {
+			ManagedReference<CreatureObject*> patron = patronDataMap.elementAt(0).getKey();
 
-		if (!patron->isWatching())
-			sendEntertainmentUpdate(patron, 0, "");
+			Locker clocker(patron, entertainer);
 
-		patronDataMap.drop(patron);
+			playerManager->stopWatch(patron, entertainer->getObjectID(), true, true, false);
+
+			if (!patron->isWatching())
+				sendEntertainmentUpdate(patron, 0, "");
+
+			patronDataMap.drop(patron);
+		}
+
+		if (tickTask != nullptr && tickTask->isScheduled())
+			tickTask->cancel();
+
+		entertainer->notifyObservers(ObserverEventType::STOPENTERTAIN, entertainer);
+
+		updateEntertainerMissionStatus(false, MissionTypes::DANCER);
+		sendEntertainingUpdate(entertainer, 0, false);
+
+		if (!isDancing() && !isPlayingMusic()) {
+			ManagedReference<PlayerObject*> entPlayer = entertainer->getPlayerObject();
+
+			if (entPlayer != nullptr && entPlayer->getPerformanceBuffTarget() != 0)
+				entPlayer->setPerformanceBuffTarget(0);
+
+			if (!keepSessionActive)
+				entertainer->dropActiveSession(SessionFacadeType::ENTERTAINING);
+		}
+
+		if (autoCycleEnabled && !autoCycleStageChanging)
+			disableAutoAfterStop = true;
 	}
 
-	if (tickTask != nullptr && tickTask->isScheduled())
-		tickTask->cancel();
+	if (disableAutoAfterStop)
+		disableAutoCycle(false);
+}
 
-	entertainer->notifyObservers(ObserverEventType::STOPENTERTAIN, entertainer);
+int EntertainingSessionImplementation::handleAutoCycleTick() {
+	if (!autoCycleEnabled)
+		return ENTERTAINER_AUTO_ACTION_NONE;
 
-	updateEntertainerMissionStatus(false, MissionTypes::DANCER);
-	sendEntertainingUpdate(entertainer, 0, false);
+	switch (autoCycleStage) {
+	case ENTERTAINER_AUTO_STAGE_NONE:
+		return ENTERTAINER_AUTO_ACTION_NONE;
+	case ENTERTAINER_AUTO_STAGE_DANCE:
+		if (!isDancing())
+			return autoCycleStageChanging ? ENTERTAINER_AUTO_ACTION_NONE : ENTERTAINER_AUTO_ACTION_DISABLE;
+		break;
+	case ENTERTAINER_AUTO_STAGE_MUSIC:
+		if (!isPlayingMusic())
+			return autoCycleStageChanging ? ENTERTAINER_AUTO_ACTION_NONE : ENTERTAINER_AUTO_ACTION_DISABLE;
+		break;
+	default:
+		return ENTERTAINER_AUTO_ACTION_DISABLE;
+	}
 
-	if (!isDancing() && !isPlayingMusic()) {
-		ManagedReference<PlayerObject*> entPlayer = entertainer->getPlayerObject();
+	// Auto-flourish execution for faster buff building
+	if (++autoFlourishTickCounter >= autoFlourishInterval) {
+		autoFlourishTickCounter = 0;
+		
+		ManagedReference<CreatureObject*> ent = entertainer.get();
+		if (ent != nullptr && flourishCount < 5) {
+			// Execute flourish (use flourish 1, doesn't grant XP during auto-cycle to prevent exploitation)
+			doFlourish(1, false);
+		}
+	}
 
-		if (entPlayer != nullptr && entPlayer->getPerformanceBuffTarget() != 0)
-			entPlayer->setPerformanceBuffTarget(0);
+	if (autoCycleTicksRemaining > 0 && --autoCycleTicksRemaining > 0)
+		return ENTERTAINER_AUTO_ACTION_NONE;
 
-		entertainer->dropActiveSession(SessionFacadeType::ENTERTAINING);
+	autoCycleStageChanging = true;
+	return ENTERTAINER_AUTO_ACTION_ADVANCE_STAGE;
+}
+
+void EntertainingSessionImplementation::enableAutoCycle(int danceIndex, int musicIndex, int musicInstrumentType) {
+	ManagedReference<CreatureObject*> ent = entertainer.get();
+
+	if (ent == nullptr)
+		return;
+
+	PerformanceManager* performanceManager = SkillManager::instance()->getPerformanceManager();
+	Performance* dancePerformance = performanceManager->getPerformanceFromIndex(danceIndex);
+	Performance* musicPerformance = performanceManager->getPerformanceFromIndex(musicIndex);
+
+	if (dancePerformance == nullptr || !dancePerformance->isDance() || musicPerformance == nullptr || !musicPerformance->isMusic()) {
+		ent->sendSystemMessage("Unable to enable auto cycle: invalid performance selection.");
+		return;
+	}
+
+	bool alreadyPerforming = false;
+
+	{
+		Locker locker(ent);
+
+		if (isDancing() || isPlayingMusic()) {
+			alreadyPerforming = true;
+		} else {
+			autoCycleEnabled = true;
+			autoCycleStageChanging = false;
+			autoCycleStage = ENTERTAINER_AUTO_STAGE_NONE;
+			autoCycleTicksRemaining = 0;
+			autoDancePerformanceIndex = danceIndex;
+			autoMusicPerformanceIndex = musicIndex;
+			autoMusicInstrumentType = musicInstrumentType;
+		}
+	}
+
+	if (alreadyPerforming) {
+		ent->sendSystemMessage("You must stop performing before enabling auto cycle.");
+		return;
+	}
+
+	StringBuffer msg;
+	msg << "Entertainer auto cycle enabled: dance '" << dancePerformance->getName() << "', music '" << musicPerformance->getName() << "'.";
+	ent->sendSystemMessage(msg.toString());
+
+	startAutoCycleStage(ENTERTAINER_AUTO_STAGE_DANCE);
+}
+
+void EntertainingSessionImplementation::disableAutoCycle(bool sendMessage) {
+	ManagedReference<CreatureObject*> ent = entertainer.get();
+
+	if (ent == nullptr)
+		return;
+
+	bool wasEnabled = false;
+
+	{
+		Locker locker(ent);
+		wasEnabled = autoCycleEnabled;
+
+		if (autoCycleEnabled) {
+			autoCycleEnabled = false;
+			autoCycleStageChanging = false;
+			autoCycleStage = ENTERTAINER_AUTO_STAGE_NONE;
+			autoCycleTicksRemaining = 0;
+			autoDancePerformanceIndex = 0;
+			autoMusicPerformanceIndex = 0;
+			autoMusicInstrumentType = -1;
+		}
+	}
+
+	if (!sendMessage)
+		return;
+
+	if (wasEnabled)
+		ent->sendSystemMessage("Entertainer auto cycle disabled.");
+	else
+		ent->sendSystemMessage("Entertainer auto cycle is not active.");
+}
+
+void EntertainingSessionImplementation::startAutoCycleStage(int stage) {
+	ManagedReference<CreatureObject*> ent = entertainer.get();
+
+	if (ent == nullptr)
+		return;
+
+	PerformanceManager* performanceManager = SkillManager::instance()->getPerformanceManager();
+
+	int performanceIndex = 0;
+	int storedInstrumentType = autoMusicInstrumentType;
+
+	{
+		Locker locker(ent);
+
+		if (!autoCycleEnabled) {
+			autoCycleStage = ENTERTAINER_AUTO_STAGE_NONE;
+			autoCycleStageChanging = false;
+			return;
+		}
+
+		autoCycleStage = stage;
+
+		if (stage == ENTERTAINER_AUTO_STAGE_DANCE) {
+			performanceIndex = autoDancePerformanceIndex;
+		} else if (stage == ENTERTAINER_AUTO_STAGE_MUSIC) {
+			performanceIndex = autoMusicPerformanceIndex;
+		} else {
+			autoCycleStage = ENTERTAINER_AUTO_STAGE_NONE;
+			autoCycleStageChanging = false;
+			return;
+		}
+	}
+
+	if (stage == ENTERTAINER_AUTO_STAGE_DANCE) {
+		Performance* performance = performanceManager->getPerformanceFromIndex(performanceIndex);
+
+		if (performance == nullptr || !performance->isDance()) {
+			disableAutoCycle(true);
+			return;
+		}
+
+		int ticks = computeAutoCycleTicks(ent, performance, true);
+
+		if (ticks <= 0)
+			ticks = 1;
+
+		{
+			Locker locker(ent);
+
+			if (!autoCycleEnabled)
+				return;
+
+			autoCycleTicksRemaining = ticks;
+			autoCycleStageChanging = false;
+			
+			// Set flourish interval based on performance loop duration
+			// Dance loops are 10s, so tick every 10s means flourish every 5 ticks (50s)
+			// Music loops are 5s, so flourish every 10 ticks (50s) - keeps consistent timing
+			float loopDuration = performance->getLoopDuration();
+			autoFlourishInterval = (int)(50.0f / (loopDuration * 2.0f)); // 50 seconds / (loop * 2s tick)
+			if (autoFlourishInterval < 1)
+				autoFlourishInterval = 1;
+			autoFlourishTickCounter = 0;
+		}
+
+		startDancing(performanceIndex);
+
+		StringBuffer msg;
+		msg << "Auto cycle: starting dance '" << performance->getName() << "'.";
+		ent->sendSystemMessage(msg.toString());
+
+		return;
+	}
+
+	Reference<Instrument*> instrument = ent->getPlayableInstrument();
+
+	if (instrument == nullptr) {
+		ent->sendSystemMessage("@performance:music_no_instrument");
+		disableAutoCycle(true);
+		return;
+	}
+
+	int currentInstrumentType = instrument->getInstrumentType();
+	int resolvedIndex = performanceIndex;
+
+	if (currentInstrumentType != storedInstrumentType) {
+		int matchingIndex = performanceManager->getMatchingPerformanceIndex(performanceIndex, currentInstrumentType);
+
+		if (matchingIndex != 0)
+			resolvedIndex = matchingIndex;
+	}
+
+	Performance* performance = performanceManager->getPerformanceFromIndex(resolvedIndex);
+
+	if (performance == nullptr || !performance->isMusic()) {
+		ent->sendSystemMessage("Auto cycle: unable to start configured song.");
+		disableAutoCycle(true);
+		return;
+	}
+
+	if (!performanceManager->canPlayInstrument(ent, currentInstrumentType)) {
+		performanceManager->performanceMessageToSelf(ent, nullptr, "performance", "music_lack_skill_instrument");
+		disableAutoCycle(true);
+		return;
+	}
+
+	if (!performanceManager->canPlaySong(ent, resolvedIndex)) {
+		performanceManager->performanceMessageToSelf(ent, nullptr, "performance", "music_lack_skill_song_self");
+		disableAutoCycle(true);
+		return;
+	}
+
+	int ticks = computeAutoCycleTicks(ent, performance, false);
+
+	if (ticks <= 0)
+		ticks = 1;
+
+	{
+		Locker locker(ent);
+
+		if (!autoCycleEnabled)
+			return;
+
+		autoMusicPerformanceIndex = resolvedIndex;
+		autoMusicInstrumentType = currentInstrumentType;
+		autoCycleTicksRemaining = ticks;
+		autoCycleStageChanging = false;
+		
+		// Set flourish interval based on performance loop duration
+		float loopDuration = performance->getLoopDuration();
+		autoFlourishInterval = (int)(50.0f / (loopDuration * 2.0f)); // 50 seconds / (loop * 2s tick)
+		if (autoFlourishInterval < 1)
+			autoFlourishInterval = 1;
+		autoFlourishTickCounter = 0;
+	}
+
+	startPlayingMusic(resolvedIndex, instrument.get());
+
+	StringBuffer msg;
+	msg << "Auto cycle: starting music '" << performance->getName() << "'.";
+	ent->sendSystemMessage(msg.toString());
+}
+
+void EntertainingSessionImplementation::advanceAutoCycleStage() {
+	ManagedReference<CreatureObject*> ent = entertainer.get();
+
+	if (ent == nullptr)
+		return;
+
+	int stage = ENTERTAINER_AUTO_STAGE_NONE;
+
+	{
+		Locker locker(ent);
+
+		if (!autoCycleEnabled) {
+			autoCycleStageChanging = false;
+			return;
+		}
+
+		stage = autoCycleStage;
+	}
+
+	if (stage == ENTERTAINER_AUTO_STAGE_DANCE) {
+		stopDancing();
+
+		{
+			Locker locker(ent);
+
+			if (!autoCycleEnabled) {
+				autoCycleStageChanging = false;
+				return;
+			}
+		}
+
+		startAutoCycleStage(ENTERTAINER_AUTO_STAGE_MUSIC);
+	} else if (stage == ENTERTAINER_AUTO_STAGE_MUSIC) {
+		stopMusic(true);
+
+		{
+			Locker locker(ent);
+
+			if (!autoCycleEnabled) {
+				autoCycleStageChanging = false;
+				return;
+			}
+		}
+
+		startAutoCycleStage(ENTERTAINER_AUTO_STAGE_DANCE);
+	} else {
+		disableAutoCycle(false);
+		return;
+	}
+
+	{
+		Locker locker(ent);
+		autoCycleStageChanging = false;
 	}
 }
 
@@ -697,9 +1121,9 @@ void EntertainingSessionImplementation::addEntertainerBuffDuration(CreatureObjec
 
 	buffDuration += duration;
 
-	//SR2 Edit - Added Skill mod for City Spec for additional ent buff duration
-	if (buffDuration > (120.0f + (10.0f / 60.0f) + (float) entertainer->getSkillMod("increase_entertainer_buff"))) // 2 hrs 10 seconds
-		buffDuration = (120.0f + (10.0f / 60.0f) + (float) entertainer->getSkillMod("increase_entertainer_buff")); // 2 hrs 10 seconds
+	// City Specialist skill mod for additional entertainer buff duration
+	if (buffDuration > (120.0f + (10.0f / 60.0f) + (float) entertainer->getSkillMod("increase_entertainer_buff"))) // 2 hrs 10 seconds + city spec bonus
+		buffDuration = (120.0f + (10.0f / 60.0f) + (float) entertainer->getSkillMod("increase_entertainer_buff")); // 2hrs 10 seconds + city spec bonus
 
 	setEntertainerBuffDuration(creature, performanceType, buffDuration);
 }
@@ -858,7 +1282,11 @@ void EntertainingSessionImplementation::activateEntertainerBuff(CreatureObject* 
 		ManagedReference<PlayerObject*> entPlayer = entertainer->getPlayerObject();
 		//Check if the patron is a valid buff target
 		//Whether it be passive(in the same group) or active (/setPerform target)
-		if ((!entertainer->isGrouped() || entertainer->getGroupID() != creature->getGroupID()) && entPlayer->getPerformanceBuffTarget() != creature->getObjectID())
+		bool sameGroup = entertainer->isGrouped() && entertainer->getGroupID() == creature->getGroupID();
+		bool isTargeted = entPlayer != nullptr && entPlayer->getPerformanceBuffTarget() == creature->getObjectID();
+		bool isActivePatron = patronDataMap.contains(creature);
+
+		if (!sameGroup && !isTargeted && !isActivePatron)
 			return;
 
 		if (creature->isIncapacitated() || creature->isDead()) {
@@ -988,7 +1416,11 @@ void EntertainingSessionImplementation::increaseEntertainerBuff(CreatureObject* 
 	ManagedReference<PlayerObject*> entPlayer = entertainer->getPlayerObject();
 	//Check if the patron is a valid buff target
 	//Whether it be passive(in the same group) or active (/setPerform target)
-	if ((!entertainer->isGrouped() || entertainer->getGroupID() != patron->getGroupID()) && entPlayer->getPerformanceBuffTarget() != patron->getObjectID())
+	bool sameGroup = entertainer->isGrouped() && entertainer->getGroupID() == patron->getGroupID();
+	bool isTargeted = entPlayer != nullptr && entPlayer->getPerformanceBuffTarget() == patron->getObjectID();
+	bool isActivePatron = patronDataMap.contains(patron);
+
+	if (!sameGroup && !isTargeted && !isActivePatron)
 		return;
 
 	if (isInDenyServiceList(patron))
@@ -1019,7 +1451,7 @@ void EntertainingSessionImplementation::awardEntertainerExperience() {
 
 			if (flourishXp > 0) {
 				int flourishDec = (int)((float)performance->getFlourishXpMod() / 6.0f);
-				flourishXp -= Math::max(1, flourishDec);
+				flourishXp -= std::max(1, flourishDec);
 			}
 
 			if (flourishXp < 0)
@@ -1060,7 +1492,7 @@ void EntertainingSessionImplementation::awardEntertainerExperience() {
 
 			int xpAmount = flourishXp + performance->getBaseXp();
 
-			int audienceSize = Math::min(getBandAudienceSize(), 50);
+			int audienceSize = std::min(getBandAudienceSize(), 50);
 			float audienceMod = audienceSize / 50.f;
 			float applauseMod = applauseCount / 100.f;
 

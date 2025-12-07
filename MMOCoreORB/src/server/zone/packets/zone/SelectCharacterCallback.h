@@ -22,10 +22,6 @@
 #include "server/zone/managers/collision/CollisionManager.h"
 #include "templates/params/creature/PlayerArrangement.h"
 
-#ifdef WITH_SWGREALMS_API
-#include "server/login/SWGRealmsAPI.h"
-#endif // WITH_SWGREALMS_API
-
 // #define DEBUG_SELECT_CHAR_CALLBACK
 
 class SelectCharacterCallback : public MessageCallback {
@@ -56,60 +52,28 @@ public:
 
 		if (zoneServer->isServerLocked() && (ghost->getAdminLevel() == 0)) {
 			ErrorMessage* errMsg = new ErrorMessage("Login Error", "Server is currently locked", 0);
-			client->sendMessage(errMsg);
+		client->sendMessage(errMsg);
 
-			return;
-		}
+		return;
+	}
 
-#ifdef WITH_SWGREALMS_API
-		auto clientIP = client->getIPAddress();
-		auto loggedInAccounts = zoneServer->getPlayerManager()->getOnlineZoneClientMap()->getAccountsLoggedIn(clientIP);
+	connectApprovedPlayer(obj, characterID, player, client, zoneServer);
+}
 
-		SWGRealmsAPI::instance()->approvePlayerConnect(clientIP, ghost->getAccountID(), characterID, loggedInAccounts,
-				[object = Reference<SceneObject*>(obj), characterID,
-				playerCreature = Reference<CreatureObject*>(player),
-				clientObject = Reference<ZoneClientSession*>(client),
-				zoneServer](const SessionApprovalResult& result) {
+static void connectApprovedPlayer(SceneObject* obj, uint64_t characterID, CreatureObject* player, ZoneClientSession* client, ZoneServer* zoneServer) {
+	PlayerObject* ghost = player->getPlayerObject();
 
-			if (!result.isActionAllowed()) {
-				clientObject->info(true) << "Player connect not approved: " << result.getLogMessage();
+	if (ghost == nullptr) {
+		return;
+	}
 
-				clientObject->sendMessage(new ErrorMessage(result.getTitle(), result.getMessage(true), 0));
-				return;
-			}
+	// Tie client to player object
+	player->setClient(client);
+	client->setPlayer(player);
 
-			SWGRealmsAPI::updateClientIPAddress(clientObject, result);
-
-			Locker locker(object);
-
-			if (result.isActionDebug() && playerCreature != nullptr) {
-				auto ghost = playerCreature->getPlayerObject();
-
-				if (ghost != nullptr) {
-					ghost->setLogLevel(Logger::DEBUG);
-				}
-			}
-
-			connectApprovedPlayer(object, characterID, playerCreature, clientObject, zoneServer);
-		});
-	};
-
-	static void connectApprovedPlayer(SceneObject* obj, uint64_t characterID, CreatureObject* player, ZoneClientSession* client, ZoneServer* zoneServer) {
-		PlayerObject* ghost = player->getPlayerObject();
-
-		if (ghost == nullptr) {
-			return;
-		}
-#endif // WITH_SWGREALMS_API
-
-		// Tie client to player object
-		player->setClient(client);
-		client->setPlayer(player);
-
-		// Get stored zone name
-		String zoneName = ghost->getSavedTerrainName();
-
-		auto zone = zoneServer->getZone(zoneName);
+	// Get stored zone name
+	String zoneName = ghost->getSavedTerrainName();
+	auto zone = zoneServer->getZone(zoneName);
 
 #ifdef DEBUG_SELECT_CHAR_CALLBACK
 		StringBuffer debugMsg;

@@ -9,17 +9,12 @@
 #include "conf/ConfigManager.h"
 #include "Galaxy.h"
 
-#ifdef WITH_SWGREALMS_API
-#include "server/login/SWGRealmsAPI.h"
-#endif
-
 class GalaxyList {
 	Vector<Galaxy> galaxies;
 	Galaxy current;
 	int curIdx = 0;
 
 public:
-#ifndef WITH_SWGREALMS_API
 	GalaxyList(uint32 accountid) {
 		StringBuffer query;
 		query << "SELECT g.* FROM `galaxy` g"
@@ -40,16 +35,6 @@ public:
 
 		curIdx = 0;
 	}
-#else // WITH_SWGREALMS_API
-	// Implementation in GalaxyList.cpp to avoid circular include issues
-	GalaxyList(uint32 accountid) {
-		auto swgRealmsAPI = server::login::SWGRealmsAPI::instance();
-
-		if (swgRealmsAPI != nullptr) {
-			galaxies = swgRealmsAPI->getAuthorizedGalaxies(accountid);
-		}
-	}
-#endif // WITH_SWGREALMS_API
 
 	bool next() {
 		if (curIdx < galaxies.size()) {

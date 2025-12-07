@@ -18,10 +18,6 @@
 
 #include "ClientPermissionsMessage.h"
 
-#ifdef WITH_SWGREALMS_API
-#include "server/login/SWGRealmsAPI.h"
-#endif // WITH_SWGREALMS_API
-
 class ClientIdMessageCallback : public MessageCallback {
 	uint32 gameBits{};
 	uint32 dataLen;
@@ -51,24 +47,6 @@ public:
 	}
 
 	void run() {
-#ifdef WITH_SWGREALMS_API
-		SWGRealmsAPI::instance()->validateSession(sessionID, accountID, client->getSession()->getIPAddress(),
-				[zoneClient = Reference<ZoneClientSession*>(client),
-				zoneServer = server,
-				approved_sessionID = sessionID,
-				approved_accountID = accountID](const SessionApprovalResult& result) {
-
-			if (!result.isActionAllowed()) {
-				zoneClient->sendMessage(new ErrorMessage(result.getTitle(), result.getMessage(), 0x0));
-				zoneClient->info(true) << "Invalid session in ClientIDMessageCallback: " << result.getLogMessage();
-				return;
-			}
-
-			SWGRealmsAPI::updateClientIPAddress(zoneClient, result);
-
-			approveSession(zoneClient, zoneServer, approved_sessionID, approved_accountID);
-		});
-#else // WITH_SWGREALMS_API
 		StringBuffer query;
 		query << "SELECT session_id FROM sessions WHERE account_id = " << accountID;
 		query << " AND  ip = '"<< client->getSession()->getIPAddress() <<"' AND expires > NOW();";
@@ -113,7 +91,6 @@ public:
 		}
 
 		approveSession(client, server, sessionID, accountID);
-#endif // WITH_SWGREALMS_API
 	}
 
 	static void approveSession(ZoneClientSession* client, ZoneProcessServer* server, String sessionID, uint32 accountID) {
@@ -132,17 +109,15 @@ public:
 			return;
 		}
 
-		// Lock the account object
-		Locker alocker(account);
+	// Lock the account object
+	Locker alocker(account);
 
-#ifndef WITH_SWGREALMS_API
-		AccountManager::expireSession(account, sessionID);
-#endif
-		client->resetCharacters();
+	AccountManager::expireSession(account, sessionID);
 
-		int galaxyID = zoneServer->getGalaxyID();
+	client->resetCharacters();
+	int galaxyID = zoneServer->getGalaxyID();
 
-		Reference<CharacterList*> characters = account->getCharacterList();
+	Reference<CharacterList*> characters = account->getCharacterList();
 		const GalaxyBanEntry* galaxyBan = account->getGalaxyBan(galaxyID);
 
 		bool canConnect = true;

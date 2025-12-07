@@ -2,7 +2,6 @@
 				Copyright <SWGEmu>
 		See file COPYING for copying conditions.*/
 
-#ifndef WITH_SWGREALMS_API
 #include "ServerDatabase.h"
 
 #include "conf/ConfigManager.h"
@@ -142,4 +141,3 @@ void ServerDatabase::updateDatabaseSchema() {
 		"ALTER TABLE `account_log` MODIFY COLUMN `ip_address` VARCHAR(64);"
 	);
 }
-#endif // !WITH_SWGREALMS_API

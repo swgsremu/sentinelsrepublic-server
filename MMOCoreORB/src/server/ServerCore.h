@@ -12,9 +12,6 @@
 #include "server/features/Features.h"
 
 #include "server/login/LoginServer.h"
-#ifdef WITH_SWGREALMS_API
-#include "server/login/SWGRealmsAPI.h"
-#endif // WITH_SWGREALMS_API
 #include "server/ping/PingServer.h"
 
 namespace server {
@@ -48,9 +45,7 @@ namespace engine {
 class ServerCore : public Core, public Logger {
 	Pipe consoleCommandPipe;
 	conf::ConfigManager* configManager;
-#ifndef WITH_SWGREALMS_API
 	ServerDatabase* database;
-#endif // !WITH_SWGREALMS_API
 	MantisDatabase* mantisDatabase;
 	DistributedObjectBroker* orb;
 	Reference<server::login::LoginServer*> loginServer;
@@ -61,9 +56,6 @@ class ServerCore : public Core, public Logger {
 #ifdef WITH_REST_API
 	server::web3::RESTServer* restServer;
 #endif // WITH_REST_API
-#ifdef WITH_SWGREALMS_API
-	Reference<server::login::SWGRealmsAPI*> swgRealmsAPI;
-#endif // WITH_SWGREALMS_API
 
 	Mutex shutdownBlockMutex;
 	Condition waitCondition;
@@ -137,9 +129,7 @@ public:
 		return arguments.contains(arg);
 	}
 
-#ifndef WITH_SWGREALMS_API
 	static int getSchemaVersion();
-#endif // !WITH_SWGREALMS_API
 };
 
 #endif /*SERVERCORE_H_*/

@@ -104,6 +104,9 @@ class PlayerObject extends IntangibleObject {
 	protected string mutedReason;
 	protected int tosVersionAccepted;
 
+	@dirty
+	protected boolean autoDroidPowerEnabled;
+
 	@dereferenced
 	protected SortedVector<unsigned long> ownedStructures;
 
@@ -345,6 +348,8 @@ class PlayerObject extends IntangibleObject {
 
 		muted = false;
 		mutedReason = "";
+
+		autoDroidPowerEnabled = false;
 
 		debugOutput = false;
 

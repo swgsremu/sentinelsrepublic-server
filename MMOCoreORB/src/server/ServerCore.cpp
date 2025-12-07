@@ -13,9 +13,6 @@
 #include "server/chat/ChatManager.h"
 #include "server/login/LoginServer.h"
 #include "system/lang/SignalException.h"
-#ifdef WITH_SWGREALMS_API
-#include "server/login/SWGRealmsAPI.h"
-#endif // WITH_SWGREALMS_API
 #include "ping/PingServer.h"
 #include "status/StatusServer.h"
 #include "web/RESTServer.h"
@@ -70,16 +67,11 @@ ServerCore::ServerCore(bool truncateDatabases, const SortedVector<String>& args)
 	zoneServerRef = nullptr;
 	statusServer = nullptr;
 	pingServer = nullptr;
-#ifndef WITH_SWGREALMS_API
 	database = nullptr;
-#endif // !WITH_SWGREALMS_API
 	mantisDatabase = nullptr;
 #ifdef WITH_REST_API
 	restServer = nullptr;
 #endif // WITH_REST_API
-#if WITH_SWGREALMS_API
-	swgRealmsAPI = nullptr;
-#endif // WITH_SWGREALMS_API
 
 	truncateAllData = truncateDatabases;
 	arguments = args;
@@ -514,14 +506,6 @@ void ServerCore::registerConsoleCommmands() {
 	addCommand("dumpcfg", dumpConfigLambda);
 	addCommand("dumpconfig", dumpConfigLambda);
 
-#ifdef WITH_SWGREALMS_API
-	const auto swgRealmsApiLambda = [this](const String& arguments) -> CommandResult {
-		return SWGRealmsAPI::instance()->consoleCommand(arguments) ? SUCCESS : ERROR;
-	};
-
-	addCommand("swgrealms", swgRealmsApiLambda);
-#endif // WITH_SWGREALMS_API
-
 	addCommand("toggleModifiedObjectsDump", [this](const String& arguments) -> CommandResult {
 		DOBObjectManager::setDumpLastModifiedTraces(!DOBObjectManager::getDumpLastModifiedTraces());
 
@@ -668,9 +652,7 @@ void ServerCore::initialize() {
 	try {
 		ObjectManager* objectManager = ObjectManager::instance();
 
-#ifndef WITH_SWGREALMS_API
 		database = new ServerDatabase(configManager);
-#endif // !WITH_SWGREALMS_API
 
 		mantisDatabase = new MantisDatabase(configManager);
 
@@ -694,11 +676,9 @@ void ServerCore::initialize() {
 			loginServer = new LoginServer(configManager);
 			loginServer->deploy("LoginServer");
 
-#ifndef WITH_SWGREALMS_API
 			if (!ConfigManager::instance()->getLoginEnableSessionId()) {
 				database->instance()->executeStatement("TRUNCATE TABLE sessions");
 			}
-#endif
 		}
 
 		if (configManager->getMakeZone()) {
@@ -721,12 +701,6 @@ void ServerCore::initialize() {
 		restServer->start();
 #endif // WITH_REST_API
 
-#if WITH_SWGREALMS_API
-		if (ConfigManager::instance()->getString("Core3.Login.API.BaseURL", "").length() > 0) {
-			swgRealmsAPI = SWGRealmsAPI::instance();
-		}
-#endif // WITH_SWGREALMS_API
-
 		ZoneServer* zoneServer = zoneServerRef.get();
 
 		NavMeshManager::instance()->initialize(configManager->getMaxNavMeshJobs(), zoneServer);
@@ -748,7 +722,6 @@ void ServerCore::initialize() {
 			int galaxyID = configManager->getZoneGalaxyID();
 
 			try {
-#ifndef WITH_SWGREALMS_API
 				if (zonePort == 0) {
 					const String query = "SELECT port FROM galaxy WHERE galaxy_id = "
 								   + String::valueOf(galaxyID);
@@ -758,35 +731,10 @@ void ServerCore::initialize() {
 						zonePort = result->getInt(0);
 					}
 				}
-#else // WITH_SWGREALMS_API
-				if (zonePort == 0) {
-					auto swgRealmsAPI = SWGRealmsAPI::instance();
 
-					if (swgRealmsAPI != nullptr) {
-						auto galaxyOpt = swgRealmsAPI->getGalaxyEntry(galaxyID);
-
-						if (galaxyOpt.has_value()) {
-							zonePort = galaxyOpt.value().getPort();
-						} else {
-							error("Failed to load galaxy port for galaxy_id " + String::valueOf(galaxyID));
-						}
-					}
-				}
-#endif // WITH_SWGREALMS_API
-
-#ifndef WITH_SWGREALMS_API
 				database->instance()->executeStatement(
 						"DELETE FROM characters_dirty WHERE galaxy_id = "
 						+ String::valueOf(galaxyID));
-#else // WITH_SWGREALMS_API
-			auto swgRealmsAPI = SWGRealmsAPI::instance();
-			if (swgRealmsAPI != nullptr) {
-				String errorMessage;
-				if (!swgRealmsAPI->rollbackCharactersBlocking(galaxyID, errorMessage)) {
-					error() << "Failed to rollback uncommitted characters: " << errorMessage;
-				}
-			}
-#endif // WITH_SWGREALMS_API
 			} catch (const DatabaseException &e) {
 				fatal(e.getMessage());
 			}
@@ -825,15 +773,6 @@ void ServerCore::initialize() {
 		info("initialized", true);
 
 		System::flushStreams();
-
-#if WITH_SWGREALMS_API
-		if (ConfigManager::instance()->getString("Core3.Login.API.BaseURL", "").length() > 0) {
-			if (configManager != nullptr) {
-				swgRealmsAPI->notifyGalaxyStart(configManager->getZoneGalaxyID());
-				swgRealmsAPI->scheduleMetricsPublish();
-			}
-		}
-#endif // WITH_SWGREALMS_API
 
 		if (arguments.contains("playercleanup") && zoneServer != nullptr) {
 			zoneServer->getPlayerManager()->cleanupCharacters();
@@ -988,28 +927,13 @@ void ServerCore::shutdown() {
 
 	objectManager->finalizeInstance();
 
-#ifdef WITH_SWGREALMS_API
-	if (swgRealmsAPI) {
-		if (configManager != nullptr) {
-			swgRealmsAPI->notifyGalaxyShutdown();
-		}
-
-		info(true) << "Finalize SWGRealmsAPI...";
-		swgRealmsAPI->finalizeInstance();
-		swgRealmsAPI = nullptr;
-		info(true) << "Finalized SWGRealmsAPI...";
-	}
-#endif // WITH_SWGREALMS_API
-
 	configManager = nullptr;
 	metricsManager = nullptr;
 
-#ifndef WITH_SWGREALMS_API
 	if (database != nullptr) {
 		delete database;
 		database = nullptr;
 	}
-#endif // !WITH_SWGREALMS_API
 
 	if (mantisDatabase != nullptr) {
 		delete mantisDatabase;
@@ -1130,14 +1054,12 @@ void ServerCore::processConfig() {
 		warning("missing config file.. loading default values");
 }
 
-#ifndef WITH_SWGREALMS_API
 int ServerCore::getSchemaVersion() {
 	if (instance != nullptr && instance->database != nullptr)
 		return instance->database->getSchemaVersion();
 
 	return -1;
 }
-#endif // !WITH_SWGREALMS_API
 
 coredetail::ConsoleReaderService::ConsoleReaderService(ServerCore* serverCoreInstance) : ServiceThread("ConsoleReader"), core(serverCoreInstance) {
 }

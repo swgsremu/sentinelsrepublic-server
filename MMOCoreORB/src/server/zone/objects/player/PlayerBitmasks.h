@@ -20,9 +20,12 @@ public:
 		LFG				= 0,
 		NEWBIEHELPER	= 1,
 		ROLEPLAYER		= 2,
+		BUFFING			= 3,
+		HEALING			= 4,
 		AFK				= 7,
 		LD				= 8,
 		FACTIONRANK		= 9,
+		AUTO_GROUP_INVITE = 10,
 		ANONYMOUS		= 127
 	};
 

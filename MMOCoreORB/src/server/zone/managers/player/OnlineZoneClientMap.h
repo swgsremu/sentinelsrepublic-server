@@ -38,15 +38,13 @@ public:
 			ip_list.put(ip, account_list);
 			onlineCount = 1;
 		} else {
-			account_list->put(accountId);
-			onlineCount = account_list->size();
-		}
+		account_list->put(accountId);
+		onlineCount = account_list->size();
+	}
 
-#ifndef WITH_SWGREALMS_API
-		insertLogEntry(accountId, galaxyId, ip, 0, onlineCount);
-#endif // !WITH_SWGREALMS_API
+	insertLogEntry(accountId, galaxyId, ip, 0, onlineCount);
 
-		if (onlineCount >= ConfigManager::instance()->getInt("Core3.LogOnlineCount", 3)) {
+	if (onlineCount >= ConfigManager::instance()->getInt("Core3.LogOnlineCount", 3)) {
 			String delim = " ";
 			StringBuffer msg;
 
@@ -72,9 +70,7 @@ public:
 			onlineCount = account_list->size();
 		}
 
-#ifndef WITH_SWGREALMS_API
 		insertLogEntry(accountId, galaxyId, ip, 1, onlineCount);
-#endif // !WITH_SWGREALMS_API
 
 		if (account_list != nullptr && account_list->size() == 0)
 			ip_list.remove(ip);
@@ -97,7 +93,6 @@ public:
 	}
 
 private:
-#ifndef WITH_SWGREALMS_API
 	void insertLogEntry(uint32 accountId, int galaxyId, const String& ipAddress, int logout, int onlineCount) {
 		StringBuffer query;
 
@@ -122,7 +117,6 @@ private:
 			error(e.getMessage());
 		}
 	}
-#endif // !WITH_SWGREALMS_API
 };
 
 #endif /* ONLINEZONECLIENTMAP_H_ */

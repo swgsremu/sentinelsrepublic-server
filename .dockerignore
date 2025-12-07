@@ -1,0 +1,95 @@
+# Include any files or directories that you don't want to be copied to your
+# container here (e.g., local build artifacts, temporary files, etc.).
+#
+# For more help, visit the .dockerignore file reference guide at
+# https://docs.docker.com/engine/reference/builder/#dockerignore-file
+
+**/.DS_Store
+**/__pycache__
+**/.venv
+**/.classpath
+**/.dockerignore
+**/.env
+**/.git
+**/.gitignore
+**/.project
+**/.settings
+**/.toolstarget
+**/.vs
+**/.vscode
+**/*.*proj.user
+**/*.dbmdl
+
+# Test coverage outputs
+luacov.stats.out
+luacov.report.out
+
+# Test outputs
+compile_commands.json
+*.cache
+.cache/
+
+# Cache files
+srdocker/docker/
+
+# Docker files (not needed in build context)
+tre/
+
+# TRE files (will be mounted)
+MMOCoreORB/bin/databases/
+
+# Databases (will be in volumes)
+*.tmp
+temp/
+tmp/
+
+# Temporary files
+MMOCoreORB/bin/log/
+logs/
+log/
+*.log
+
+# Logs
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# OS files
+*~
+*.swo
+*.swp
+**/*.jfm
+
+**/bin
+**/charts
+**/docker-compose*
+**/compose*
+**/Dockerfile*
+**/node_modules
+**/npm-debug.log
+**/obj
+**/secrets.dev.yaml
+**/values.dev.yaml
+LICENSE
+README.md
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation and personal folders
+Joseph_Docs/
+doc/
+*.md
+README*
+
+# Build artifacts
+build/
+MMOCoreORB/build/
+*.o
+*.so
+*.a
+
+# IDE and editor files
+.vscode/
+.idea/

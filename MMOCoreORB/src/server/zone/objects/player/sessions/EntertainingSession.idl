@@ -42,6 +42,15 @@ class EntertainingSession extends Facade {
 	protected int applauseCount;
 	protected boolean acceptingBandFlourishes;
 	protected boolean performingOutro;
+	protected boolean autoCycleEnabled;
+	protected boolean autoCycleStageChanging;
+	protected int autoCycleStage;
+	protected int autoCycleTicksRemaining;
+	protected int autoDancePerformanceIndex;
+	protected int autoMusicPerformanceIndex;
+	protected int autoMusicInstrumentType;
+	protected int autoFlourishTickCounter;
+	protected int autoFlourishInterval;
 
 	public EntertainingSession(CreatureObject ent) {
 		entertainer = ent;
@@ -57,6 +66,15 @@ class EntertainingSession extends Facade {
 
 		acceptingBandFlourishes = true;
 		performingOutro = false;
+		autoCycleEnabled = false;
+		autoCycleStageChanging = false;
+		autoCycleStage = 0;
+		autoCycleTicksRemaining = 0;
+		autoDancePerformanceIndex = 0;
+		autoMusicPerformanceIndex = 0;
+		autoMusicInstrumentType = -1;
+		autoFlourishTickCounter = 0;
+		autoFlourishInterval = 5;
 
 		Logger.setLoggingName("EntertainingSession");
 		Logger.setLogging(false);
@@ -207,4 +225,20 @@ class EntertainingSession extends Facade {
 	public void setPerformingOutro(boolean val) {
 		performingOutro = val;
 	}
+
+	public boolean isAutoCycleEnabled() {
+		return autoCycleEnabled;
+	}
+
+	public native void enableAutoCycle(int danceIndex, int musicIndex, int musicInstrumentType);
+	public native void disableAutoCycle(boolean sendMessage);
+
+	@local
+	public native int handleAutoCycleTick();
+
+	@local
+	public native void startAutoCycleStage(int stage);
+
+	@local
+	public native void advanceAutoCycleStage();
 }

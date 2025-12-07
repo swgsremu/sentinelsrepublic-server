@@ -464,6 +464,8 @@
 #include "ObjectCommand.h"
 #include "ObjvarCommand.h"
 #include "OpenContainerCommand.h"
+#include "OpenClinicCommand.h"
+#include "OpenHospitalCommand.h"
 #include "OpenLotteryContainerCommand.h"
 #include "OverChargeShot1Command.h"
 #include "OverChargeShot2Command.h"

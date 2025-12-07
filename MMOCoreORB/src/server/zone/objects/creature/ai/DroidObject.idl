@@ -177,20 +177,22 @@ class DroidObject extends AiAgent {
 		return power > 0;
 	}
 
+	@read
+	public int getPowerLevel() {
+		return power;
+	}
+
+	@read
+	public int getMaxPowerLevel() {
+		return MAX_POWER;
+	}
+
 	/**
-	 * Consumes power
-	 * @pre { this object is locked }
-	 * @post { this object is locked }
-	 * @param amount int the amount of power to use
+	 * Consumes the specified amount of power. Triggers low power handling if depleted.
+	 * @param amount power units to consume
 	 */
 	@preLocked
-	public void usePower( int amount ){
-		power = power - amount;
-		if( power <= 0 ){
-			power = 0;
-			handleLowPower();
-		}
-	}
+	public native void usePower(int amount);
 
 	@dirty
 	@preLocked

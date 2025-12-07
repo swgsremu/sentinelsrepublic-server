@@ -1,0 +1,99 @@
+/*
+				Copyright <SWGEmu>
+		See file COPYING for copying conditions. */
+
+package server.zone.objects.player.sessions;
+
+import engine.util.Facade;
+import server.zone.objects.creature.CreatureObject;
+include system.util.VectorMap;
+
+class MedicalServiceSession extends Facade {
+	public static final int SERVICE_ENHANCEMENT = 1;
+	public static final int SERVICE_WOUND = 2;
+	public static final int SERVICE_ENTERTAINER = 4;
+	public static final int SERVICE_ENHANCEMENT_RESIST = 8;
+	public static final int SERVICE_PET = 16;
+
+	@weakReference
+	protected CreatureObject practitioner;
+
+	protected boolean hospitalMode;
+	protected boolean includeResists;
+	protected boolean active;
+
+	protected int enhancementPrice;
+	protected int woundPrice;
+
+	protected int rangeMeters;
+	protected int ticketDurationMs;
+
+	@dereferenced
+	protected VectorMap<unsigned long, int> activeTickets;
+
+	@dereferenced
+	protected VectorMap<unsigned long, long> ticketExpiry;
+
+	public MedicalServiceSession(CreatureObject practitioner, boolean hospitalMode) {
+		initializeState(practitioner, hospitalMode);
+	}
+
+	public native void initializeState(CreatureObject practitioner, boolean hospitalMode);
+
+
+	public native void openSession(int enhancementPrice, int woundPrice, boolean includeResists);
+	public native void closeSession(boolean notifyPractitioner);
+
+	public native void updateMode(boolean hospitalMode);
+	public native void updatePrices(int enhancementPrice, int woundPrice);
+	public native void updateIncludeResists(boolean includeResists);
+
+	public native boolean isHospitalMode();
+	public native boolean canProvideEnhancements();
+	public native boolean canProvideWoundHealing();
+	public native boolean includesResists();
+	public native boolean isActive();
+
+	public native int getEnhancementPrice();
+	public native int getWoundPrice();
+
+	public native void beginEnhancementRequest(CreatureObject patient);
+	public native void beginEnhancementResistRequest(CreatureObject patient);
+	public native void beginEntertainerBuffRequest(CreatureObject patient);
+	public native void beginPetBuffRequest(CreatureObject patient);
+	public native void beginWoundRequest(CreatureObject patient);
+
+	public native void confirmEnhancementRequest(CreatureObject patient, boolean accepted);
+	public native void confirmEnhancementResistRequest(CreatureObject patient, boolean accepted);
+	public native void confirmEntertainerBuffRequest(CreatureObject patient, boolean accepted);
+	public native void confirmPetBuffRequest(CreatureObject patient, boolean accepted);
+	public native void confirmWoundRequest(CreatureObject patient, boolean accepted);
+
+	public native boolean patientHasEnhancementAccess(CreatureObject patient, boolean notifyIfMissing);
+	public native boolean patientHasWoundAccess(CreatureObject patient, boolean notifyIfMissing);
+	public native boolean patientHasPetAccess(CreatureObject patient, boolean notifyIfMissing);
+
+	public native void completeEnhancement(CreatureObject patient, boolean notifyPatient);
+	public native void completePetBuff(CreatureObject patient, boolean notifyPatient);
+	public native void completeWound(CreatureObject patient, boolean notifyPatient);
+
+	public native void revokeAllAccess(CreatureObject patient, boolean notifyPatient);
+
+	@local
+	public native void grantServiceAccess(CreatureObject patient, int serviceFlag, boolean notify);
+
+	@local
+	public native boolean collectPayment(CreatureObject patient, int amount);
+
+	@local
+	public native boolean hasService(CreatureObject patient, int serviceFlag, boolean notifyIfMissing);
+
+	@local
+	public native void revokeService(CreatureObject patient, int serviceFlag, boolean notifyPatient);
+
+	@local
+	public native void clearExpiredTickets(unsigned long patientId);
+
+	@local
+	public native boolean isWithinServiceRange(CreatureObject patient);
+}

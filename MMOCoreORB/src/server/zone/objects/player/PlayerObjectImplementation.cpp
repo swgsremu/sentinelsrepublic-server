@@ -84,10 +84,6 @@
 #include "server/zone/managers/gcw/GCWManager.h"
 #include "server/zone/objects/ship/ShipObject.h"
 
-#ifdef WITH_SWGREALMS_API
-#include "server/login/SWGRealmsAPI.h"
-#endif // WITH_SWGREALMS_API
-
 void PlayerObjectImplementation::initializeTransientMembers() {
 	playerLogLevel = ConfigManager::instance()->getPlayerLogLevel();
 
@@ -1679,14 +1675,6 @@ void PlayerObjectImplementation::notifyOnline() {
 
 	resetSessionStats(true);
 
-#ifdef WITH_SWGREALMS_API
-	auto client = playerCreature->getClient();
-
-	// NOTE: Call after resetSessionStats so first session_stats has been saved and can be inspected
-	SWGRealmsAPI::instance()->notifyPlayerOnline(client != nullptr ? client->getIPAddress() : sessionStatsIPAddress,
-			getAccountID(), playerCreature->getObjectID());
-#endif // WITH_SWGREALMS_API
-
 	ChatManager* chatManager = server->getChatManager();
 	ZoneServer* zoneServer = server->getZoneServer();
 
@@ -1928,14 +1916,6 @@ void PlayerObjectImplementation::notifyOffline() {
 	}
 
 	logSessionStats(true);
-
-#ifdef WITH_SWGREALMS_API
-	auto client = playerCreature->getClient();
-
-	// NOTE: Call after logSessionStats so session_stats has been saved and can be inspected
-	SWGRealmsAPI::instance()->notifyPlayerOffline(client != nullptr ? client->getIPAddress() : sessionStatsIPAddress, getAccountID(),
-			playerCreature->getObjectID());
-#endif // WITH_SWGREALMS_API
 }
 
 void PlayerObjectImplementation::incrementSessionMovement(float moveDelta) {
@@ -2039,7 +2019,6 @@ void PlayerObjectImplementation::logSessionStats(bool isSessionEnd) {
 	}
 
 	// Log session statistics
-#ifndef WITH_SWGREALMS_API
 	if (ServerCore::getSchemaVersion() >= 1003) {
 		StringBuffer query;
 
@@ -2090,28 +2069,6 @@ void PlayerObjectImplementation::logSessionStats(bool isSessionEnd) {
 
 		info(logMsg.toString(), true);
 	}
-#else // WITH_SWGREALMS_API
-
-	// API mode: Use TransactionLog with SESSIONSTATS code
-	if (parent != nullptr) {
-		CreatureObject* creature = parent->asCreatureObject();
-
-		if (creature != nullptr) {
-			TransactionLog trx(TrxCode::SESSIONSTATS, creature);
-
-			trx.addState("uptime", (int)(uptime / 1000.0f));
-			trx.addState("dstSessionEnd", isSessionEnd);
-			trx.addState("dstDeltaSeconds", (int)(sessionStatsMiliSecs / 1000.0f));
-			trx.addState("dstDeltaCredits", creditsDelta);
-			trx.addState("dstDeltaSkillPoints", skillPointDelta);
-			trx.addState("dstActivityXP", sessionStatsActivityXP);
-			trx.addState("dstCurrentCredits", currentCredits);
-			trx.addState("dstIPAccountCount", ipAccountCount);
-
-			trx.commit();
-		}
-	}
-#endif // WITH_SWGREALMS_API
 
 	resetSessionStats(false);
 }

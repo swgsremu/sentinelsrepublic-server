@@ -80,7 +80,6 @@ void LoginPacketHandler::handleDeleteCharacterMessage(LoginClient* client, Messa
 
 	int dbDelete = 0;
 
-#ifndef WITH_SWGREALMS_API
 	StringBuffer moveStatement;
 	moveStatement << "INSERT INTO deleted_characters SELECT *, 0 as db_deleted FROM characters WHERE character_oid = " << charId;
 	moveStatement << " AND account_id = " << accountId << " AND galaxy_id = " << ServerId << ";";
@@ -134,15 +133,6 @@ void LoginPacketHandler::handleDeleteCharacterMessage(LoginClient* client, Messa
 			dbDelete = 1;
 		}
 	}
-#else // WITH_SWGREALMS_API
-	auto swgRealmsAPI = SWGRealmsAPI::instance();
-	String errorMessage;
-
-	if (swgRealmsAPI == nullptr || !swgRealmsAPI->deleteCharacterBlocking(charId, accountId, ServerId, errorMessage)) {
-		error() << "Failed to delete character: " << errorMessage;
-		dbDelete = 1;
-	}
-#endif // WITH_SWGREALMS_API
 
 	auto* msg = new DeleteCharacterReplyMessage(dbDelete);
 	client->sendMessage(msg);

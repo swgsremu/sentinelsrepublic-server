@@ -9,9 +9,6 @@
 #include "AccountManager.h"
 #include "server/login/LoginClient.h"
 #include "server/login/LoginServer.h"
-#ifdef WITH_SWGREALMS_API
-#include "server/login/SWGRealmsAPI.h"
-#endif // WITH_SWGREALMS_API
 #include "server/login/packets/AccountVersionMessage.h"
 #include "server/login/packets/EnumerateCharacterId.h"
 #include "server/login/packets/LoginClientToken.h"
@@ -33,7 +30,6 @@ AccountManager::AccountManager(LoginServer* loginserv) : Logger("AccountManager"
 	setLogging(false);
 	setGlobalLogging(false);
 
-#ifndef WITH_SWGREALMS_API
 	if (ServerCore::truncateDatabases()) {
 		try {
 			String query = "TRUNCATE TABLE characters";
@@ -45,7 +41,6 @@ AccountManager::AccountManager(LoginServer* loginserv) : Logger("AccountManager"
 			error(e.getMessage());
 		}
 	}
-#endif // !WITH_SWGREALMS_API
 }
 
 AccountManager::~AccountManager() {
@@ -56,7 +51,6 @@ void AccountManager::loginAccount(LoginClient* client, Message* packet) {
 	String username, password, version;
 	AccountVersionMessage::parse(packet, username, password, version);
 
-#ifndef WITH_SWGREALMS_API
 	Database::escapeString(username);
 	Database::escapeString(password);
 
@@ -70,67 +64,10 @@ void AccountManager::loginAccount(LoginClient* client, Message* packet) {
 	if (account == nullptr)
 		return;
 
-#else // WITH_SWGREALMS_API
-	StringBuffer clientEndpoint;
-
-	auto session = client->getSession();
-
-	if (session == nullptr)
-		return;
-
-	auto address = session->getAddress();
-
-	clientEndpoint << address.getIPAddress() << ":" << address.getPort();
-
-	SWGRealmsAPI::instance()->createSession(username, password, version, clientEndpoint.toString(),
-			[this, username, loginClient = Reference<LoginClient*>(client)](const SessionApprovalResult& result) {
-
-		if (result.isActionTemporaryFailure()) {
-			error() << "Unexpected failure in createSession for user [" << username << "]: " << result.getLogMessage();
-		}
-
-		if (loginClient == nullptr)
-			return;
-
-		if (!result.isActionAllowed()) {
-			loginClient->sendErrorMessage(result.getTitle(), result.getMessage(true));
-			return;
-		}
-
-		auto sessionId = result.getSessionID();
-
-		if (sessionId.isEmpty()) {
-			loginClient->sendErrorMessage("Login Error", "Your session key was invalid, exit the client and try logging in again, if this continues contact support.");
-
-			error() << "missing sessionId in createSession for user [" << username << "]: " << result.getLogMessage();
-
-			return;
-		}
-
-		Reference<Account*> loginAccount = getAccount(result.getAccountID(), true);
-
-		if (loginAccount == nullptr) {
-			loginClient->sendErrorMessage("Login Error", "Failed to find your account, please contact support.");
-
-			error() << "getAccount(" << result.getAccountID() << ") failed in createSession for user [" << username << "]: " << result.getLogMessage();
-			return;
-		}
-
-		Locker locker(loginAccount);
-
-		loginAccount->setSessionId(sessionId);
-		loginAccount->setStationID(result.getStationID());
-
-		if (!loginFinalize(loginClient, loginAccount)) {
-			return;
-		}
-
-		loginApprovedAccount(loginClient, loginAccount);
-	});
+	loginApprovedAccount(client, account);
 };
 
 void AccountManager::loginApprovedAccount(LoginClient* client, ManagedReference<Account*> account) {
-#endif // WITH_SWGREALMS_API
 	String sessionID = account->getSessionId();
 
 	if (sessionID.isEmpty()) {
@@ -149,25 +86,17 @@ void AccountManager::loginApprovedAccount(LoginClient* client, ManagedReference<
 
 	String ip = client->getSession()->getAddress().getIPAddress();
 
-#ifdef WITH_SWGREALMS_API
-	SWGRealmsAPI::instance()->notifySessionStart(ip, accountID);
-#endif // WITH_SWGREALMS_API
-
-#ifndef WITH_SWGREALMS_API
 	String sessionDuration = ConfigManager::instance()->getString("Core3.Login.SessionDuration", "00:15");
 	StringBuffer sessionQuery;
 	sessionQuery << "REPLACE INTO sessions (account_id, session_id, ip, expires) VALUES (";
 	sessionQuery << accountID << ", '" << sessionID << "', '" << ip << "' , ADDTIME(NOW(), '" << sessionDuration << "'));";
-#endif // !WITH_SWGREALMS_API
 
 	StringBuffer logQuery;
 	logQuery << "INSERT INTO account_log (account_id, ip_address, timestamp) VALUES (" << accountID << ", '" << ip << "', NOW());";
 
 	try {
-#ifndef WITH_SWGREALMS_API
 		ServerDatabase::instance()->executeStatement(sessionQuery);
 		ServerDatabase::instance()->executeStatement(logQuery);
-#endif // !WITH_SWGREALMS_API
 	} catch (const DatabaseException& e) {
 		client->error() << e.getMessage();
 	}
@@ -179,7 +108,6 @@ void AccountManager::loginApprovedAccount(LoginClient* client, ManagedReference<
 	client->sendMessage(eci);
 }
 
-#ifndef WITH_SWGREALMS_API
 Reference<Account*> AccountManager::validateAccountCredentials(LoginClient* client, const String& username, const String& password) {
 	if (client == nullptr) {
 		return nullptr;
@@ -262,7 +190,6 @@ Reference<Account*> AccountManager::validateAccountCredentials(LoginClient* clie
 
 	return loginFinalize(client, account) == true ? account : nullptr;
 }
-#endif // !WITH_SWGREALMS_API
 
 bool AccountManager::loginFinalize(LoginClient* client, ManagedReference<Account*> account) {
 	if (client == nullptr || account == nullptr) {
@@ -322,7 +249,6 @@ bool AccountManager::loginFinalize(LoginClient* client, ManagedReference<Account
 	return true;
 }
 
-#ifndef WITH_SWGREALMS_API
 void AccountManager::updateHash(const String& username, const String& password) {
 	String salt = Crypto::randomSalt();
 	String hash = Crypto::SHA256Hash(dbSecret + password + salt);
@@ -514,76 +440,7 @@ Reference<Account*> AccountManager::getAccount(const String& accountName, bool f
 
 	return getAccount(query.toString(), temp, forceSqlUpdate);
 }
-#else // WITH_SWGREALMS_API
-Reference<Account*> AccountManager::getAccount(uint32 accountID, bool forceSqlUpdate) {
-	static Logger logger("AccountManager");
 
-	Reference<Account*> accObj;
-
-	{
-		// Scope mutext ot just ObjectBroker since API can process result on separate thread
-		Locker locker(&mutex);
-
-		static uint64 databaseID = ObjectDatabaseManager::instance()->getDatabaseID("accounts");
-
-		uint64 oid = (accountID | (databaseID << 48));
-
-		accObj = Core::getObjectBroker()->lookUp(oid).castTo<Account*>();
-
-		if (accObj == nullptr) {
-			// Lazily create account object
-			accObj = dynamic_cast<Account*>(ObjectManager::instance()->createObject("Account", 3, "accounts", oid));
-
-			if (accObj == nullptr) {
-				logger.error("Error creating account object with account ID " + String::hexvalueOf((int64)oid));
-
-				return nullptr;
-			}
-		} else if (!forceSqlUpdate && accObj->isSqlLoaded() && !accObj->isAccountDataStale()) {
-			return accObj;
-		}
-	}
-
-	// Try to get account data from API
-	String errorMessage;
-	auto swgRealmsAPI = SWGRealmsAPI::instance();
-
-	if (swgRealmsAPI == nullptr) {
-		logger.error() << "SWGRealms API instance is null";
-		return nullptr;
-	}
-
-	if (swgRealmsAPI->getAccountDataBlocking(accountID, accObj, errorMessage)) {
-		Locker locker(accObj);
-		accObj->updateFromDatabase();
-
-		return accObj;
-	}
-
-	logger.error() << "SWGRealms API getAccountDataBlocking failed for accountID " << accountID << ": " << errorMessage;
-	return nullptr;
-}
-
-Reference<Account*> AccountManager::getAccount(const String& accountName, bool forceSqlUpdate) {
-	static Logger logger("AccountManager");
-
-	String errorMessage;
-	auto swgRealmsAPI = SWGRealmsAPI::instance();
-
-	// Get account_id from username via API
-	uint32 accountID = swgRealmsAPI->getAccountID(accountName, errorMessage);
-
-	if (accountID == 0) {
-		logger.error() << "Failed to get account_id for username " << accountName << ": " << errorMessage;
-		return nullptr;
-	}
-
-	// Use account_id to get full account (may use cache, avoiding second API call)
-	return getAccount(accountID, forceSqlUpdate);
-}
-#endif // WITH_SWGREALMS_API
-
-#ifndef WITH_SWGREALMS_API
 void AccountManager::expireSession(Reference<Account*> account, const String& sessionID) {
 	if (account == nullptr || sessionID.isEmpty()) {
 		return;
@@ -605,4 +462,4 @@ void AccountManager::expireSession(Reference<Account*> account, const String& se
 		logger.error() << e.getMessage();
 	}
 }
-#endif // !WITH_SWGREALMS_API
+
